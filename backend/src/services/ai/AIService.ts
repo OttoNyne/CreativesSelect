@@ -6,6 +6,8 @@ export interface TextGenerationRequest {
 export interface ImageGenerationRequest {
   prompt: string;
   kind: "avatar" | "banner" | "wallpaper" | "post";
+  /** Request an animated/looping result instead of a static image (wallpaper only). */
+  live?: boolean;
 }
 
 export interface AIService {

@@ -14,7 +14,10 @@ export interface User {
   bio: string | null;
   avatarUrl: string | null;
   bannerUrl: string | null;
+  bannerPosition: string;
   wallpaperUrl: string | null;
+  wallpaperType: "image" | "video";
+  wallpaperPosition: string;
   isPrivate: boolean;
   createdAt: string;
   theme: ProfileTheme;

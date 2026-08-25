@@ -9,6 +9,7 @@ import { assetUrl, ApiError } from "../api/client";
 import type { User, ProfileTheme } from "../types";
 import { profileThemeStyle } from "../theme/applyProfileTheme";
 import { Avatar } from "../components/common/Avatar";
+import { ImagePositioner } from "../components/common/ImagePositioner";
 import { ThemeEditor } from "../components/profile/ThemeEditor";
 import { TopFriendsList } from "../components/profile/TopFriendsList";
 import { ProfileComments } from "../components/profile/ProfileComments";
@@ -28,6 +29,7 @@ export function ProfilePage() {
   const [isFriend, setIsFriend] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [liveWallpaper, setLiveWallpaper] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +81,8 @@ export function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const { url } = await uploadFile(file, "wallpapers");
-    await saveProfile({ wallpaperUrl: url });
+    const wallpaperType = file.type.startsWith("video/") ? "video" : "image";
+    await saveProfile({ wallpaperUrl: url, wallpaperType, wallpaperPosition: "50% 50%" });
   }
 
   async function handleFriendRequest() {
@@ -112,13 +115,52 @@ export function ProfilePage() {
     return <div className="p-8 text-center text-white/50">Loading profile…</div>;
   }
 
+  const wallpaperUrl = assetUrl(profile.wallpaperUrl);
+  const isVideoWallpaper = profile.wallpaperType === "video" && Boolean(wallpaperUrl);
+
   return (
     <div
-      style={profileThemeStyle(profile.theme, assetUrl(profile.wallpaperUrl))}
+      style={profileThemeStyle(
+        profile.theme,
+        isVideoWallpaper ? undefined : wallpaperUrl,
+        profile.wallpaperPosition,
+      )}
       className="min-h-[calc(100vh-56px)]"
     >
-      <div className="relative h-48 w-full bg-black/30">
-        {profile.bannerUrl && <img src={assetUrl(profile.bannerUrl)} alt="" className="h-full w-full object-cover" />}
+      {isVideoWallpaper && (
+        <>
+          <video
+            src={wallpaperUrl}
+            style={{ objectPosition: profile.wallpaperPosition }}
+            className="fixed inset-0 -z-10 h-full w-full object-cover"
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+          <div className="fixed inset-0 -z-10 bg-black/40" />
+        </>
+      )}
+
+      <div className={`relative w-full bg-black/30 ${editing && isOwner && profile.bannerUrl ? "" : "h-48 overflow-hidden"}`}>
+        {editing && isOwner && profile.bannerUrl ? (
+          <ImagePositioner
+            src={assetUrl(profile.bannerUrl)!}
+            mediaType="image"
+            position={profile.bannerPosition}
+            onCommit={(bannerPosition) => saveProfile({ bannerPosition })}
+            heightClass="h-48"
+          />
+        ) : (
+          profile.bannerUrl && (
+            <img
+              src={assetUrl(profile.bannerUrl)}
+              alt=""
+              style={{ objectPosition: profile.bannerPosition }}
+              className="h-full w-full object-cover"
+            />
+          )
+        )}
         {isOwner && (
           <button
             onClick={() => bannerInputRef.current?.click()}
@@ -205,7 +247,7 @@ export function ProfilePage() {
               <GenerateImageButton
                 kind="banner"
                 getPrompt={() => bio}
-                onGenerated={(url) => saveProfile({ bannerUrl: url })}
+                onGenerated={(url) => saveProfile({ bannerUrl: url, bannerPosition: "50% 50%" })}
                 label="Generate banner"
               />
               <label className="ml-auto flex items-center gap-2 text-sm opacity-70">
@@ -228,16 +270,27 @@ export function ProfilePage() {
               <input
                 ref={wallpaperInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/mp4,video/webm"
                 className="hidden"
                 onChange={handleWallpaperFile}
               />
               <GenerateImageButton
                 kind="wallpaper"
                 getPrompt={() => bio}
-                onGenerated={(url) => saveProfile({ wallpaperUrl: url })}
+                live={liveWallpaper}
+                onGenerated={(url) =>
+                  saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
+                }
                 label="Generate wallpaper"
               />
+              <label className="flex items-center gap-1.5 text-xs text-white/60">
+                <input
+                  type="checkbox"
+                  checked={liveWallpaper}
+                  onChange={(e) => setLiveWallpaper(e.target.checked)}
+                />
+                Live (animated)
+              </label>
               {profile.wallpaperUrl && (
                 <button
                   type="button"
@@ -248,6 +301,15 @@ export function ProfilePage() {
                 </button>
               )}
             </div>
+            {profile.wallpaperUrl && (
+              <ImagePositioner
+                src={wallpaperUrl!}
+                mediaType={profile.wallpaperType}
+                position={profile.wallpaperPosition}
+                onCommit={(wallpaperPosition) => saveProfile({ wallpaperPosition })}
+                heightClass="h-32"
+              />
+            )}
             <button
               onClick={() => saveProfile({ bio, theme })}
               disabled={saving}

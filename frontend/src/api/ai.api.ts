@@ -3,6 +3,6 @@ import { api } from "./client";
 export const aiApi = {
   generateText: (prompt: string, kind: "bio" | "caption" | "blurb") =>
     api.post<{ text: string }>("/ai/text", { prompt, kind }),
-  generateImage: (prompt: string, kind: "avatar" | "banner" | "wallpaper" | "post") =>
-    api.post<{ url: string }>("/ai/image", { prompt, kind }),
+  generateImage: (prompt: string, kind: "avatar" | "banner" | "wallpaper" | "post", live?: boolean) =>
+    api.post<{ url: string }>("/ai/image", { prompt, kind, live }),
 };

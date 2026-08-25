@@ -7,6 +7,9 @@ const mediaUrlSchema = z.string().refine(
   "Must be a relative path or absolute URL",
 );
 
+// CSS background-position value, e.g. "50% 50%" or "30% 70%".
+const positionSchema = z.string().regex(/^-?\d{1,3}%\s-?\d{1,3}%$/, "Must be a position like \"50% 50%\"");
+
 export const registerSchema = z.object({
   email: z.string().email(),
   username: z
@@ -28,7 +31,10 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(2000).optional(),
   avatarUrl: mediaUrlSchema.optional().nullable(),
   bannerUrl: mediaUrlSchema.optional().nullable(),
+  bannerPosition: positionSchema.optional(),
   wallpaperUrl: mediaUrlSchema.optional().nullable(),
+  wallpaperType: z.enum(["image", "video"]).optional(),
+  wallpaperPosition: positionSchema.optional(),
   isPrivate: z.boolean().optional(),
   theme: z
     .object({
@@ -76,6 +82,7 @@ export const aiTextRequestSchema = z.object({
 export const aiImageRequestSchema = z.object({
   prompt: z.string().max(2000),
   kind: z.enum(["avatar", "banner", "wallpaper", "post"]),
+  live: z.boolean().optional(),
 });
 
 export const createTrackSchema = z.object({

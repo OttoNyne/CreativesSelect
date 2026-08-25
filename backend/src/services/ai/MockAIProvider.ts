@@ -60,6 +60,39 @@ function buildGradientSvg(prompt: string, kind: ImageGenerationRequest["kind"]):
 </svg>`;
 }
 
+// A "live" wallpaper: still an SVG (no real video model behind the mock
+// provider), but with animated gradient stops + a slow rotation so it
+// visibly moves when embedded via CSS background-image.
+function buildAnimatedGradientSvg(prompt: string, kind: ImageGenerationRequest["kind"]): string {
+  const hue1 = Math.round(hashToHue(prompt));
+  const hues = [hue1, (hue1 + 90) % 360, (hue1 + 180) % 360, (hue1 + 270) % 360, hue1];
+  const { width, height } = IMAGE_DIMENSIONS[kind];
+  const stopColors = (offset: number) =>
+    hues.map((h) => `hsl(${Math.round((h + offset) % 360)},75%,55%)`).join(";");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%">
+        <animate attributeName="stop-color" values="${stopColors(0)}" dur="8s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="100%">
+        <animate attributeName="stop-color" values="${stopColors(150)}" dur="8s" repeatCount="indefinite" />
+      </stop>
+      <animateTransform
+        attributeName="gradientTransform"
+        type="rotate"
+        from="0 0.5 0.5"
+        to="360 0.5 0.5"
+        dur="20s"
+        repeatCount="indefinite"
+      />
+    </linearGradient>
+  </defs>
+  <rect width="${width}" height="${height}" fill="url(#g)" />
+</svg>`;
+}
+
 export class MockAIProvider implements AIService {
   async generateText({ prompt, kind }: TextGenerationRequest): Promise<{ text: string }> {
     await delay(300 + Math.random() * 300);
@@ -70,12 +103,16 @@ export class MockAIProvider implements AIService {
     return { text };
   }
 
-  async generateImage({ prompt, kind }: ImageGenerationRequest): Promise<{ url: string }> {
+  async generateImage({ prompt, kind, live }: ImageGenerationRequest): Promise<{ url: string }> {
     await delay(400 + Math.random() * 400);
     const dir = path.join(UPLOADS_ROOT, "ai-generated");
     fs.mkdirSync(dir, { recursive: true });
     const filename = `${crypto.randomUUID()}.svg`;
-    fs.writeFileSync(path.join(dir, filename), buildGradientSvg(prompt || crypto.randomUUID(), kind));
+    const svg =
+      live && kind === "wallpaper"
+        ? buildAnimatedGradientSvg(prompt || crypto.randomUUID(), kind)
+        : buildGradientSvg(prompt || crypto.randomUUID(), kind);
+    fs.writeFileSync(path.join(dir, filename), svg);
     return { url: `/uploads/ai-generated/${filename}` };
   }
 }

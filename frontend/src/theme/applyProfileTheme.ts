@@ -9,7 +9,11 @@ const DEFAULT_THEME: Required<ProfileTheme> = {
   layoutStyle: "grid",
 };
 
-export function profileThemeStyle(theme: ProfileTheme | undefined, wallpaperUrl?: string): CSSProperties {
+export function profileThemeStyle(
+  theme: ProfileTheme | undefined,
+  wallpaperUrl?: string,
+  wallpaperPosition = "50% 50%",
+): CSSProperties {
   const merged = { ...DEFAULT_THEME, ...theme };
   const base: CSSProperties = {
     "--profile-bg": merged.bgColor,
@@ -26,7 +30,7 @@ export function profileThemeStyle(theme: ProfileTheme | undefined, wallpaperUrl?
       backgroundColor: "var(--profile-bg)",
       backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("${wallpaperUrl}")`,
       backgroundSize: "cover",
-      backgroundPosition: "center",
+      backgroundPosition: wallpaperPosition,
       backgroundAttachment: "fixed",
     };
   }

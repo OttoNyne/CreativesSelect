@@ -37,7 +37,10 @@ export async function updateOwnProfile(
     bio?: string;
     avatarUrl?: string | null;
     bannerUrl?: string | null;
+    bannerPosition?: string;
     wallpaperUrl?: string | null;
+    wallpaperType?: "image" | "video";
+    wallpaperPosition?: string;
     isPrivate?: boolean;
     theme?: Record<string, string>;
   },
