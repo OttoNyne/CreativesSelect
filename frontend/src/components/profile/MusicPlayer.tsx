@@ -11,6 +11,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
   const [loading, setLoading] = useState(true);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [youtubeTitle, setYoutubeTitle] = useState("");
+  const [uploadCaption, setUploadCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,11 +51,12 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
     try {
       const { url } = await uploadFile(file, "tracks");
       const { track } = await tracksApi.add({
-        title: file.name.replace(/\.[^/.]+$/, ""),
+        title: uploadCaption.trim() || file.name.replace(/\.[^/.]+$/, ""),
         sourceType: "upload",
         url,
       });
       setTracks((t) => [...t, track]);
+      setUploadCaption("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't upload that file");
     } finally {
@@ -131,14 +133,22 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                   Add
                 </button>
               </form>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"
-              >
-                {uploading ? "Uploading…" : "📎 Upload a song"}
-              </button>
+              <div className="flex gap-1.5">
+                <input
+                  value={uploadCaption}
+                  onChange={(e) => setUploadCaption(e.target.value)}
+                  placeholder="Caption (optional)"
+                  className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="shrink-0 rounded-md border border-white/15 px-3 py-1 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"
+                >
+                  {uploading ? "Uploading…" : "📎 Upload a song"}
+                </button>
+              </div>
               <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileChange} />
             </>
           )}
