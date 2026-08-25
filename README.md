@@ -1,6 +1,7 @@
 # CreativesSelect
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-CreativesSelect-181717?logo=github)](https://github.com/OttoNyne/CreativesSelect)
+[![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)](LICENSE)
 
 A social platform for creatives — customizable profiles, friend connections, testimonials, groups/collabs, and on-request AI assistance (writing + image generation) for content creation.
 
