@@ -1,10 +1,12 @@
 # CreativesSelect
 
+[![GitHub Repo](https://img.shields.io/badge/GitHub-CreativesSelect-181717?logo=github)](https://github.com/OttoNyne/CreativesSelect)
+
 A social platform for creatives — customizable profiles, friend connections, testimonials, groups/collabs, and on-request AI assistance (writing + image generation) for content creation.
 
 ## Stack
 - **Backend**: Node + Express + TypeScript, Prisma + SQLite, JWT (httpOnly cookie) auth
-- **Frontend**: Vite + React + TypeScript, React Router, Tailwind CSS, React Query
+- **Frontend**: Vite + React + TypeScript, React Router, Tailwind CSS
 
 ## First-time setup
 
