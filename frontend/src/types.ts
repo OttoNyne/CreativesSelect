@@ -1,0 +1,90 @@
+export interface ProfileTheme {
+  bgColor?: string;
+  textColor?: string;
+  accentColor?: string;
+  fontFamily?: string;
+  layoutStyle?: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  displayName: string;
+  bio: string | null;
+  avatarUrl: string | null;
+  bannerUrl: string | null;
+  profileSongUrl: string | null;
+  isPrivate: boolean;
+  createdAt: string;
+  theme: ProfileTheme;
+}
+
+export interface Post {
+  id: string;
+  authorId: string;
+  author: User;
+  content: string;
+  imageUrl: string | null;
+  isAiText: boolean;
+  isAiImage: boolean;
+  createdAt: string;
+  commentCount: number;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: User;
+}
+
+export interface Friendship {
+  id: string;
+  requesterId: string;
+  addresseeId: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+}
+
+export interface FriendRequest {
+  id: string;
+  createdAt: string;
+  requester: User;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description: string | null;
+  bannerUrl: string | null;
+  createdById: string;
+  createdAt: string;
+  memberCount: number;
+  isMember: boolean;
+}
+
+export interface GroupMember {
+  role: string;
+  joinedAt: string;
+  user: User;
+}
+
+export interface MediaItem {
+  id: string;
+  ownerId: string;
+  url: string;
+  type: string;
+  caption: string | null;
+  isAiImage: boolean;
+  createdAt: string;
+}
+
+export interface Notification {
+  id: string;
+  recipientId: string;
+  type: string;
+  payload: Record<string, unknown>;
+  isRead: boolean;
+  createdAt: string;
+}

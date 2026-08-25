@@ -1,0 +1,79 @@
+import { z } from "zod";
+
+// Accepts either an absolute URL or a relative path like "/uploads/avatars/xyz.png"
+// (our own upload/AI endpoints return relative paths, not absolute URLs).
+const mediaUrlSchema = z.string().refine(
+  (value) => value.startsWith("/") || /^https?:\/\//.test(value),
+  "Must be a relative path or absolute URL",
+);
+
+export const registerSchema = z.object({
+  email: z.string().email(),
+  username: z
+    .string()
+    .min(3)
+    .max(24)
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  password: z.string().min(8).max(72),
+  displayName: z.string().min(1).max(60),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const updateProfileSchema = z.object({
+  displayName: z.string().min(1).max(60).optional(),
+  bio: z.string().max(2000).optional(),
+  avatarUrl: mediaUrlSchema.optional().nullable(),
+  bannerUrl: mediaUrlSchema.optional().nullable(),
+  profileSongUrl: mediaUrlSchema.optional().nullable(),
+  isPrivate: z.boolean().optional(),
+  theme: z
+    .object({
+      bgColor: z.string().optional(),
+      textColor: z.string().optional(),
+      accentColor: z.string().optional(),
+      fontFamily: z.string().optional(),
+      layoutStyle: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const topFriendsSchema = z.object({
+  usernames: z.array(z.string()).max(8),
+});
+
+export const createPostSchema = z.object({
+  content: z.string().min(1).max(3000),
+  imageUrl: mediaUrlSchema.optional().nullable(),
+  isAiText: z.boolean().optional(),
+  isAiImage: z.boolean().optional(),
+});
+
+export const createCommentSchema = z.object({
+  content: z.string().min(1).max(1000),
+});
+
+export const createGroupSchema = z.object({
+  name: z.string().min(1).max(80),
+  description: z.string().max(1000).optional(),
+  bannerUrl: mediaUrlSchema.optional().nullable(),
+});
+
+export const reportSchema = z.object({
+  targetType: z.enum(["user", "post", "comment", "profileComment"]),
+  targetId: z.string().min(1),
+  reason: z.string().min(1).max(1000),
+});
+
+export const aiTextRequestSchema = z.object({
+  prompt: z.string().max(2000),
+  kind: z.enum(["bio", "caption", "blurb"]),
+});
+
+export const aiImageRequestSchema = z.object({
+  prompt: z.string().max(2000),
+  kind: z.enum(["avatar", "banner", "post"]),
+});

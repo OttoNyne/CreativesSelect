@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  username       String   @unique
+  passwordHash   String
+  displayName    String
+  bio            String?
+  avatarUrl      String?
+  bannerUrl      String?
+  profileSongUrl String?
+  isPrivate      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  // JSON string: {bgColor, textColor, accentColor, fontFamily, layoutStyle}
+  theme String @default("{}")
+
+  posts            Post[]
+  comments         Comment[]        @relation("AuthoredComments")
+  profileComments  ProfileComment[] @relation("ProfileCommentAuthor")
+  receivedComments ProfileComment[] @relation("ProfileOwner")
+  mediaItems       MediaItem[]
+  sentRequests     Friendship[]     @relation("Requester")
+  receivedRequests Friendship[]     @relation("Addressee")
+  topFriends       TopFriend[]      @relation("TopFriendOwner")
+  featuredAsTop    TopFriend[]      @relation("TopFriendTarget")
+  groupMemberships GroupMembership[]
+  createdGroups    Group[]          @relation("GroupCreator")
+  notifications    Notification[]   @relation("NotificationRecipient")
+  blocksInitiated  Block[]          @relation("Blocker")
+  blocksReceived   Block[]          @relation("Blocked")
+  reportsFiled     Report[]         @relation("Reporter")
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  imageUrl  String?
+  isAiText  Boolean  @default(false)
+  isAiImage Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  comments Comment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("AuthoredComments", fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model ProfileComment {
+  id             String   @id @default(cuid())
+  profileOwnerId String
+  profileOwner   User     @relation("ProfileOwner", fields: [profileOwnerId], references: [id])
+  authorId       String
+  author         User     @relation("ProfileCommentAuthor", fields: [authorId], references: [id])
+  content        String
+  createdAt      DateTime @default(now())
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  requester   User     @relation("Requester", fields: [requesterId], references: [id])
+  addresseeId String
+  addressee   User     @relation("Addressee", fields: [addresseeId], references: [id])
+  status      String   @default("pending") // pending | accepted | declined
+  createdAt   DateTime @default(now())
+
+  @@unique([requesterId, addresseeId])
+}
+
+model TopFriend {
+  id       String @id @default(cuid())
+  ownerId  String
+  owner    User   @relation("TopFriendOwner", fields: [ownerId], references: [id])
+  targetId String
+  target   User   @relation("TopFriendTarget", fields: [targetId], references: [id])
+  position Int
+
+  @@unique([ownerId, targetId])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  bannerUrl   String?
+  createdById String
+  createdBy   User     @relation("GroupCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  memberships GroupMembership[]
+}
+
+model GroupMembership {
+  id       String   @id @default(cuid())
+  groupId  String
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  role     String   @default("member") // member | admin
+  joinedAt DateTime @default(now())
+
+  @@unique([groupId, userId])
+}
+
+model MediaItem {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  url       String
+  type      String // image | audio | video | embed
+  caption   String?
+  isAiImage Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  recipientId String
+  recipient   User     @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  type        String // friend_request | comment | profile_comment | group_invite
+  payload     String // JSON string with relevant ids
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id])
+  blockedId String
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation("Reporter", fields: [reporterId], references: [id])
+  targetType String // user | post | comment | profileComment
+  targetId   String
+  reason     String
+  status     String   @default("open") // open | reviewed | dismissed
+  createdAt  DateTime @default(now())
+}
