@@ -130,6 +130,19 @@ async function main() {
     });
   }
 
+  const novaTracks: { title: string; sourceType: "youtube"; url: string }[] = [
+    { title: "Late Night Painting Mix", sourceType: "youtube", url: "dQw4w9WgXcQ" },
+  ];
+  for (let i = 0; i < novaTracks.length; i++) {
+    const t = novaTracks[i];
+    const existing = await prisma.track.findFirst({ where: { ownerId: nova.id, title: t.title } });
+    if (!existing) {
+      await prisma.track.create({
+        data: { ownerId: nova.id, title: t.title, sourceType: t.sourceType, url: t.url, position: i },
+      });
+    }
+  }
+
   const testimonial = await prisma.profileComment.findFirst({
     where: { profileOwnerId: nova.id, authorId: created.get("lyricist_lee")!.id },
   });

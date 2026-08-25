@@ -13,6 +13,7 @@ import { ThemeEditor } from "../components/profile/ThemeEditor";
 import { TopFriendsList } from "../components/profile/TopFriendsList";
 import { ProfileComments } from "../components/profile/ProfileComments";
 import { PortfolioGrid } from "../components/profile/PortfolioGrid";
+import { MusicPlayer } from "../components/profile/MusicPlayer";
 import { GenerateTextButton } from "../components/ai/GenerateTextButton";
 import { GenerateImageButton } from "../components/ai/GenerateImageButton";
 
@@ -29,6 +30,7 @@ export function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
   const isOwner = viewer?.username === username;
 
@@ -73,6 +75,13 @@ export function ProfilePage() {
     await saveProfile({ bannerUrl: url });
   }
 
+  async function handleWallpaperFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { url } = await uploadFile(file, "wallpapers");
+    await saveProfile({ wallpaperUrl: url });
+  }
+
   async function handleFriendRequest() {
     try {
       await friendsApi.request(username);
@@ -104,7 +113,10 @@ export function ProfilePage() {
   }
 
   return (
-    <div style={profileThemeStyle(profile.theme)} className="min-h-[calc(100vh-56px)]">
+    <div
+      style={profileThemeStyle(profile.theme, assetUrl(profile.wallpaperUrl))}
+      className="min-h-[calc(100vh-56px)]"
+    >
       <div className="relative h-48 w-full bg-black/30">
         {profile.bannerUrl && <img src={assetUrl(profile.bannerUrl)} alt="" className="h-full w-full object-cover" />}
         {isOwner && (
@@ -178,10 +190,6 @@ export function ProfilePage() {
           </div>
         </div>
 
-        {profile.profileSongUrl && (
-          <audio controls src={assetUrl(profile.profileSongUrl)} className="mt-3 w-full" />
-        )}
-
         {editing && isOwner ? (
           <div className="mt-4 space-y-3">
             <ThemeEditor theme={theme} onChange={setTheme} />
@@ -209,6 +217,37 @@ export function ProfilePage() {
                 Private profile
               </label>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => wallpaperInputRef.current?.click()}
+                className="rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10"
+              >
+                🖼️ Change wallpaper
+              </button>
+              <input
+                ref={wallpaperInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleWallpaperFile}
+              />
+              <GenerateImageButton
+                kind="wallpaper"
+                getPrompt={() => bio}
+                onGenerated={(url) => saveProfile({ wallpaperUrl: url })}
+                label="Generate wallpaper"
+              />
+              {profile.wallpaperUrl && (
+                <button
+                  type="button"
+                  onClick={() => saveProfile({ wallpaperUrl: null })}
+                  className="text-xs text-white/40 hover:text-red-400"
+                >
+                  Remove wallpaper
+                </button>
+              )}
+            </div>
             <button
               onClick={() => saveProfile({ bio, theme })}
               disabled={saving}
@@ -225,6 +264,9 @@ export function ProfilePage() {
         <div className="mt-6 grid grid-cols-1 gap-4 pb-10 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <TopFriendsList username={profile.username} isOwner={isOwner} />
+          </div>
+          <div className="sm:col-span-2">
+            <MusicPlayer username={profile.username} isOwner={isOwner} />
           </div>
           <div className="sm:col-span-2">
             <PortfolioGrid username={profile.username} isOwner={isOwner} />

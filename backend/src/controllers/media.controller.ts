@@ -8,10 +8,12 @@ function mediaTypeFromMime(mimetype: string): string {
   return "image";
 }
 
+const PASS_THROUGH_FOLDERS = new Set(["avatars", "banners", "wallpapers", "tracks"]);
+
 export const postUpload = asyncHandler(async (req: Request, res: Response) => {
   if (!req.file) throw new HttpError(400, "No file uploaded");
   const purpose = String(req.query.purpose ?? "portfolio");
-  const folder = purpose === "avatars" || purpose === "banners" ? purpose : "portfolio";
+  const folder = PASS_THROUGH_FOLDERS.has(purpose) ? purpose : "portfolio";
   const url = `/uploads/${folder}/${req.file.filename}`;
 
   if (purpose === "portfolio") {

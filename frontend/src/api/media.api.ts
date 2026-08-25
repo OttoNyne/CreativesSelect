@@ -3,7 +3,7 @@ import type { MediaItem } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
-export type UploadPurpose = "avatars" | "banners" | "portfolio";
+export type UploadPurpose = "avatars" | "banners" | "wallpapers" | "portfolio" | "tracks";
 
 export async function uploadFile(
   file: File,

@@ -7,7 +7,7 @@ export function GenerateImageButton({
   onGenerated,
   label = "Generate image with AI",
 }: {
-  kind: "avatar" | "banner" | "post";
+  kind: "avatar" | "banner" | "wallpaper" | "post";
   getPrompt: () => string;
   onGenerated: (url: string) => void;
   label?: string;

@@ -16,6 +16,7 @@ import { mediaRouter } from "./routes/media.routes";
 import { notificationsRouter } from "./routes/notifications.routes";
 import { moderationRouter } from "./routes/moderation.routes";
 import { aiRouter } from "./routes/ai.routes";
+import { tracksRouter } from "./routes/tracks.routes";
 
 export function createApp() {
   const app = express();
@@ -42,6 +43,7 @@ export function createApp() {
   app.use("/api/notifications", notificationsRouter);
   app.use("/api", moderationRouter);
   app.use("/api/ai", aiRouter);
+  app.use("/api/tracks", tracksRouter);
 
   app.use(errorHandler);
 

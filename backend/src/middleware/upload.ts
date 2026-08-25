@@ -5,8 +5,17 @@ import multer from "multer";
 
 export const UPLOADS_ROOT = path.join(__dirname, "..", "..", "uploads");
 
-const ALLOWED_PURPOSES = new Set(["avatars", "banners", "portfolio"]);
-const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "audio/mpeg"]);
+const ALLOWED_PURPOSES = new Set(["avatars", "banners", "wallpapers", "portfolio", "tracks"]);
+const ALLOWED_MIME = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/wav",
+  "audio/ogg",
+]);
 
 const storage = multer.diskStorage({
   destination: (req, _file, cb) => {
@@ -24,7 +33,7 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 15 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!ALLOWED_MIME.has(file.mimetype)) {
       cb(new Error("Unsupported file type"));

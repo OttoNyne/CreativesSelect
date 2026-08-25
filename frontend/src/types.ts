@@ -14,7 +14,7 @@ export interface User {
   bio: string | null;
   avatarUrl: string | null;
   bannerUrl: string | null;
-  profileSongUrl: string | null;
+  wallpaperUrl: string | null;
   isPrivate: boolean;
   createdAt: string;
   theme: ProfileTheme;
@@ -77,6 +77,16 @@ export interface MediaItem {
   type: string;
   caption: string | null;
   isAiImage: boolean;
+  createdAt: string;
+}
+
+export interface Track {
+  id: string;
+  ownerId: string;
+  title: string;
+  sourceType: "upload" | "youtube";
+  url: string;
+  position: number;
   createdAt: string;
 }
 

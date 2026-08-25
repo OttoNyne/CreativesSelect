@@ -16,7 +16,7 @@ model User {
   bio            String?
   avatarUrl      String?
   bannerUrl      String?
-  profileSongUrl String?
+  wallpaperUrl   String?
   isPrivate      Boolean  @default(false)
   createdAt      DateTime @default(now())
 
@@ -28,6 +28,7 @@ model User {
   profileComments  ProfileComment[] @relation("ProfileCommentAuthor")
   receivedComments ProfileComment[] @relation("ProfileOwner")
   mediaItems       MediaItem[]
+  tracks           Track[]
   sentRequests     Friendship[]     @relation("Requester")
   receivedRequests Friendship[]     @relation("Addressee")
   topFriends       TopFriend[]      @relation("TopFriendOwner")
@@ -129,6 +130,17 @@ model MediaItem {
   caption   String?
   isAiImage Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Track {
+  id         String   @id @default(cuid())
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id])
+  title      String
+  sourceType String // "upload" | "youtube"
+  url        String // relative upload path, or a YouTube video ID
+  position   Int
+  createdAt  DateTime @default(now())
 }
 
 model Notification {

@@ -28,7 +28,7 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(2000).optional(),
   avatarUrl: mediaUrlSchema.optional().nullable(),
   bannerUrl: mediaUrlSchema.optional().nullable(),
-  profileSongUrl: mediaUrlSchema.optional().nullable(),
+  wallpaperUrl: mediaUrlSchema.optional().nullable(),
   isPrivate: z.boolean().optional(),
   theme: z
     .object({
@@ -75,5 +75,11 @@ export const aiTextRequestSchema = z.object({
 
 export const aiImageRequestSchema = z.object({
   prompt: z.string().max(2000),
-  kind: z.enum(["avatar", "banner", "post"]),
+  kind: z.enum(["avatar", "banner", "wallpaper", "post"]),
+});
+
+export const createTrackSchema = z.object({
+  title: z.string().min(1).max(100),
+  sourceType: z.enum(["upload", "youtube"]),
+  url: z.string().min(1).max(2000),
 });

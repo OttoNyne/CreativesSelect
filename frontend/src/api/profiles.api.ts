@@ -6,7 +6,7 @@ export interface UpdateProfileInput {
   bio?: string;
   avatarUrl?: string | null;
   bannerUrl?: string | null;
-  profileSongUrl?: string | null;
+  wallpaperUrl?: string | null;
   isPrivate?: boolean;
   theme?: ProfileTheme;
 }

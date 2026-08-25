@@ -5,7 +5,7 @@ export interface TextGenerationRequest {
 
 export interface ImageGenerationRequest {
   prompt: string;
-  kind: "avatar" | "banner" | "post";
+  kind: "avatar" | "banner" | "wallpaper" | "post";
 }
 
 export interface AIService {

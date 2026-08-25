@@ -38,17 +38,25 @@ function hashToHue(input: string): number {
   return hash[0] * 1.4117647; // 0-255 -> 0-360ish
 }
 
-function buildGradientSvg(prompt: string): string {
+const IMAGE_DIMENSIONS: Record<ImageGenerationRequest["kind"], { width: number; height: number }> = {
+  avatar: { width: 512, height: 512 },
+  post: { width: 512, height: 512 },
+  banner: { width: 1200, height: 400 },
+  wallpaper: { width: 1600, height: 900 },
+};
+
+function buildGradientSvg(prompt: string, kind: ImageGenerationRequest["kind"]): string {
   const hue1 = Math.round(hashToHue(prompt));
   const hue2 = Math.round((hue1 + 60) % 360);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+  const { width, height } = IMAGE_DIMENSIONS[kind];
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <defs>
     <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="hsl(${hue1},70%,55%)" />
       <stop offset="100%" stop-color="hsl(${hue2},70%,45%)" />
     </linearGradient>
   </defs>
-  <rect width="512" height="512" fill="url(#g)" />
+  <rect width="${width}" height="${height}" fill="url(#g)" />
 </svg>`;
 }
 
@@ -62,12 +70,12 @@ export class MockAIProvider implements AIService {
     return { text };
   }
 
-  async generateImage({ prompt }: ImageGenerationRequest): Promise<{ url: string }> {
+  async generateImage({ prompt, kind }: ImageGenerationRequest): Promise<{ url: string }> {
     await delay(400 + Math.random() * 400);
     const dir = path.join(UPLOADS_ROOT, "ai-generated");
     fs.mkdirSync(dir, { recursive: true });
     const filename = `${crypto.randomUUID()}.svg`;
-    fs.writeFileSync(path.join(dir, filename), buildGradientSvg(prompt || crypto.randomUUID()));
+    fs.writeFileSync(path.join(dir, filename), buildGradientSvg(prompt || crypto.randomUUID(), kind));
     return { url: `/uploads/ai-generated/${filename}` };
   }
 }

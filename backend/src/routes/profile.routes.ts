@@ -10,6 +10,7 @@ import {
   postProfileComment,
   putTopFriends,
 } from "../controllers/profile.controller";
+import { getUserTracks } from "../controllers/tracks.controller";
 
 export const profileRouter = Router();
 
@@ -22,3 +23,4 @@ profileRouter.get("/:username", attachUserIfPresent, getProfile);
 profileRouter.get("/:username/top-friends", getTopFriends);
 profileRouter.get("/:username/comments", getProfileComments);
 profileRouter.post("/:username/comments", requireAuth, postProfileComment);
+profileRouter.get("/:username/tracks", attachUserIfPresent, getUserTracks);
