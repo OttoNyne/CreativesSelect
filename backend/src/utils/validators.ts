@@ -30,8 +30,6 @@ export const updateProfileSchema = z.object({
   displayName: z.string().min(1).max(60).optional(),
   bio: z.string().max(2000).optional(),
   avatarUrl: mediaUrlSchema.optional().nullable(),
-  bannerUrl: mediaUrlSchema.optional().nullable(),
-  bannerPosition: positionSchema.optional(),
   wallpaperUrl: mediaUrlSchema.optional().nullable(),
   wallpaperType: z.enum(["image", "video"]).optional(),
   wallpaperPosition: positionSchema.optional(),
@@ -81,8 +79,12 @@ export const aiTextRequestSchema = z.object({
 
 export const aiImageRequestSchema = z.object({
   prompt: z.string().max(2000),
-  kind: z.enum(["avatar", "banner", "wallpaper", "post"]),
+  kind: z.enum(["avatar", "wallpaper", "post"]),
   live: z.boolean().optional(),
+});
+
+export const imageSearchQuerySchema = z.object({
+  q: z.string().min(1).max(200),
 });
 
 export const createTrackSchema = z.object({

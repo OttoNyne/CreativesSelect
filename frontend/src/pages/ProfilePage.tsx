@@ -17,6 +17,7 @@ import { PortfolioGrid } from "../components/profile/PortfolioGrid";
 import { MusicPlayer } from "../components/profile/MusicPlayer";
 import { GenerateTextButton } from "../components/ai/GenerateTextButton";
 import { GenerateImageButton } from "../components/ai/GenerateImageButton";
+import { ImageSearchPicker } from "../components/ai/ImageSearchPicker";
 
 export function ProfilePage() {
   const { username = "" } = useParams();
@@ -31,7 +32,6 @@ export function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [liveWallpaper, setLiveWallpaper] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
   const isOwner = viewer?.username === username;
@@ -68,13 +68,6 @@ export function ProfilePage() {
     if (!file) return;
     const { url } = await uploadFile(file, "avatars");
     await saveProfile({ avatarUrl: url });
-  }
-
-  async function handleBannerFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const { url } = await uploadFile(file, "banners");
-    await saveProfile({ bannerUrl: url });
   }
 
   async function handleWallpaperFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -142,38 +135,8 @@ export function ProfilePage() {
         </>
       )}
 
-      <div className={`relative w-full bg-black/30 ${editing && isOwner && profile.bannerUrl ? "" : "h-48 overflow-hidden"}`}>
-        {editing && isOwner && profile.bannerUrl ? (
-          <ImagePositioner
-            src={assetUrl(profile.bannerUrl)!}
-            mediaType="image"
-            position={profile.bannerPosition}
-            onCommit={(bannerPosition) => saveProfile({ bannerPosition })}
-            heightClass="h-48"
-          />
-        ) : (
-          profile.bannerUrl && (
-            <img
-              src={assetUrl(profile.bannerUrl)}
-              alt=""
-              style={{ objectPosition: profile.bannerPosition }}
-              className="h-full w-full object-cover"
-            />
-          )
-        )}
-        {isOwner && (
-          <button
-            onClick={() => bannerInputRef.current?.click()}
-            className="absolute bottom-2 right-2 rounded-md bg-black/60 px-3 py-1 text-xs text-white"
-          >
-            Change banner
-          </button>
-        )}
-        <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerFile} />
-      </div>
-
-      <div className="mx-auto max-w-3xl px-4">
-        <div className="-mt-10 flex items-end gap-4">
+      <div className="mx-auto max-w-3xl px-4 pt-8">
+        <div className="flex items-end gap-4">
           <div className="relative">
             <Avatar
               username={profile.username}
@@ -244,12 +207,6 @@ export function ProfilePage() {
             />
             <div className="flex flex-wrap items-center gap-2">
               <GenerateTextButton kind="bio" getPrompt={() => bio || profile.displayName} onGenerated={setBio} />
-              <GenerateImageButton
-                kind="banner"
-                getPrompt={() => bio}
-                onGenerated={(url) => saveProfile({ bannerUrl: url, bannerPosition: "50% 50%" })}
-                label="Generate banner"
-              />
               <label className="ml-auto flex items-center gap-2 text-sm opacity-70">
                 <input
                   type="checkbox"
@@ -301,6 +258,12 @@ export function ProfilePage() {
                 </button>
               )}
             </div>
+            <ImageSearchPicker
+              label="🔍 Search photos for wallpaper"
+              onSelect={(url) =>
+                saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
+              }
+            />
             {profile.wallpaperUrl && (
               <ImagePositioner
                 src={wallpaperUrl!}

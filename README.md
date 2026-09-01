@@ -43,4 +43,6 @@ After seeding, log in with any of the seeded users (see `backend/prisma/seed.ts`
 
 ## AI features
 
-Content creation (post captions, bios, avatar/banner images) includes on-request "Generate with AI" actions. These are currently backed by a mock provider (`backend/src/services/ai/MockAIProvider.ts`) so the app runs with zero API keys. To wire up a real provider, implement `ClaudeAIProvider.ts` and set `AI_PROVIDER=real` in `backend/.env`.
+Content creation (post captions, bios, avatar/wallpaper images) includes on-request "Generate with AI" actions. These are currently backed by a mock provider (`backend/src/services/ai/MockAIProvider.ts`) so the app runs with zero API keys. To wire up a real provider, implement `ClaudeAIProvider.ts` and set `AI_PROVIDER=real` in `backend/.env`.
+
+Wallpaper selection also has a "Search photos" option that queries [Openverse](https://openverse.org) for openly-licensed images matching what you type. Unlike the rest of the AI layer, this is real search, not a mock — it makes a live outbound request and needs no API key.

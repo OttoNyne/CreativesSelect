@@ -1,4 +1,5 @@
-import { AIService, ImageGenerationRequest, TextGenerationRequest } from "./AIService";
+import { AIService, ImageGenerationRequest, ImageSearchResult, TextGenerationRequest } from "./AIService";
+import { searchOpenverseImages } from "./imageSearch";
 
 /**
  * Real provider stub. Wire this up once real API keys are available:
@@ -13,5 +14,11 @@ export class ClaudeAIProvider implements AIService {
 
   async generateImage(_req: ImageGenerationRequest): Promise<{ url: string }> {
     throw new Error("ClaudeAIProvider.generateImage is not implemented yet");
+  }
+
+  // Image search hits a real, keyless API rather than a paid model, so it
+  // works the same regardless of which provider is active.
+  async searchImages(query: string): Promise<{ results: ImageSearchResult[] }> {
+    return searchOpenverseImages(query);
   }
 }

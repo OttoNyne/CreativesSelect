@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { AIService, ImageGenerationRequest, TextGenerationRequest } from "./AIService";
+import { AIService, ImageGenerationRequest, ImageSearchResult, TextGenerationRequest } from "./AIService";
 import { UPLOADS_ROOT } from "../../middleware/upload";
+import { searchOpenverseImages } from "./imageSearch";
 
 const TEXT_TEMPLATES: Record<TextGenerationRequest["kind"], string[]> = {
   bio: [
@@ -41,7 +42,6 @@ function hashToHue(input: string): number {
 const IMAGE_DIMENSIONS: Record<ImageGenerationRequest["kind"], { width: number; height: number }> = {
   avatar: { width: 512, height: 512 },
   post: { width: 512, height: 512 },
-  banner: { width: 1200, height: 400 },
   wallpaper: { width: 1600, height: 900 },
 };
 
@@ -114,5 +114,9 @@ export class MockAIProvider implements AIService {
         : buildGradientSvg(prompt || crypto.randomUUID(), kind);
     fs.writeFileSync(path.join(dir, filename), svg);
     return { url: `/uploads/ai-generated/${filename}` };
+  }
+
+  async searchImages(query: string): Promise<{ results: ImageSearchResult[] }> {
+    return searchOpenverseImages(query);
   }
 }

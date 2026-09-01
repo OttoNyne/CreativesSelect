@@ -36,8 +36,6 @@ export async function updateOwnProfile(
     displayName?: string;
     bio?: string;
     avatarUrl?: string | null;
-    bannerUrl?: string | null;
-    bannerPosition?: string;
     wallpaperUrl?: string | null;
     wallpaperType?: "image" | "video";
     wallpaperPosition?: string;

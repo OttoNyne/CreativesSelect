@@ -15,8 +15,6 @@ model User {
   displayName    String
   bio            String?
   avatarUrl      String?
-  bannerUrl      String?
-  bannerPosition String   @default("50% 50%")
   wallpaperUrl   String?
   wallpaperType  String   @default("image") // "image" | "video" — "image" also covers animated SVGs
   wallpaperPosition String @default("50% 50%")

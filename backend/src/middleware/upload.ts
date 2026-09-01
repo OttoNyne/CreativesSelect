@@ -5,17 +5,16 @@ import multer from "multer";
 
 export const UPLOADS_ROOT = path.join(__dirname, "..", "..", "uploads");
 
-const ALLOWED_PURPOSES = new Set(["avatars", "banners", "wallpapers", "portfolio", "tracks"]);
+const ALLOWED_PURPOSES = new Set(["avatars", "wallpapers", "portfolio", "tracks"]);
 
 const IMAGE_MIME = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const AUDIO_MIME = ["audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg"];
 const VIDEO_MIME = ["video/mp4", "video/webm"];
 
-// Only "wallpapers" accepts video, so a static avatar/banner upload can't
-// smuggle in a video file just because video mimetypes exist elsewhere.
+// Only "wallpapers" accepts video, so a static avatar upload can't smuggle
+// in a video file just because video mimetypes exist elsewhere.
 const PURPOSE_MIME: Record<string, string[]> = {
   avatars: IMAGE_MIME,
-  banners: IMAGE_MIME,
   wallpapers: [...IMAGE_MIME, ...VIDEO_MIME],
   portfolio: IMAGE_MIME,
   tracks: AUDIO_MIME,

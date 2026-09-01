@@ -8,7 +8,6 @@ build/
 backend/uploads/**
 !backend/uploads/.gitkeep
 !backend/uploads/avatars/.gitkeep
-!backend/uploads/banners/.gitkeep
 !backend/uploads/portfolio/.gitkeep
 !backend/uploads/ai-generated/.gitkeep
 backend/prisma/dev.db

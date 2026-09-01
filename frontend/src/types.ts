@@ -13,8 +13,6 @@ export interface User {
   displayName: string;
   bio: string | null;
   avatarUrl: string | null;
-  bannerUrl: string | null;
-  bannerPosition: string;
   wallpaperUrl: string | null;
   wallpaperType: "image" | "video";
   wallpaperPosition: string;
@@ -91,6 +89,14 @@ export interface Track {
   url: string;
   position: number;
   createdAt: string;
+}
+
+export interface ImageSearchResult {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  title: string;
+  creator?: string;
 }
 
 export interface Notification {

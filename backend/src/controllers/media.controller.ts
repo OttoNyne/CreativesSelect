@@ -8,7 +8,7 @@ function mediaTypeFromMime(mimetype: string): string {
   return "image";
 }
 
-const PASS_THROUGH_FOLDERS = new Set(["avatars", "banners", "wallpapers", "tracks"]);
+const PASS_THROUGH_FOLDERS = new Set(["avatars", "wallpapers", "tracks"]);
 
 export const postUpload = asyncHandler(async (req: Request, res: Response) => {
   if (!req.file) throw new HttpError(400, "No file uploaded");
