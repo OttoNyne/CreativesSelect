@@ -42,11 +42,31 @@ export async function listNotifications(userId: string) {
     actorIds.size > 0 ? await prisma.user.findMany({ where: { id: { in: [...actorIds] } } }) : [];
   const actorsById = new Map(actors.map((u) => [u.id, toPublicUser(u)]));
 
+  // A friend_request notification's Accept/Decline actions only make sense
+  // while the underlying friendship is still pending — otherwise (already
+  // accepted/declined, e.g. from a previous session) they'd silently
+  // re-respond to a request that's already been resolved.
+  const friendshipIds = parsed
+    .filter((n) => n.type === "friend_request")
+    .map((n) => n.payload.friendshipId)
+    .filter((id): id is string => typeof id === "string");
+  const friendships =
+    friendshipIds.length > 0
+      ? await prisma.friendship.findMany({ where: { id: { in: friendshipIds } } })
+      : [];
+  const friendshipStatusById = new Map(friendships.map((f) => [f.id, f.status]));
+
   return parsed.map((n) => {
     const field = ACTOR_FIELD[n.type as NotificationType];
     const actorId = field ? n.payload[field] : undefined;
     const actor = typeof actorId === "string" ? actorsById.get(actorId) : undefined;
-    return { ...n, actor: actor ?? null };
+
+    let friendshipStatus: string | null = null;
+    if (n.type === "friend_request" && typeof n.payload.friendshipId === "string") {
+      friendshipStatus = friendshipStatusById.get(n.payload.friendshipId) ?? null;
+    }
+
+    return { ...n, actor: actor ?? null, friendshipStatus };
   });
 }
 

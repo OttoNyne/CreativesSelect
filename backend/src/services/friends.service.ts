@@ -74,6 +74,9 @@ export async function respondToRequest(userId: string, requestId: string, accept
   if (!request || request.addresseeId !== userId) {
     throw new HttpError(404, "Friend request not found");
   }
+  if (request.status !== "pending") {
+    throw new HttpError(409, "This friend request has already been resolved");
+  }
   return prisma.friendship.update({
     where: { id: requestId },
     data: { status: accept ? "accepted" : "declined" },

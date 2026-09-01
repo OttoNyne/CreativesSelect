@@ -20,6 +20,8 @@ function timeAgo(iso: string): string {
 function describe(n: Notification): string {
   switch (n.type) {
     case "friend_request":
+      if (n.friendshipStatus === "accepted") return "sent you a friend request — accepted";
+      if (n.friendshipStatus === "declined") return "sent you a friend request — declined";
       return "sent you a friend request";
     case "friend_accept":
       return "accepted your friend request";
@@ -152,7 +154,7 @@ export function NotificationBell() {
                   </p>
                   <p className="mt-0.5 text-[10px] text-white/30">{timeAgo(n.createdAt)}</p>
 
-                  {n.type === "friend_request" && (
+                  {n.type === "friend_request" && n.friendshipStatus === "pending" && (
                     <div className="mt-1.5 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleAccept(n)}

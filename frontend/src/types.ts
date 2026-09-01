@@ -105,6 +105,9 @@ export interface Notification {
   type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite";
   payload: Record<string, unknown>;
   actor: User | null;
+  /** Only present for type "friend_request" — the underlying Friendship's
+   *  current status, so Accept/Decline can be hidden once already resolved. */
+  friendshipStatus?: "pending" | "accepted" | "declined" | null;
   isRead: boolean;
   createdAt: string;
 }
