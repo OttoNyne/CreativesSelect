@@ -102,8 +102,9 @@ export interface ImageSearchResult {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: string;
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite";
   payload: Record<string, unknown>;
+  actor: User | null;
   isRead: boolean;
   createdAt: string;
 }

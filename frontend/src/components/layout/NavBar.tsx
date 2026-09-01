@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../api/auth.api";
 import { Avatar } from "../common/Avatar";
+import { NotificationBell } from "./NotificationBell";
 
 export function NavBar() {
   const { user, setUser } = useAuth();
@@ -34,6 +35,7 @@ export function NavBar() {
             <Link to="/search" className="text-white/70 hover:text-white">
               Search
             </Link>
+            <NotificationBell />
             <Link to={`/u/${user.username}`} className="flex items-center gap-2 text-white/90 hover:text-white">
               <Avatar username={user.username} displayName={user.displayName} avatarUrl={user.avatarUrl} size={28} />
               {user.displayName}

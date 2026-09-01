@@ -27,7 +27,10 @@ export const postFriendRequest = asyncHandler(async (req: Request, res: Response
   const friendship = await sendFriendRequest(req.user!.id, req.params.username);
   const addressee = await prisma.user.findUnique({ where: { id: friendship.addresseeId } });
   if (addressee) {
-    await createNotification(addressee.id, "friend_request", { requesterId: req.user!.id });
+    await createNotification(addressee.id, "friend_request", {
+      requesterId: req.user!.id,
+      friendshipId: friendship.id,
+    });
   }
   res.status(201).json({ friendship });
 });

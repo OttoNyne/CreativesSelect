@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/errorHandler";
-import { listNotifications, markNotificationRead } from "../services/notifications.service";
+import { listNotifications, markAllNotificationsRead, markNotificationRead } from "../services/notifications.service";
 
 export const getNotifications = asyncHandler(async (req: Request, res: Response) => {
   const notifications = await listNotifications(req.user!.id);
@@ -9,5 +9,10 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
 
 export const postMarkRead = asyncHandler(async (req: Request, res: Response) => {
   await markNotificationRead(req.user!.id, req.params.id);
+  res.status(204).send();
+});
+
+export const postMarkAllRead = asyncHandler(async (req: Request, res: Response) => {
+  await markAllNotificationsRead(req.user!.id);
   res.status(204).send();
 });
