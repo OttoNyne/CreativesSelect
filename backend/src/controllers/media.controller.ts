@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { asyncHandler, HttpError } from "../middleware/errorHandler";
 import { addMediaItem, deleteMediaItem, listMediaByUsername } from "../services/media.service";
+import { createMediaItemSchema } from "../utils/validators";
 
 function mediaTypeFromMime(mimetype: string): string {
   if (mimetype.startsWith("audio/")) return "audio";
@@ -26,6 +27,12 @@ export const postUpload = asyncHandler(async (req: Request, res: Response) => {
   }
 
   res.status(201).json({ url });
+});
+
+export const postMediaItem = asyncHandler(async (req: Request, res: Response) => {
+  const input = createMediaItemSchema.parse(req.body);
+  const mediaItem = await addMediaItem(req.user!.id, input);
+  res.status(201).json({ mediaItem });
 });
 
 export const getUserMedia = asyncHandler(async (req: Request, res: Response) => {

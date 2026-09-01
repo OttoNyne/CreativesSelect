@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { tracksApi } from "../../api/tracks.api";
 import { uploadFile } from "../../api/media.api";
-import { assetUrl, ApiError } from "../../api/client";
+import { ApiError } from "../../api/client";
+import { usePlayback } from "../../context/PlaybackContext";
 import type { Track } from "../../types";
 
 const MAX_TRACKS = 5;
@@ -15,6 +16,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { current, play } = usePlayback();
 
   useEffect(() => {
     tracksApi.byUser(username).then(({ tracks }) => {
@@ -78,33 +80,45 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
           {tracks.length}/{MAX_TRACKS}
         </span>
       </div>
+      {tracks.length > 1 && (
+        <p className="mt-1 text-[10px] text-white/30">
+          Plays straight through the queue until you pause — keeps going as you browse elsewhere in the app.
+        </p>
+      )}
 
-      <div className="mt-3 space-y-3">
+      <div className="mt-3 space-y-1.5">
         {loading && <p className="text-xs text-white/40">Loading…</p>}
         {!loading && tracks.length === 0 && <p className="text-xs text-white/40">No tracks yet.</p>}
-        {tracks.map((track) => (
-          <div key={track.id} className="rounded-lg border border-white/5 bg-black/20 p-2">
-            <div className="mb-1 flex items-center justify-between">
-              <span className="text-xs font-medium text-white/80">{track.title}</span>
+        {tracks.map((track) => {
+          const isPlaying = current?.id === track.id;
+          return (
+            <div
+              key={track.id}
+              className={`flex items-center gap-2 rounded-lg border p-2 ${
+                isPlaying ? "border-[var(--profile-accent)] bg-white/5" : "border-white/5 bg-black/20"
+              }`}
+            >
+              <button
+                onClick={() => play(track, tracks)}
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs ${
+                  isPlaying ? "bg-[var(--profile-accent)] text-white" : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+                title={isPlaying ? "Playing" : "Play"}
+              >
+                {isPlaying ? "♪" : "▶"}
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-white/80">{track.title}</p>
+                <p className="text-[10px] text-white/30">{track.sourceType === "youtube" ? "YouTube" : "Uploaded"}</p>
+              </div>
               {isOwner && (
-                <button onClick={() => handleRemove(track.id)} className="text-xs text-white/30 hover:text-red-400">
+                <button onClick={() => handleRemove(track.id)} className="shrink-0 text-xs text-white/30 hover:text-red-400">
                   ✕
                 </button>
               )}
             </div>
-            {track.sourceType === "youtube" ? (
-              <iframe
-                src={`https://www.youtube.com/embed/${track.url}`}
-                title={track.title}
-                className="h-20 w-full rounded"
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-              />
-            ) : (
-              <audio controls src={assetUrl(track.url)} className="w-full" />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {isOwner && (

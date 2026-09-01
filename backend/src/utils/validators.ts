@@ -87,6 +87,15 @@ export const imageSearchQuerySchema = z.object({
   q: z.string().min(1).max(200),
 });
 
+// For adding a media item from a URL (AI-generated or picked from image
+// search) rather than a direct file upload.
+export const createMediaItemSchema = z.object({
+  url: mediaUrlSchema,
+  type: z.enum(["image", "audio", "video"]).default("image"),
+  caption: z.string().max(200).optional(),
+  isAiImage: z.boolean().optional(),
+});
+
 export const createTrackSchema = z.object({
   title: z.string().min(1).max(100),
   sourceType: z.enum(["upload", "youtube"]),

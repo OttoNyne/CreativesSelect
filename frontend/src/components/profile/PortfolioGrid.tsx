@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { mediaApi, uploadFile } from "../../api/media.api";
 import { assetUrl } from "../../api/client";
 import { GenerateImageButton } from "../ai/GenerateImageButton";
+import { ImageSearchPicker } from "../ai/ImageSearchPicker";
 import type { MediaItem } from "../../types";
 
 export function PortfolioGrid({ username, isOwner }: { username: string; isOwner: boolean }) {
@@ -21,18 +22,13 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
   }
 
   async function handleAiGenerated(url: string) {
-    setItems((i) => [
-      {
-        id: crypto.randomUUID(),
-        ownerId: "",
-        url,
-        type: "image",
-        caption: prompt || null,
-        isAiImage: true,
-        createdAt: new Date().toISOString(),
-      },
-      ...i,
-    ]);
+    const { mediaItem } = await mediaApi.create({ url, type: "image", caption: prompt || undefined, isAiImage: true });
+    setItems((i) => [mediaItem, ...i]);
+  }
+
+  async function handleSearchSelected(url: string) {
+    const { mediaItem } = await mediaApi.create({ url, type: "image" });
+    setItems((i) => [mediaItem, ...i]);
   }
 
   async function handleRemove(id: string) {
@@ -56,14 +52,17 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
       </div>
 
       {isOwner && (
-        <div className="mt-2 flex items-center gap-2">
-          <input
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe an image to generate…"
-            className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none"
-          />
-          <GenerateImageButton kind="post" getPrompt={() => prompt} onGenerated={handleAiGenerated} label="Generate" />
+        <div className="mt-2 space-y-2">
+          <div className="flex items-center gap-2">
+            <input
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe an image to generate…"
+              className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none"
+            />
+            <GenerateImageButton kind="post" getPrompt={() => prompt} onGenerated={handleAiGenerated} label="Generate" />
+          </div>
+          <ImageSearchPicker label="🔍 Search photos" onSelect={handleSearchSelected} />
         </div>
       )}
 

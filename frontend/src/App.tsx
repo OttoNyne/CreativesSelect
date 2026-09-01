@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { PlaybackProvider } from "./context/PlaybackContext";
 import { NavBar } from "./components/layout/NavBar";
+import { NowPlayingBar } from "./components/layout/NowPlayingBar";
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -14,23 +16,26 @@ import { SearchPage } from "./pages/SearchPage";
 export default function App() {
   return (
     <AuthProvider>
-      <NavBar />
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+      <PlaybackProvider>
+        <NavBar />
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<FeedPage />} />
-          <Route path="/friends" element={<FriendsPage />} />
-          <Route path="/groups" element={<GroupsPage />} />
-          <Route path="/groups/:id" element={<GroupDetailPage />} />
-          <Route path="/search" element={<SearchPage />} />
-        </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<FeedPage />} />
+            <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/groups" element={<GroupsPage />} />
+            <Route path="/groups/:id" element={<GroupDetailPage />} />
+            <Route path="/search" element={<SearchPage />} />
+          </Route>
 
-        <Route path="/u/:username" element={<ProfilePage />} />
+          <Route path="/u/:username" element={<ProfilePage />} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <NowPlayingBar />
+      </PlaybackProvider>
     </AuthProvider>
   );
 }

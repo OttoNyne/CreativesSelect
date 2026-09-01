@@ -217,6 +217,13 @@ export function ProfilePage() {
               </label>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-white/40">Avatar:</span>
+              <ImageSearchPicker
+                label="🔍 Search photos for avatar"
+                onSelect={(url) => saveProfile({ avatarUrl: url })}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => wallpaperInputRef.current?.click()}

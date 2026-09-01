@@ -25,7 +25,15 @@ export async function uploadFile(
   return data;
 }
 
+export interface CreateMediaItemInput {
+  url: string;
+  type?: "image" | "audio" | "video";
+  caption?: string;
+  isAiImage?: boolean;
+}
+
 export const mediaApi = {
   byUser: (username: string) => api.get<{ media: MediaItem[] }>(`/media/user/${username}`),
+  create: (input: CreateMediaItemInput) => api.post<{ mediaItem: MediaItem }>("/media", input),
   remove: (id: string) => api.delete<void>(`/media/${id}`),
 };
