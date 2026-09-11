@@ -99,6 +99,16 @@ export interface ImageSearchResult {
   creator?: string;
 }
 
+export interface Task {
+  _id: string;
+  title: string;
+  done: boolean;
+  priority: "low" | "medium" | "high";
+  dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Notification {
   id: string;
   recipientId: string;

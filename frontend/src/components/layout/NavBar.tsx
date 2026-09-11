@@ -35,6 +35,9 @@ export function NavBar() {
             <Link to="/search" className="text-white/70 hover:text-white">
               Search
             </Link>
+            <Link to="/tasks" className="text-white/70 hover:text-white">
+              Tasks
+            </Link>
             <NotificationBell />
             <Link to={`/u/${user.username}`} className="flex items-center gap-2 text-white/90 hover:text-white">
               <Avatar username={user.username} displayName={user.displayName} avatarUrl={user.avatarUrl} size={28} />

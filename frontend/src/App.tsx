@@ -12,6 +12,7 @@ import { FriendsPage } from "./pages/FriendsPage";
 import { GroupsPage } from "./pages/GroupsPage";
 import { GroupDetailPage } from "./pages/GroupDetailPage";
 import { SearchPage } from "./pages/SearchPage";
+import { TasksPage } from "./pages/TasksPage";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/groups" element={<GroupsPage />} />
             <Route path="/groups/:id" element={<GroupDetailPage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
           </Route>
 
           <Route path="/u/:username" element={<ProfilePage />} />
