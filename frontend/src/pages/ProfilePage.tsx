@@ -50,7 +50,12 @@ export function ProfilePage() {
     if (viewer && viewer.username !== username) {
       friendsApi.list().then(({ friends }) => setIsFriend(friends.some((f) => f.username === username)));
     }
-  }, [username, viewer]);
+    // Only re-fetch when navigating to a different profile or the logged-in
+    // identity changes — not on every field-level update to `viewer` (e.g.
+    // saveProfile() calling setViewer() after an isPrivate/avatar auto-save),
+    // which would otherwise wipe out unsaved bio/theme edits in progress.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, viewer?.username]);
 
   async function saveProfile(updates: Parameters<typeof profilesApi.updateMe>[0]) {
     setSaving(true);
