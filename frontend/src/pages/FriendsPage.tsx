@@ -1,19 +1,27 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { friendsApi } from "../api/friends.api";
+import { ApiError } from "../api/client";
 import type { FriendRequest, User } from "../types";
 import { Avatar } from "../components/common/Avatar";
 
 export function FriendsPage() {
   const [friends, setFriends] = useState<User[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    const [friendsRes, requestsRes] = await Promise.all([friendsApi.list(), friendsApi.requests()]);
-    setFriends(friendsRes.friends);
-    setRequests(requestsRes.requests);
-    setLoading(false);
+    setStatus("loading");
+    try {
+      const [friendsRes, requestsRes] = await Promise.all([friendsApi.list(), friendsApi.requests()]);
+      setFriends(friendsRes.friends);
+      setRequests(requestsRes.requests);
+      setStatus("ready");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to load friends.");
+      setStatus("error");
+    }
   }
 
   useEffect(() => {
@@ -35,7 +43,8 @@ export function FriendsPage() {
     load();
   }
 
-  if (loading) return <div className="p-8 text-center text-white/40">Loading…</div>;
+  if (status === "loading") return <div className="p-8 text-center text-white/40">Loading…</div>;
+  if (status === "error") return <div className="p-8 text-center text-red-400">{error}</div>;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
