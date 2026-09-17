@@ -47,7 +47,7 @@ flowchart LR
         MW["helmet → cors → morgan\n→ requestTimer → express.json\n→ cookieParser"]
         Routes["11 route modules\n/api/auth, /api/profiles, /api/posts,\n/api/friends, /api/groups, /api/media,\n/api/notifications, /api/ai,\n/api/tracks, /api/tasks, /api (comments+moderation)"]
         Auth["requireAuth / attachUserIfPresent\n(reads + verifies JWT from the\nhttpOnly 'token' cookie)"]
-        ErrH["errorHandler\n(CastError→400, MulterError→413,\neverything else→generic 500)"]
+        ErrH["errorHandler\n(CastError→400, ValidationError→400,\nMulterError→413, everything else→generic 500)"]
     end
 
     DB[("MongoDB Atlas\n13 Mongoose models")]
@@ -81,7 +81,7 @@ flowchart LR
 5. The route handler queries `Friendship` for the caller's accepted friends,
    then `Post.find({ author: { $in: [self, ...friends] } })`, populates each
    post's `author`, and serializes each through `toPublicUser` (viewer-aware —
-   see §6) before responding as JSON.
+   see §7) before responding as JSON.
 6. The response flows back through `api/client.ts`, which throws an
    `ApiError` on a non-2xx status; `FeedPage` sets its `status` state to
    `"ready"`, `"error"`, or renders the posts.
@@ -95,7 +95,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 
 | Model | Fields | Relationships |
 |---|---|---|
-| **User** | `email` (unique), `username` (unique), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, timestamps | Referenced by nearly every other model as author/owner/participant |
+| **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, timestamps | Referenced by nearly every other model as author/owner/participant |
 | **Task** | `owner` → User, `title`, `done`, `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; the personal-productivity resource |
 | **Post** | `author` → User, `content`, `imageUrl`, `isAiText`, `isAiImage`, timestamps | Has many Comments |
 | **Comment** | `post` → Post, `author` → User, `content`, timestamps | Belongs to one Post |
@@ -107,7 +107,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 | **MediaItem** | `owner` → User, `url`, `type` (image/audio/video/embed), `caption`, `isAiImage`, timestamps | A user's portfolio piece |
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
 | **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
-| **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §6) |
+| **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
 | **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
 
 **User-ownership scoping**: every resource that belongs to one user carries an
@@ -178,7 +178,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | GET | `/:id` | — |
 | POST | `/:id/join` | 409 if already a member |
 | POST | `/:id/leave` | — |
-| GET | `/:id/members` | Viewer-aware user serialization (see §6) |
+| GET | `/:id/members` | Viewer-aware user serialization (see §7) |
 
 ### Media — `/api/media`
 | Method | Path | Auth | Notes |
@@ -226,7 +226,43 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 
 ---
 
-## 5. Component Tree
+## 5. Deployment
+
+| Layer | Platform | Notes |
+|---|---|---|
+| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL`/`CLOUDINARY_*` set as dashboard-only secrets (`sync: false`), never committed |
+| Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation |
+| Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
+| Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
+
+**Why Cloudinary, not local disk.** Render's free-tier filesystem is
+ephemeral — anything written to it is lost on every restart or redeploy.
+Early on, uploads used `multer.diskStorage()`, which meant every avatar,
+wallpaper, and portfolio image silently vanished the next time the service
+redeployed. Uploads now stream directly to Cloudinary via a small custom
+`multer` storage engine, and the database stores Cloudinary's returned CDN
+URL instead of a local path — see the Security Review for the full incident
+and the dependency conflict that complicated the fix.
+
+**Cross-domain auth cookie.** The backend and frontend are deployed to
+different domains (`onrender.com` / `vercel.app`), not different ports on
+the same domain like in local dev. `setAuthCookie` (`middleware/auth.js`)
+switches `sameSite`/`secure` based on `NODE_ENV`: `lax`/non-secure in dev
+(same registrable domain, cookie already flows), `none`/`secure` in
+production (a cross-site fetch only carries a cookie that's explicitly
+`SameSite=None; Secure`, which itself requires HTTPS — true on both
+platforms). Getting this wrong doesn't error visibly — login "succeeds" but
+no protected route ever sees the cookie — so it was verified with a live
+`Set-Cookie` header inspection after deploying, not just read from code.
+
+**Known limitation**: Render's free tier spins down after inactivity, so the
+first request after idle time is slow (cold start, tens of seconds) —
+disclosed to the user, not fixed, since it's a paid-tier upgrade, not a code
+change.
+
+---
+
+## 6. Component Tree
 
 ```
 App
@@ -264,7 +300,7 @@ sets `credentials: "include"` and turns a non-2xx response into a thrown
 
 ---
 
-## 6. Technical Decisions
+## 7. Technical Decisions
 
 **Cookie-based JWT, not an Authorization header.** The token is signed with
 `jsonwebtoken` and stored in an httpOnly cookie named `token` (`middleware/auth.js`),
@@ -301,6 +337,23 @@ whitelists exactly `title`/`done`/`priority`/`dueDate` into the update
 document — `owner` is set once, at creation, from the authenticated
 session, and can't be reassigned through the update body even by the task's
 own current owner.
+
+**A custom Cloudinary storage engine, not the off-the-shelf package.**
+`multer-storage-cloudinary` is the obvious choice for wiring `multer` to
+Cloudinary, but its latest release pins a peer dependency on
+`cloudinary@^1.x` — incompatible with the `cloudinary@^2.7.0` needed for a
+patched security advisory (see the Security Review, §5.1). Rather than
+accept the vulnerable SDK version just to keep the convenience package, a
+~15-line custom `StorageEngine` calls `cloudinary.uploader.upload_stream`
+directly — the same call the package made internally — removing the
+conflicting dependency entirely.
+
+**Centralized error handling grew by one case.** `errorHandler.js` started
+by mapping `CastError`→`400`. A Mongoose `ValidationError` (a required field
+missing, an invalid enum value) got the same generic `500` as a genuine
+server bug until a second pass added a `ValidationError`→`400` case too —
+fixed once, in the one place every route's errors already flow through,
+rather than adding input validation to each route individually.
 
 **Dynamic import for `app.js` in `server.js`.** The Express app was split
 into `app.js` (middleware + routes) and `server.js` (env loading + listen)

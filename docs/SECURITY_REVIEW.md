@@ -151,24 +151,157 @@ Every fix above was reproduced as a real HTTP request against the running
 server before the fix, and re-verified (both the attack now failing, and
 the legitimate case still working) after it.
 
-## 5. Remaining risks / not yet addressed
+## 5. Round 2 — post-deployment audit
 
-- **Input validation coverage.** `zod` is only used on the auth routes.
-  Other write routes (posts, groups, tracks, media, comments) validate
-  required fields ad hoc but don't enforce types, lengths, or formats as
-  strictly. Low risk today (Mongoose's own schema validation is a backstop),
-  but worth tightening.
+Everything in §§1–4 was found before the app was deployed. After deploying
+`first-server` to Render and the frontend to Vercel, a second, much larger
+audit pass was run systematically across every route file, the upload
+pipeline, and the frontend's media handling — again, every finding below was
+reproduced as a real request against the **live, deployed** production
+instance before being fixed, and re-verified live afterward.
+
+### 5.1 Data loss: uploads on an ephemeral filesystem
+Render's free tier filesystem is ephemeral — anything written to local disk
+is wiped on every restart or redeploy. `middleware/upload.js` used
+`multer.diskStorage()`, so every avatar, wallpaper, portfolio image, and
+uploaded track vanished the next time the service redeployed or spun down.
+**Fix**: uploads now stream directly to Cloudinary via a small custom
+`multer` `StorageEngine` (`cloudinary.uploader.upload_stream`), storing the
+returned CDN URL instead of a local path. (The mock AI-generated wallpaper
+SVG had the same bug — it now returns an inline `data:` URI instead of
+writing to disk, since it's a tiny synthetic gradient that doesn't need real
+storage.)
+
+**A dependency conflict blocked the first deploy of this fix.**
+`multer-storage-cloudinary@4.0.0` (the obvious off-the-shelf package) has an
+unmaintained peer dependency pinned to `cloudinary@^1.x`. `cloudinary@^2.7.0`
+was required to pick up a patched high-severity advisory
+([GHSA-g4mf-96x5-5m2c](https://github.com/advisories/GHSA-g4mf-96x5-5m2c),
+arbitrary argument injection via an ampersand in a parameter, present in
+`cloudinary <2.7.0`) — installing both together only *warned* locally
+(against an already-resolved dependency tree) but hard-failed Render's clean
+`npm install` with `ERESOLVE`, silently leaving the old, data-losing code
+live in production for several deploy attempts. Replaced the package
+entirely with a ~15-line custom storage engine calling the same
+`cloudinary.uploader.upload_stream` API the package used internally —
+removes the conflicting dependency and keeps the patched SDK version.
+
+**A related bug in the frontend surfaced during this fix**: `assetUrl()` in
+`api/client.ts` only recognized `http`-prefixed URLs as already-absolute;
+every other value got the API origin prepended. The new `data:` URIs for
+AI-generated images don't start with `http`, so every AI-generated
+avatar/wallpaper/portfolio image would have rendered as a broken image tag.
+Fixed by also recognizing `data:` as already-absolute.
+
+### 5.2 Username case-sensitivity (account squatting / impersonation)
+`User.username` had a unique index but, unlike `email` (`lowercase: true`),
+no case normalization. Reproduced live: registering `CaseTest` and then
+`casetest` both succeeded as two separate accounts. On a platform where
+usernames are how people find and `@`-recognize each other, this allows
+squatting a case-variant of an existing name for impersonation, and was
+inconsistent with the already-case-insensitive username search. **Fix**:
+added `lowercase: true` to the schema field, matching `email`. Verified
+Mongoose applies the same setter to query filters (not just document
+writes), so this doesn't break lookups — confirmed live that a
+case-mismatched login (`Foo@Example.com` vs. stored `foo@example.com`) has
+always worked correctly for the same reason.
+
+### 5.3 NoSQL injection / ReDoS via unescaped search input
+Both the user search (`GET /api/profiles?search=`) and group search
+(`GET /api/groups?search=`) built a MongoDB `$regex` filter directly from
+`req.query.search` with **no escaping** — the raw client input was compiled
+as a live regular expression and run against every document in the
+collection, not matched as a literal substring. Two concrete problems: (1)
+regex metacharacters change matching semantics — confirmed live that
+searching `livedem.` matched the user `livedemo` via the `.` wildcard,
+before the fix; (2) a crafted pathological pattern (e.g. `(a+)+$`) can
+trigger catastrophic backtracking, a real denial-of-service vector against
+the database, not just the app process. **Fix**: added
+`utils/regex.js#escapeRegex` and applied it at both call sites, so user
+input is always matched as a literal string. Re-verified live: `livedem.`
+now returns no match, while `livedem` still correctly matches.
+
+### 5.4 Centralized error handling had a gap: Mongoose `ValidationError`
+The shared `errorHandler` mapped `CastError`→`400` and `MulterError`→`413`
+(round 1), but a required-field failure raised by Mongoose itself —
+`ValidationError` — fell through to the generic `500` catch-all. Reproduced
+live: `POST /api/groups` with no `name` (a required field) returned
+`{"error":"Internal server error"}` at `500`. Because this is fixed once in
+the shared handler, it silently hardens every route that relies on schema
+validation rather than its own explicit checks. **Fix**: return `400` with
+the first validation message (e.g. ``Path `name` is required.``), the same
+treatment as the two existing cases.
+
+### 5.5 Unvalidated input shapes crashing specific routes
+Four more routes crashed with a generic `500` on plausible (not even
+adversarial) malformed input, each reproduced live before being fixed:
+
+- **`POST /api/tracks`**, `sourceType: "youtube"` with no `url` — threw
+  inside `extractYouTubeId` (`url.match` on `undefined`). Fixed with an
+  explicit string check before use.
+- **`GET /api/tasks?sort=title&sort=done`** (a repeated query key, which
+  Express's parser turns into an array) — Mongoose's `.sort()` rejects a
+  flat array of field names and throws. Fixed by normalizing to a single
+  string, taking the first value.
+- **`PUT /api/profiles/me/top-friends`**, `{"usernames": "not-an-array"}` or
+  `{"usernames": 42}` — a string still has `.slice()` (silently truncating
+  instead of failing) but not `.map()`, and a number has neither, so the
+  route crashed downstream instead of validating the shape up front. Fixed
+  by requiring an actual array and dropping non-string entries.
+- **Same route, `{"usernames": ["alice", "alice"]}`** (a duplicate) —
+  `TopFriend` has a unique `(owner, target)` index, and the route built one
+  document per array entry with no deduplication, so `insertMany` hit a
+  duplicate-key error on the second occurrence. Fixed by deduplicating on
+  the resolved target id before insert.
+
+### 5.6 Orphaned-data crash: deleting a commented-on post
+`DELETE /api/posts/:id` didn't cascade-delete the post's comments. A comment
+left behind after its post was deleted became "orphaned" — its `post`
+reference pointed at a document that no longer existed. Reproduced live:
+create a post, comment on it, delete the post, then try to delete that
+comment — `comment.populate("post")` resolves to `null`, and
+`comment.post.author` threw a `TypeError`, falling through to a `500`, even
+though the comment's own author has every right to remove it. **Fix**: two
+changes — cascade-delete a post's comments when the post itself is deleted
+(stops new orphans), and a null-safe check in the comment-delete route so
+any already-orphaned comment can still be removed by its own author
+instead of crashing.
+
+### 5.7 What was checked and found clean this round
+`ai.routes.js` (input validation, error masking already correct),
+`friends.routes.js` (self-friend/block checks, IDOR-safe accept/decline),
+`moderation.routes.js` (self-block already fixed in round 1, bidirectional
+block check, enum-validated reports), `media.routes.js` (ownership checks,
+visibility gating, no mass assignment), and `notifications.routes.js`
+(properly scoped read/read-all, guards against a missing actor).
+
+## 6. Remaining risks / not yet addressed
+
 - **No rate limiting.** Login, register, and friend-request routes have no
   throttling — a credential-stuffing or spam-request script could hit them
   freely.
-- **No automated dependency scanning in CI.** `npm audit` was run manually;
+- **No automated dependency scanning in CI.** `npm audit` is run manually;
   there's no scheduled/CI check to catch a newly-disclosed vulnerability in
-  a dependency after this review.
+  a dependency after this review (this is exactly how the `cloudinary <2.7.0`
+  advisory in §5.1 was found — worth automating).
 - **File uploads aren't content-sniffed.** `multer`'s `fileFilter` trusts the
-  client-supplied MIME type, not the actual file bytes — a client could
-  label arbitrary content as `image/png`. Filenames are UUID-randomized on
-  write, which limits (but doesn't eliminate) the impact.
-- **No CSRF token.** The app relies on `SameSite=Lax` on the auth cookie plus
-  a locked CORS origin rather than an explicit CSRF token. Reasonable for
-  this app's current risk profile, but worth naming as a conscious trade-off
-  rather than an oversight.
+  client-supplied MIME type, not the actual file bytes. Cloudinary itself
+  re-derives the real type on ingest, which limits the practical impact, but
+  the app-level filter is still trust-the-client.
+- **No CSRF token.** The app relies on `SameSite=None`/`Secure` (prod) or
+  `SameSite=Lax` (dev) on the auth cookie plus a locked CORS origin rather
+  than an explicit CSRF token. Reasonable for this app's current risk
+  profile, but worth naming as a conscious trade-off rather than an
+  oversight.
+- **Two narrow race conditions**, both low-severity and neither crossing a
+  privacy/access boundary: (1) `Friendship`'s unique index is directional
+  (`requester`+`addressee`), while the app-level duplicate check is
+  bidirectional — two users requesting each other in the same instant could
+  theoretically create two friendship documents. (2) `Track`'s per-user
+  5-track cap is a count-then-create check with no transaction — concurrent
+  requests from the same user could exceed the cap by one.
+- **Test accounts left in the production database** from live-reproducing
+  the bugs above (e.g. case-variant usernames used to confirm §5.2 before
+  the fix). Harmless demo data, but there's no self-service account-deletion
+  endpoint to clean them up, and this local machine can't reach MongoDB
+  Atlas directly to script a cleanup.
