@@ -275,7 +275,41 @@ block check, enum-validated reports), `media.routes.js` (ownership checks,
 visibility gating, no mass assignment), and `notifications.routes.js`
 (properly scoped read/read-all, guards against a missing actor).
 
-## 6. Remaining risks / not yet addressed
+## 6. Operational incident: a stale DB hostname caused a production outage
+
+While cleaning up the leftover test accounts noted below, live verification
+turned up a real, active production incident, unrelated to any code change:
+
+**What happened.** MongoDB Atlas lets you rename a cluster; doing so gives
+it a new SRV hostname while keeping the same underlying data. At some point
+this project's cluster was renamed from `cluster0.cljt9gd` to
+`creativeselect.q05h4or` — but `MONGODB_URI` on Render was never updated to
+match. The app kept working anyway, because a MongoDB driver resolves the
+SRV hostname once and then holds its connections; a live, never-restarted
+process doesn't need to re-resolve DNS. The old hostname's DNS record was
+eventually fully decommissioned (confirmed via an authoritative
+DNS-over-HTTPS query against the real `mongodb.net` nameservers — a genuine
+`NXDOMAIN`, not a local network issue), and the very next time the Render
+process restarted (its free-tier spin-down/wake cycle), `connectDB()` tried
+to resolve the now-dead hostname, failed, and — per its own by-design
+behavior of logging a connection failure without crashing the server —
+left the app **running but with no working database connection at all**.
+Every DB-backed request (including login) returned a generic `500`, while
+`/api/health` kept reporting healthy, since it doesn't touch the database.
+
+**Fix**: updated `MONGODB_URI` on Render to the current hostname with a
+freshly-rotated database-user password (the old one didn't validate against
+the renamed cluster resource either). Verified live: `/api/health` and a
+real login both recovered immediately after the redeploy.
+
+**Takeaway**: `config/db.js`'s "log and keep running" behavior on a failed
+initial connection is reasonable for surviving a transient blip, but it
+means a *persistent* misconfiguration (like a stale hostname) fails silent
+and slow — the process looks alive on the one health check that doesn't
+depend on the database. Worth either alerting on repeated Mongo connection
+errors, or making `/api/health` also report DB connectivity.
+
+## 7. Remaining risks / not yet addressed
 
 - **No rate limiting.** Login, register, and friend-request routes have no
   throttling — a credential-stuffing or spam-request script could hit them
@@ -300,8 +334,7 @@ visibility gating, no mass assignment), and `notifications.routes.js`
   theoretically create two friendship documents. (2) `Track`'s per-user
   5-track cap is a count-then-create check with no transaction — concurrent
   requests from the same user could exceed the cap by one.
-- **Test accounts left in the production database** from live-reproducing
-  the bugs above (e.g. case-variant usernames used to confirm §5.2 before
-  the fix). Harmless demo data, but there's no self-service account-deletion
-  endpoint to clean them up, and this local machine can't reach MongoDB
-  Atlas directly to script a cleanup.
+- ~~Test accounts left in the production database from live-reproducing the
+  bugs above~~ — cleaned up via a one-off script run directly against
+  Atlas (there's still no self-service account-deletion endpoint for a real
+  user to do this themselves, which remains a minor gap).
