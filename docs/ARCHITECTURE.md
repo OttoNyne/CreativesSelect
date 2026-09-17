@@ -44,21 +44,21 @@ flowchart LR
     end
 
     subgraph Server["Express API — first-server (:5000)"]
-        MW["helmet → cors → morgan\n→ requestTimer → express.json\n→ cookieParser → /uploads static"]
+        MW["helmet → cors → morgan\n→ requestTimer → express.json\n→ cookieParser"]
         Routes["11 route modules\n/api/auth, /api/profiles, /api/posts,\n/api/friends, /api/groups, /api/media,\n/api/notifications, /api/ai,\n/api/tracks, /api/tasks, /api (comments+moderation)"]
         Auth["requireAuth / attachUserIfPresent\n(reads + verifies JWT from the\nhttpOnly 'token' cookie)"]
         ErrH["errorHandler\n(CastError→400, MulterError→413,\neverything else→generic 500)"]
     end
 
     DB[("MongoDB Atlas\n13 Mongoose models")]
-    Disk[("Local disk\n/uploads/{avatars,wallpapers,\nportfolio,tracks,ai-generated}")]
+    Cloudinary[("Cloudinary\navatars, wallpapers,\nportfolio, tracks")]
     Openverse["Openverse API\n(external, keyless image search)"]
 
     UI --> APIClient
     APIClient -- "fetch, cookie sent automatically" --> MW
     MW --> Auth --> Routes
     Routes --> DB
-    Routes --> Disk
+    Routes --> Cloudinary
     Routes --> Openverse
     Routes -.-> ErrH
     Routes -- "JSON response" --> APIClient
@@ -183,7 +183,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### Media — `/api/media`
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/upload` | auth | multipart, `?purpose=avatars\|wallpapers\|portfolio\|tracks`, 30MB limit → `413` over |
+| POST | `/upload` | auth | multipart, `?purpose=avatars\|wallpapers\|portfolio\|tracks`, 30MB limit → `413` over, streamed to Cloudinary |
 | POST | `/` | auth | Create a MediaItem from a URL (AI-generated / search result) |
 | GET | `/user/:username` | optional | Gated by visibility |
 | DELETE | `/:id` | auth | Owner only |
