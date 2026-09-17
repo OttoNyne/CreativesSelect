@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { postsApi } from "../../api/posts.api";
+import { ApiError } from "../../api/client";
 import type { Comment } from "../../types";
 import { Avatar } from "../common/Avatar";
 import { useAuth } from "../../context/AuthContext";
@@ -15,6 +16,7 @@ export function PostCommentList({
   const [comments, setComments] = useState<Comment[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     postsApi.comments(postId).then(({ comments }) => {
@@ -26,11 +28,16 @@ export function PostCommentList({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!draft.trim()) return;
-    const { comment } = await postsApi.addComment(postId, draft.trim());
-    const next = [...comments, comment];
-    setComments(next);
-    onCountChange(next.length);
-    setDraft("");
+    setError(null);
+    try {
+      const { comment } = await postsApi.addComment(postId, draft.trim());
+      const next = [...comments, comment];
+      setComments(next);
+      onCountChange(next.length);
+      setDraft("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't post that comment.");
+    }
   }
 
   return (
@@ -58,6 +65,7 @@ export function PostCommentList({
           </button>
         </form>
       )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }

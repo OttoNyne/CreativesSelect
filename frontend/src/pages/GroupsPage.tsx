@@ -12,6 +12,7 @@ export function GroupsPage() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function load(search?: string) {
     setStatus("loading");
@@ -37,21 +38,36 @@ export function GroupsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    await groupsApi.create({ name: name.trim(), description: description.trim() || undefined });
-    setName("");
-    setDescription("");
-    setShowCreate(false);
-    load();
+    setActionError(null);
+    try {
+      await groupsApi.create({ name: name.trim(), description: description.trim() || undefined });
+      setName("");
+      setDescription("");
+      setShowCreate(false);
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't create that group.");
+    }
   }
 
   async function handleJoin(id: string) {
-    await groupsApi.join(id);
-    load(search);
+    setActionError(null);
+    try {
+      await groupsApi.join(id);
+      load(search);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't join that group.");
+    }
   }
 
   async function handleLeave(id: string) {
-    await groupsApi.leave(id);
-    load(search);
+    setActionError(null);
+    try {
+      await groupsApi.leave(id);
+      load(search);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't leave that group.");
+    }
   }
 
   if (status === "loading") return <div className="p-8 text-center text-white/40">Loading…</div>;
@@ -78,6 +94,7 @@ export function GroupsPage() {
           + New group
         </button>
       </div>
+      {actionError && <p className="text-sm text-red-400">{actionError}</p>}
 
       {showCreate && (
         <form onSubmit={handleCreate} className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-4">

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { profilesApi } from "../api/profiles.api";
+import { ApiError } from "../api/client";
 import type { User } from "../types";
 import { Avatar } from "../components/common/Avatar";
 
@@ -8,13 +9,19 @@ export function SearchPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<User[]>([]);
   const [searched, setSearched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
-    const { users } = await profilesApi.search(query.trim());
-    setResults(users);
-    setSearched(true);
+    setError(null);
+    try {
+      const { users } = await profilesApi.search(query.trim());
+      setResults(users);
+      setSearched(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't search right now.");
+    }
   }
 
   return (
@@ -30,6 +37,7 @@ export function SearchPage() {
           Search
         </button>
       </form>
+      {error && <p className="text-sm text-red-400">{error}</p>}
 
       <div className="space-y-2">
         {searched && results.length === 0 && <p className="text-sm text-white/40">No creatives found.</p>}

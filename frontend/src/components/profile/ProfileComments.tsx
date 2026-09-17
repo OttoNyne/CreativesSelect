@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { profilesApi } from "../../api/profiles.api";
+import { ApiError } from "../../api/client";
 import type { Comment } from "../../types";
 import { Avatar } from "../common/Avatar";
 import { useAuth } from "../../context/AuthContext";
@@ -10,6 +11,7 @@ export function ProfileComments({ username }: { username: string }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     profilesApi.getComments(username).then(({ comments }) => {
@@ -21,14 +23,24 @@ export function ProfileComments({ username }: { username: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!draft.trim()) return;
-    const { comment } = await profilesApi.addComment(username, draft.trim());
-    setComments((c) => [comment, ...c]);
-    setDraft("");
+    setError(null);
+    try {
+      const { comment } = await profilesApi.addComment(username, draft.trim());
+      setComments((c) => [comment, ...c]);
+      setDraft("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't post that comment.");
+    }
   }
 
   async function handleDelete(commentId: string) {
-    await profilesApi.deleteComment(commentId);
-    setComments((c) => c.filter((comment) => comment.id !== commentId));
+    setError(null);
+    try {
+      await profilesApi.deleteComment(commentId);
+      setComments((c) => c.filter((comment) => comment.id !== commentId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't delete that comment.");
+    }
   }
 
   return (
@@ -48,6 +60,7 @@ export function ProfileComments({ username }: { username: string }) {
           </button>
         </form>
       )}
+      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
       <div className="mt-3 space-y-3">
         {loading && <p className="text-xs text-white/40">Loading…</p>}
