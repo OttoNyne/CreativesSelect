@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { aiApi } from "../../api/ai.api";
+import { ApiError } from "../../api/client";
 
 export function GenerateImageButton({
   kind,
@@ -27,8 +28,8 @@ export function GenerateImageButton({
     try {
       const { url } = await aiApi.generateImage(getPrompt(), kind, live);
       onGenerated(url);
-    } catch {
-      setError("Couldn't generate an image, try again.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't generate an image, try again.");
     } finally {
       setLoading(false);
     }

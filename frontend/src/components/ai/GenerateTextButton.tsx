@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { aiApi } from "../../api/ai.api";
+import { ApiError } from "../../api/client";
 
 export function GenerateTextButton({
   kind,
@@ -25,8 +26,8 @@ export function GenerateTextButton({
     try {
       const { text } = await aiApi.generateText(getPrompt(), kind);
       onGenerated(text);
-    } catch {
-      setError("Couldn't generate text, try again.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't generate text, try again.");
     } finally {
       setLoading(false);
     }

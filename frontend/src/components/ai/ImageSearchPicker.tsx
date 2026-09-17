@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { aiApi } from "../../api/ai.api";
+import { ApiError } from "../../api/client";
 import type { ImageSearchResult } from "../../types";
 
 export function ImageSearchPicker({
@@ -25,8 +26,8 @@ export function ImageSearchPicker({
       const { results } = await aiApi.searchImages(query.trim());
       setResults(results);
       setSearched(true);
-    } catch {
-      setError("Couldn't search right now, try again.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't search right now, try again.");
     } finally {
       setLoading(false);
     }
