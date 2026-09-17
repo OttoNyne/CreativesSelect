@@ -18,6 +18,10 @@ export function GenerateImageButton({
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
+    if (!getPrompt().trim()) {
+      setError("Describe what you want first, then generate.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

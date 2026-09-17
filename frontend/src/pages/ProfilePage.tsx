@@ -31,6 +31,7 @@ export function ProfilePage() {
   const [requestSent, setRequestSent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [liveWallpaper, setLiveWallpaper] = useState(false);
+  const [wallpaperPrompt, setWallpaperPrompt] = useState("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
@@ -243,15 +244,6 @@ export function ProfilePage() {
                 className="hidden"
                 onChange={handleWallpaperFile}
               />
-              <GenerateImageButton
-                kind="wallpaper"
-                getPrompt={() => bio}
-                live={liveWallpaper}
-                onGenerated={(url) =>
-                  saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
-                }
-                label="Generate wallpaper"
-              />
               <label className="flex items-center gap-1.5 text-xs text-white/60">
                 <input
                   type="checkbox"
@@ -269,6 +261,23 @@ export function ProfilePage() {
                   Remove wallpaper
                 </button>
               )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={wallpaperPrompt}
+                onChange={(e) => setWallpaperPrompt(e.target.value)}
+                placeholder="Describe a wallpaper to generate…"
+                className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:outline-none"
+              />
+              <GenerateImageButton
+                kind="wallpaper"
+                getPrompt={() => wallpaperPrompt}
+                live={liveWallpaper}
+                onGenerated={(url) =>
+                  saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
+                }
+                label="Generate wallpaper"
+              />
             </div>
             <ImageSearchPicker
               label="🔍 Search photos for wallpaper"
