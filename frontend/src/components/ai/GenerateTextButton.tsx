@@ -15,12 +15,9 @@ export function GenerateTextButton({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isEmpty = !getPrompt().trim();
 
   async function handleClick() {
-    if (!getPrompt().trim()) {
-      setError("Type something first, then generate.");
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
@@ -38,7 +35,8 @@ export function GenerateTextButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={loading}
+        disabled={loading || isEmpty}
+        title={isEmpty ? "Type something first" : undefined}
         className="flex items-center gap-1.5 rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/20 disabled:opacity-50"
       >
         {loading ? "Generating…" : `✨ ${label}`}

@@ -17,12 +17,9 @@ export function GenerateImageButton({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isEmpty = !getPrompt().trim();
 
   async function handleClick() {
-    if (!getPrompt().trim()) {
-      setError("Describe what you want first, then generate.");
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
@@ -40,7 +37,8 @@ export function GenerateImageButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={loading}
+        disabled={loading || isEmpty}
+        title={isEmpty ? "Type a description first" : undefined}
         className="flex items-center gap-1.5 rounded-md border border-fuchsia-500/40 bg-fuchsia-500/10 px-3 py-1.5 text-xs font-medium text-fuchsia-300 hover:bg-fuchsia-500/20 disabled:opacity-50"
       >
         {loading ? (live ? "Animating…" : "Painting…") : `🖼️ ${label}`}
