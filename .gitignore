@@ -4,15 +4,6 @@ build/
 .env
 *.local
 
-# backend
-backend/uploads/**
-!backend/uploads/.gitkeep
-!backend/uploads/avatars/.gitkeep
-!backend/uploads/portfolio/.gitkeep
-!backend/uploads/ai-generated/.gitkeep
-backend/prisma/dev.db
-backend/prisma/dev.db-journal
-
 # frontend
 frontend/dist/
 
