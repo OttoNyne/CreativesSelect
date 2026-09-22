@@ -9,6 +9,7 @@ export function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     postsApi
@@ -24,8 +25,13 @@ export function FeedPage() {
   }, []);
 
   async function handleDelete(id: string) {
-    await postsApi.remove(id);
-    setPosts((p) => p.filter((post) => post.id !== id));
+    setActionError(null);
+    try {
+      await postsApi.remove(id);
+      setPosts((p) => p.filter((post) => post.id !== id));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't delete that post.");
+    }
   }
 
   if (status === "error") {
@@ -34,6 +40,7 @@ export function FeedPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+      {actionError && <p className="text-sm text-red-400">{actionError}</p>}
       <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} />
 
       {status === "loading" && <div className="text-center text-white/40">Loading feed…</div>}

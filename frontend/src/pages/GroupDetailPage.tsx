@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { groupsApi } from "../api/groups.api";
+import { ApiError } from "../api/client";
 import type { Group, GroupMember } from "../types";
 import { Avatar } from "../components/common/Avatar";
 import { useAuth } from "../context/AuthContext";
@@ -10,35 +11,56 @@ export function GroupDetailPage() {
   const { user } = useAuth();
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
+  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function load() {
-    const [{ group }, { members }] = await Promise.all([groupsApi.get(id), groupsApi.members(id)]);
-    setGroup(group);
-    setMembers(members);
-    setLoading(false);
+    setStatus("loading");
+    try {
+      const [{ group }, { members }] = await Promise.all([groupsApi.get(id), groupsApi.members(id)]);
+      setGroup(group);
+      setMembers(members);
+      setStatus("ready");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to load this group.");
+      setStatus("error");
+    }
   }
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const isMember = members.some((m) => m.user.username === user?.username);
 
   async function handleJoin() {
-    await groupsApi.join(id);
-    load();
+    setActionError(null);
+    try {
+      await groupsApi.join(id);
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't join that group.");
+    }
   }
 
   async function handleLeave() {
-    await groupsApi.leave(id);
-    load();
+    setActionError(null);
+    try {
+      await groupsApi.leave(id);
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't leave that group.");
+    }
   }
 
-  if (loading || !group) return <div className="p-8 text-center text-white/40">Loading…</div>;
+  if (status === "loading") return <div className="p-8 text-center text-white/40">Loading…</div>;
+  if (status === "error" || !group) return <div className="p-8 text-center text-red-400">{error}</div>;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+      {actionError && <p className="text-sm text-red-400">{actionError}</p>}
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
         <h1 className="text-xl font-bold text-white">{group.name}</h1>
         <p className="mt-1 text-sm text-white/60">{group.description}</p>

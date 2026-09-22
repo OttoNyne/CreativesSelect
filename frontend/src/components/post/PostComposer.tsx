@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { postsApi } from "../../api/posts.api";
 import { uploadFile } from "../../api/media.api";
-import { assetUrl } from "../../api/client";
+import { assetUrl, ApiError } from "../../api/client";
 import { GenerateTextButton } from "../ai/GenerateTextButton";
 import { GenerateImageButton } from "../ai/GenerateImageButton";
 import type { Post } from "../../types";
@@ -12,12 +12,14 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   const [isAiText, setIsAiText] = useState(false);
   const [isAiImage, setIsAiImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!content.trim()) return;
     setSubmitting(true);
+    setError(null);
     try {
       const { post } = await postsApi.create({ content: content.trim(), imageUrl, isAiText, isAiImage });
       onPosted(post);
@@ -25,6 +27,8 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
       setImageUrl(null);
       setIsAiText(false);
       setIsAiImage(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't post that, try again.");
     } finally {
       setSubmitting(false);
     }
@@ -33,9 +37,14 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { url } = await uploadFile(file, "portfolio");
-    setImageUrl(url);
-    setIsAiImage(false);
+    setError(null);
+    try {
+      const { url } = await uploadFile(file, "portfolio");
+      setImageUrl(url);
+      setIsAiImage(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't upload that file.");
+    }
   }
 
   return (
@@ -98,6 +107,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
           {submitting ? "Posting…" : "Post"}
         </button>
       </div>
+      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </form>
   );
 }

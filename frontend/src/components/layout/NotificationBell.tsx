@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { notificationsApi } from "../../api/notifications.api";
 import { friendsApi } from "../../api/friends.api";
+import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
 import type { Notification } from "../../types";
 
@@ -78,17 +79,25 @@ export function NotificationBell() {
   async function handleAccept(n: Notification) {
     const friendshipId = n.payload.friendshipId;
     if (typeof friendshipId !== "string") return;
-    await friendsApi.accept(friendshipId);
-    setNotifications((ns) => ns.filter((item) => item.id !== n.id));
-    await notificationsApi.markRead(n.id);
+    try {
+      await friendsApi.accept(friendshipId);
+      setNotifications((ns) => ns.filter((item) => item.id !== n.id));
+      await notificationsApi.markRead(n.id);
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't accept that request.");
+    }
   }
 
   async function handleDecline(n: Notification) {
     const friendshipId = n.payload.friendshipId;
     if (typeof friendshipId !== "string") return;
-    await friendsApi.decline(friendshipId);
-    setNotifications((ns) => ns.filter((item) => item.id !== n.id));
-    await notificationsApi.markRead(n.id);
+    try {
+      await friendsApi.decline(friendshipId);
+      setNotifications((ns) => ns.filter((item) => item.id !== n.id));
+      await notificationsApi.markRead(n.id);
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't decline that request.");
+    }
   }
 
   return (

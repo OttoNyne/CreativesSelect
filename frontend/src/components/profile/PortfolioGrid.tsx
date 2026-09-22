@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { mediaApi, uploadFile } from "../../api/media.api";
-import { assetUrl } from "../../api/client";
+import { assetUrl, ApiError } from "../../api/client";
 import { GenerateImageButton } from "../ai/GenerateImageButton";
 import { ImageSearchPicker } from "../ai/ImageSearchPicker";
 import type { MediaItem } from "../../types";
@@ -8,6 +8,7 @@ import type { MediaItem } from "../../types";
 export function PortfolioGrid({ username, isOwner }: { username: string; isOwner: boolean }) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [prompt, setPrompt] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -17,23 +18,43 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { mediaItem } = await uploadFile(file, "portfolio");
-    if (mediaItem) setItems((i) => [mediaItem, ...i]);
+    setError(null);
+    try {
+      const { mediaItem } = await uploadFile(file, "portfolio");
+      if (mediaItem) setItems((i) => [mediaItem, ...i]);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't upload that file.");
+    }
   }
 
   async function handleAiGenerated(url: string) {
-    const { mediaItem } = await mediaApi.create({ url, type: "image", caption: prompt || undefined, isAiImage: true });
-    setItems((i) => [mediaItem, ...i]);
+    setError(null);
+    try {
+      const { mediaItem } = await mediaApi.create({ url, type: "image", caption: prompt || undefined, isAiImage: true });
+      setItems((i) => [mediaItem, ...i]);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't save that image.");
+    }
   }
 
   async function handleSearchSelected(url: string) {
-    const { mediaItem } = await mediaApi.create({ url, type: "image" });
-    setItems((i) => [mediaItem, ...i]);
+    setError(null);
+    try {
+      const { mediaItem } = await mediaApi.create({ url, type: "image" });
+      setItems((i) => [mediaItem, ...i]);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't save that image.");
+    }
   }
 
   async function handleRemove(id: string) {
-    await mediaApi.remove(id);
-    setItems((i) => i.filter((item) => item.id !== id));
+    setError(null);
+    try {
+      await mediaApi.remove(id);
+      setItems((i) => i.filter((item) => item.id !== id));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't remove that item.");
+    }
   }
 
   return (
@@ -65,6 +86,7 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
           <ImageSearchPicker label="🔍 Search photos" onSelect={handleSearchSelected} />
         </div>
       )}
+      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {items.length === 0 && <p className="col-span-3 text-xs text-white/40">No portfolio pieces yet.</p>}

@@ -9,9 +9,15 @@ export function NavBar() {
   const navigate = useNavigate();
 
   async function handleLogout() {
-    await authApi.logout();
-    setUser(null);
-    navigate("/login");
+    try {
+      await authApi.logout();
+    } finally {
+      // Always clear client-side session state, even if the server call
+      // failed (e.g. a network blip) -- from the user's perspective,
+      // clicking "Log out" should never leave them stuck logged in.
+      setUser(null);
+      navigate("/login");
+    }
   }
 
   return (

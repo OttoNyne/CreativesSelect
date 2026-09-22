@@ -10,6 +10,7 @@ export function FriendsPage() {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function load() {
     setStatus("loading");
@@ -29,18 +30,33 @@ export function FriendsPage() {
   }, []);
 
   async function handleAccept(requestId: string) {
-    await friendsApi.accept(requestId);
-    load();
+    setActionError(null);
+    try {
+      await friendsApi.accept(requestId);
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't accept that request.");
+    }
   }
 
   async function handleDecline(requestId: string) {
-    await friendsApi.decline(requestId);
-    load();
+    setActionError(null);
+    try {
+      await friendsApi.decline(requestId);
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't decline that request.");
+    }
   }
 
   async function handleRemove(friendId: string) {
-    await friendsApi.remove(friendId);
-    load();
+    setActionError(null);
+    try {
+      await friendsApi.remove(friendId);
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't remove that friend.");
+    }
   }
 
   if (status === "loading") return <div className="p-8 text-center text-white/40">Loading…</div>;
@@ -48,6 +64,7 @@ export function FriendsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
+      {actionError && <p className="text-sm text-red-400">{actionError}</p>}
       {requests.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Friend Requests</h2>

@@ -68,8 +68,13 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
   }
 
   async function handleRemove(id: string) {
-    await tracksApi.remove(id);
-    setTracks((t) => t.filter((track) => track.id !== id));
+    setError(null);
+    try {
+      await tracksApi.remove(id);
+      setTracks((t) => t.filter((track) => track.id !== id));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't remove that track.");
+    }
   }
 
   return (

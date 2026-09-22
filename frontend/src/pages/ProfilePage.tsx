@@ -64,6 +64,8 @@ export function ProfilePage() {
       const { user } = await profilesApi.updateMe(updates);
       setProfile(user);
       if (isOwner) setViewer(user);
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't save that change.");
     } finally {
       setSaving(false);
     }
@@ -72,16 +74,24 @@ export function ProfilePage() {
   async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { url } = await uploadFile(file, "avatars");
-    await saveProfile({ avatarUrl: url });
+    try {
+      const { url } = await uploadFile(file, "avatars");
+      await saveProfile({ avatarUrl: url });
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't upload that image.");
+    }
   }
 
   async function handleWallpaperFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { url } = await uploadFile(file, "wallpapers");
-    const wallpaperType = file.type.startsWith("video/") ? "video" : "image";
-    await saveProfile({ wallpaperUrl: url, wallpaperType, wallpaperPosition: "50% 50%" });
+    try {
+      const { url } = await uploadFile(file, "wallpapers");
+      const wallpaperType = file.type.startsWith("video/") ? "video" : "image";
+      await saveProfile({ wallpaperUrl: url, wallpaperType, wallpaperPosition: "50% 50%" });
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't upload that file.");
+    }
   }
 
   async function handleFriendRequest() {
@@ -95,15 +105,23 @@ export function ProfilePage() {
 
   async function handleBlock() {
     if (!confirm(`Block @${username}? They won't be able to friend, comment, or interact with you.`)) return;
-    await moderationApi.block(username);
-    alert("User blocked.");
+    try {
+      await moderationApi.block(username);
+      alert("User blocked.");
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't block that user.");
+    }
   }
 
   async function handleReport() {
     const reason = prompt("What's the issue with this profile?");
     if (!reason) return;
-    await moderationApi.report("user", profile!.id, reason);
-    alert("Report submitted. Thanks for helping keep this space safe.");
+    try {
+      await moderationApi.report("user", profile!.id, reason);
+      alert("Report submitted. Thanks for helping keep this space safe.");
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't submit that report.");
+    }
   }
 
   if (notFound) {
