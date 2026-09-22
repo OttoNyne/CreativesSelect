@@ -79,7 +79,7 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe an image to generate…"
-              className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none"
+              className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none"
             />
             <GenerateImageButton kind="post" getPrompt={() => prompt} onGenerated={handleAiGenerated} label="Generate" />
           </div>

@@ -280,12 +280,12 @@ export function ProfilePage() {
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 value={wallpaperPrompt}
                 onChange={(e) => setWallpaperPrompt(e.target.value)}
                 placeholder="Describe a wallpaper to generate…"
-                className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:outline-none"
+                className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:outline-none"
               />
               <GenerateImageButton
                 kind="wallpaper"
