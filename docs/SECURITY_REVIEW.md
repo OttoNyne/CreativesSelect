@@ -386,6 +386,66 @@ deleting a post removed the image from storage, a wallpaper-referenced image
 survived, and a second live run caught that Cloudinary's CDN kept serving a
 deleted image — fixed by invalidating the cache on delete.
 
+### 5.14 Nothing throttled login, and the cross-site cookie had no CSRF defense
+
+Login, registration, password changes and deletion had no throttling — a script could
+guess passwords indefinitely — and the auth cookie is `SameSite=None; Secure` in
+production, so a browser attaches it to requests made by *any* website. CORS
+doesn't stop a cross-site "simple" request from being sent and acted on.
+
+**Fixes.** (1) Login counts failed attempts per email (10 / 15 min) and per IP (30 /
+15 min) and returns `429` with `Retry-After`; registration is capped at 10 per IP per
+hour; password changes and account deletion allow 5 wrong passwords per 15 minutes.
+(2) `middleware/csrf.js` rejects any state-changing request whose `Origin` isn't the
+frontend (`403`); requests with no `Origin` header can't be forged from a victim's
+browser and pass. (3) All limits moved from per-process memory to a MongoDB-backed
+limiter, so they persist across restarts and hold across instances.
+
+Verified by tests (lock-out after 10 failures, successful logins uncounted, emails
+independent, `429` after 10 registrations, evil/`null` origins `403`, real origin
+and no-origin allowed, limiter shared between instances) and live: the 11th failed
+login returned `429` with `Retry-After: 900`, an untrusted origin got `403`, and
+authenticated writes from the real frontend origin still worked.
+
+### 5.15 Sessions weren't revalidated: a deleted account's token kept working
+
+`requireAuth` only verified the JWT's signature, so a session token stayed valid for
+its full 7 days no matter what happened to the account. Found while building account
+deletion: replaying a copied token after the account was deleted still passed
+`requireAuth` and **created a post under the deleted user's id** (reproduced against
+production). It also meant a password change couldn't cut off an attacker's session.
+
+**Fix.** `requireAuth` (and the optional-auth variant) now confirms the user still
+exists and that the token was issued after `passwordChangedAt`, which a password
+change sets. A real server error during that check is a `500`, not a fake logout. Live
+re-test: after a password change the other session got `401` on reads and writes while
+the changing session stayed signed in, and a token copied before deletion was refused
+and created no data. (The extra cost is one indexed lookup by `_id` per request.)
+
+### 5.16 No way to delete an account or change a password — and two weak accounts
+
+Users couldn't delete their own data or change their password. Auditing the stored
+bcrypt hashes in the production database (offline, against the hashes — no login attempts)
+found **2 of 4 accounts still using `password123`**, the value the login page used to
+advertise (§5.12): the demo account and a leftover test account.
+
+**Fixes.** `PUT /api/auth/password` (current password required; signs out other
+sessions) and `DELETE /api/profiles/me` (password required; deletes the account and
+everything it owns, hands shared groups to another member, deletes stored files) with UI on
+the profile edit panel. Uploads are now recorded in the same ledger as generated
+images, so account deletion, post/portfolio/track deletion and avatar/wallpaper
+replacement clean up Cloudinary — only for files the ledger says the user owns, since URLs
+on posts and portfolio items are client-supplied. A live run confirmed a full lifecycle
+against production: upload and AI image recorded, replaced wallpaper deleted, wrong password
+refused, deletion removed the user's data and every file while leaving another user's
+account untouched. The two weak accounts still need their owners to change the password.
+
+### 5.17 Help offers had no reply path
+
+An offer notified the owner but there was no way to respond. Offers can now carry a
+note (≤300 chars, validated as text) and the owner can accept an offer from the
+notification, which notifies the offerer once. Only the offer's recipient can accept it.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -448,56 +508,44 @@ its own.
 
 ## 8. Remaining risks / not yet addressed
 
-- **Board limits are per instance, in memory.** Public posts are capped at
-  10 per user per hour and help offers at 20, but like the AI caps the
-  counters reset on restart and aren't shared across instances. They stop a
-  single account flooding the board or another user's notifications, not a
-  script that registers many accounts.
-
-- **No rate limiting.** Login, register, and friend-request routes have no
-  throttling — a credential-stuffing or spam-request script could hit them
-  freely.
-- **The AI image cap is per instance, in memory.** It resets on restart
-  and wouldn't be shared across multiple servers; fine for one free-tier
-  instance, not for scaling out. The free Cloudflare allowance is also
-  shared by all users, so heavy use degrades the feature to "temporarily
-  unavailable" until it resets (text generation is real too, capped at 30
-  per user per hour under the same per-instance rules).
-- **Generated images are only cleaned up when their post is deleted.**
-  Replacing or removing a wallpaper or avatar leaves its old generated image
-  on Cloudinary, and the two images generated before the ledger existed have
-  no ledger entry, so they are never auto-deleted.
-- **Backend deploy gating depends on a dashboard setting.** Both repos run
-  tests and `npm audit --audit-level=high` in GitHub Actions on every push and
-  PR, and Dependabot opens weekly npm and monthly Actions update PRs (this is
-  how the `cloudinary <2.7.0` advisory in §5.1 was originally found, by hand).
-  The frontend now deploys only from CI on a green run (Vercel's git deploys
-  are disabled, so a red build can't reach production — verified). The backend
-  is configured with `autoDeployTrigger: checksPass` in `render.yaml`, but
-  that only takes effect if the Render service's Auto-Deploy is set to "After
-  CI Checks Pass" in the dashboard; until then a red build can still deploy
-  the API.
-- **Frontend deploys have a CI-token dependency.** Production deploys use a
-  Vercel API token stored as a GitHub Actions secret. It's scoped to one
-  team, can be revoked at any time, and never appears in the repo; if it
-  expires or is revoked, frontend deploys stop until it's replaced.
+- **Two accounts still use a known weak password.** The audit in §5.16 found
+  the demo account and a leftover test account on `password123`. The
+  change-password feature exists now, but the app can't do it for them.
+- **No on-demand "sign out everywhere".** Sessions are 7-day JWTs. They are now
+  revoked automatically by a password change or account deletion (§5.15), but a
+  user can't revoke them on demand without changing their password.
+- **Rate limits are per account/IP.** They are durable and shared now (MongoDB),
+  but a script spreading attempts across many IPs and many accounts is only
+  slowed, not stopped (registration: 10 per IP per hour). The limiter also fails
+  open if its own database call errors.
+- **CSRF relies on the `Origin` check, not tokens.** Browsers always send
+  `Origin` on cross-site state-changing requests, so this is effective, but a
+  request with no `Origin` header is allowed (non-browser clients only).
+- **The free Cloudflare AI allowance is shared by all users**, so heavy use
+  degrades image/text generation to "temporarily unavailable" until it resets.
+- **Backend deploy gating depends on a dashboard setting.** Both repos run tests and
+  `npm audit --audit-level=high` in GitHub Actions on every push and PR, and
+  Dependabot opens weekly update PRs. The frontend deploys only from a green CI run
+  (Vercel's git deploys are disabled — verified). The backend has
+  `autoDeployTrigger: checksPass` in `render.yaml`, which only takes effect if
+  the Render service's Auto-Deploy is set to "After CI Checks Pass" in the dashboard.
+- **The frontend deploy depends on a CI token.** Production deploys use a Vercel API
+  token stored as a GitHub Actions secret; if it expires or is revoked, frontend
+  deploys pause until it's replaced.
+- **The keep-warm ping depends on GitHub's scheduler.** Scheduled workflows can run a
+  few minutes late and GitHub pauses them after 60 days without repo activity
+  (any commit resumes them); the free-tier cold start (~50 s) returns if it stops.
 - **File uploads aren't content-sniffed.** `multer`'s `fileFilter` trusts the
-  client-supplied MIME type, not the actual file bytes. Cloudinary itself
-  re-derives the real type on ingest, which limits the practical impact, but
-  the app-level filter is still trust-the-client.
-- **No CSRF token.** The app relies on `SameSite=None`/`Secure` (prod) or
-  `SameSite=Lax` (dev) on the auth cookie plus a locked CORS origin rather
-  than an explicit CSRF token. Reasonable for this app's current risk
-  profile, but worth naming as a conscious trade-off rather than an
-  oversight.
+  client-supplied MIME type; Cloudinary re-derives the real type on ingest, which
+  limits the practical impact.
+- **Older stored files aren't cleaned up automatically.** Files stored before the
+  ledger existed (two AI images) have no ledger entry and are left alone by design.
+- **Test coverage has known gaps.** No frontend tests for the group detail, login
+  and register pages or the portfolio/music components, and no browser-level
+  end-to-end tests (production is checked with scripted live runs instead).
 - **Two narrow race conditions**, both low-severity and neither crossing a
   privacy/access boundary: (1) `Friendship`'s unique index is directional
-  (`requester`+`addressee`), while the app-level duplicate check is
-  bidirectional — two users requesting each other in the same instant could
-  theoretically create two friendship documents. (2) `Track`'s per-user
-  5-track cap is a count-then-create check with no transaction — concurrent
-  requests from the same user could exceed the cap by one.
-- ~~Test accounts left in the production database from live-reproducing the
-  bugs above~~ — cleaned up via a one-off script run directly against
-  Atlas (there's still no self-service account-deletion endpoint for a real
-  user to do this themselves, which remains a minor gap).
+  (`requester`+`addressee`) while the app-level duplicate check is bidirectional —
+  two users requesting each other in the same instant could theoretically create two
+  friendship documents. (2) `Track`'s per-user 5-track cap is a count-then-create
+  check with no transaction — concurrent requests could exceed it by one.

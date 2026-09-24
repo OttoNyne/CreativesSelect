@@ -50,7 +50,7 @@ flowchart LR
         ErrH["errorHandler\n(CastError→400, ValidationError→400,\nMulterError→413, everything else→generic 500)"]
     end
 
-    DB[("MongoDB Atlas\n14 Mongoose models")]
+    DB[("MongoDB Atlas\n16 Mongoose models")]
     Cloudinary[("Cloudinary\navatars, wallpapers,\nportfolio, tracks,\nAI-generated images")]
     Openverse["Openverse API\n(external, keyless image search)"]
     CFAI["Cloudflare Workers AI\n(FLUX.1 schnell image generation)"]
@@ -97,7 +97,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 
 | Model | Fields | Relationships |
 |---|---|---|
-| **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, timestamps | Referenced by nearly every other model as author/owner/participant |
+| **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, `passwordChangedAt` (sessions issued before it are rejected), timestamps | Referenced by nearly every other model as author/owner/participant |
 | **Task** | `owner` → User, `title`, `description`, `isPublic` (default false), `done` (= resolved), `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; shown in the UI as a "Help wanted" request — private by default, listed on the public board when `isPublic` |
 | **Post** | `author` → User, `content`, `imageUrl`, `isAiText`, `isAiImage`, timestamps | Has many Comments |
 | **Comment** | `post` → Post, `author` → User, `content`, timestamps | Belongs to one Post |
@@ -108,8 +108,9 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 | **GroupMembership** | `group` → Group, `user` → User, `role` (member/admin), `joinedAt`, unique on (group, user) | Join table between User and Group |
 | **MediaItem** | `owner` → User, `url`, `type` (image/audio/video/embed), `caption`, `isAiImage`, timestamps | A user's portfolio piece |
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
-| **GeneratedImage** | `owner` → User, `url`, `publicId`, timestamps | Ledger of AI images stored on Cloudinary and who generated them; lets the app delete an image safely when its last post is removed |
-| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
+| **StoredAsset** | `owner` → User, `url`, `publicId`, `resourceType` (image/video/raw), `kind` (ai/upload), timestamps | Ledger of every file the server itself stored on Cloudinary (AI images and uploads) and whose it is — the only thing that lets the app delete an asset safely |
+| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
+| **RateLimitHit** | `key`, `at`, `expireAt` (TTL index) | One row per rate-limited action; stored in MongoDB so limits survive restarts and are shared by every server instance, and expired rows delete themselves |
 | **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
 | **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
 
@@ -130,8 +131,9 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### Auth — `/api/auth`
 | Method | Path | Auth | Body → Response |
 |---|---|---|---|
-| POST | `/register` | public | `{email, username, password, displayName}` → `201 {user}` |
-| POST | `/login` | public | `{email, password}` → `200 {user}`, sets `token` cookie |
+| POST | `/register` | public | `{email, username, password, displayName}` → `201 {user}`; `429` after 10 registrations per IP per hour |
+| POST | `/login` | public | `{email, password}` → `200 {user}`, sets `token` cookie; only *failed* attempts count — `429` (with `Retry-After`) after 10 per email or 30 per IP in 15 minutes |
+| PUT | `/password` | auth | `{currentPassword, newPassword}` → `204`; wrong current password `403` (5 failures / 15 min then `429`); every other session is signed out, this one is re-issued |
 | POST | `/logout` | public | — → `204`, clears cookie |
 | GET | `/me` | auth | → `200 {user}` |
 
@@ -139,7 +141,8 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/?search=` | auth | Search by username/displayName (regex, case-insensitive) |
-| PATCH | `/me` | auth | Update own displayName/bio/avatar/wallpaper/isPrivate/theme |
+| PATCH | `/me` | auth | Update own displayName/bio/avatar/wallpaper/isPrivate/theme; a replaced avatar/wallpaper the server stored is deleted from Cloudinary if nothing else uses it |
+| DELETE | `/me` | auth | `{password}` → `204`. Permanently deletes the account and everything it owns (posts, comments on them, friendships, media, tracks, requests, notifications, reports, stored files); groups it created are handed to another member or removed if empty |
 | PUT | `/me/top-friends` | auth | `{usernames: string[]}`, max 8 |
 | DELETE | `/comments/:commentId` | auth | Author or profile owner only |
 | GET | `/:username` | optional | `403` if private and viewer isn't owner/friend/unblocked |
@@ -197,6 +200,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | GET | `/` | Latest 50, with resolved actor + live friendship status |
 | POST | `/read-all` | — |
 | POST | `/:id/read` | Scoped to own recipient id |
+| POST | `/:id/accept-offer` | Owner of a help request accepts an offer notification → notifies the offerer (`help_accepted`), once; `404` for anyone but the recipient |
 
 ### Moderation — mounted at `/api` (auth)
 | Method | Path | Notes |
@@ -223,7 +227,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 |---|---|---|
 | GET | `/?done=&sort=&page=&limit=` | Owner-scoped; filter/sort/paginate |
 | GET | `/board` | Open (`done=false`), public requests from *other* users, newest first (max 100). Requests from blocked users, and from private-profile users who aren't your friends, are omitted entirely |
-| POST | `/:id/offer` | Offer to help on someone's public, open request → notifies the owner (`help_offer`), once per offerer per request, max 20 per user per hour (`429`). `400` on your own request; `404` if it's private/missing/not visible to you |
+| POST | `/:id/offer` | Offer to help on someone's public, open request → notifies the owner (`help_offer`), once per offerer per request, max 20 per user per hour (`429`). Optional `{message}` (≤300 chars) is shown to the owner. `400` on your own request; `404` if it's private/missing/not visible to you |
 | GET | `/:id` | Owner-scoped; `404` (not `403`) if not yours |
 | POST | `/` | `{title, description?, isPublic?, priority?, dueDate?}` → `201`; only those fields are read from the body; public posts capped at 10 per user per hour (`429`) |
 | PUT | `/:id` | Whitelisted fields only (`title`, `description`, `isPublic`, `done`, `priority`, `dueDate`) — `owner` cannot be overwritten via the body |
@@ -239,7 +243,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; production deploys come **only from CI**: `vercel.json` sets `git.deploymentEnabled: false`, and the `deploy` job in `.github/workflows/ci.yml` builds and ships with the Vercel CLI (secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) only after lint, build, tests and audit pass on `master`. Side effect: no per-PR preview deployments |
 | AI image generation | Cloudflare Workers AI (FLUX.1 schnell), free daily allowance | Needs `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; without them the backend uses the mock provider. Results are re-hosted on Cloudinary |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -384,16 +388,21 @@ rather than adding input validation to each route individually.
 
 **Two test suites, each mocking at its own boundary.** The backend
 (`first-server`) runs Vitest + Supertest against a dedicated
-`creativeselect_test` database — 20 tests over auth, the Tasks CRUD, and the
-Help wanted board (visibility, blocking, offers, rate limits, email
-privacy). The frontend runs Vitest + Testing Library in jsdom — 28 tests
-that mock the `api/*` modules, so they check what the UI does with server
-responses (errors shown, buttons disabled, requests sent) rather than
-re-testing the server. Covered: the API client (`ApiError`, credentials, 204s),
-`ProtectedRoute`, `GenerateImageButton`, `SearchPage`, the Help wanted
-page, and the per-route page titles. Test files are type-checked by `tsc -b` as part of the Vercel build, so a
-type error in a test blocks a deploy. Not yet covered: the profile, groups,
-friends and feed pages, and most backend social routes.
+`creativeselect_test` database — 71 tests over auth (including throttling,
+CSRF and session revocation), the Tasks CRUD and Help wanted board, friends,
+blocking, reports, groups, portfolio media, account deletion, password
+change and stored-asset cleanup (Cloudinary itself is mocked). The frontend
+runs Vitest + Testing Library in jsdom — 71 tests that mock the `api/*`
+modules, so they check what the UI does with server responses (errors
+shown, buttons disabled, requests sent) rather than re-testing the server.
+Covered: the API client, `ProtectedRoute`, the Feed, Friends, Groups,
+Profile, Search and Help wanted pages, the notification bell, the
+AI image button, delete-account and change-password, and page titles. Test
+files are type-checked by `tsc -b` as part of the Vercel build, so a type
+error in a test blocks a deploy. Not covered: the group detail, login and
+register pages, the portfolio/music components, and any browser-level
+end-to-end test (production behaviour is checked by scripted live runs
+against throwaway accounts instead).
 
 **Failed background requests must not become unhandled rejections.** The
 notification bell polls every 30 seconds and the top-friends list loads on
@@ -406,17 +415,43 @@ route (`Help wanted · CreativesSelect`, `@username · CreativesSelect`), and
 the app ships its own favicon, meta description, focus rings and
 reduced-motion support.
 
-**Deleting generated images safely: a ledger, not a URL check.** A post's
-`imageUrl` is client-supplied, so "delete the Cloudinary asset this post
-points at" would let anyone delete anyone's image by posting its URL. Instead,
-when the provider stores an image, `GeneratedImage` records who generated it;
-deleting a post removes the asset only if a ledger entry exists **for that
-user**, and only if no other post, avatar/wallpaper or portfolio item still
-references the URL. The deletion also purges Cloudinary's CDN cache — found
-during live testing, when a deleted image kept being served from cache — and
-can never fail the user's own action (errors are logged, the post is still
-deleted). Images generated before the ledger existed, and images replaced as
-a wallpaper or avatar, are not cleaned up yet.
+**Deleting stored files safely: a ledger, not a URL check.** A post's
+`imageUrl` (and a portfolio item's, and a group banner's) is client-supplied,
+so "delete the Cloudinary asset this points at" would let anyone delete
+anyone's file by submitting its URL. Instead, whenever the server itself
+stores a file — an AI image or an upload — `StoredAsset` records whose it is.
+A file is deleted only if a ledger entry exists **for that user**, and only
+when nothing else (another post, avatar/wallpaper, portfolio item, track or
+group banner) still references the URL: when a post, portfolio item or track
+is deleted, or an avatar/wallpaper is replaced. Account deletion removes every
+file in the user's ledger. Deletions purge Cloudinary's CDN cache (found in
+live testing: a deleted image kept being served from cache) and never fail
+the user's own action — errors are logged and the record is deleted anyway.
+Files stored before the ledger existed have no entry and are left alone.
+
+**Abuse protection: one shared limiter, plus an origin check.** All rate
+limits (login/registration, AI, the board, password and deletion attempts)
+use one MongoDB-backed sliding-window limiter (`utils/rateLimit.js`) instead
+of per-process memory, so they survive a restart and hold across instances.
+Login counts only failed attempts — per email (stops guessing one account from
+many IPs) and per IP (stops one client trying many accounts) — so normal use
+never burns the budget; it fails open if the database call itself errors,
+rather than locking everyone out. `app.set('trust proxy', 1)` makes `req.ip`
+the real client behind Render. Because the auth cookie is `SameSite=None` (the
+frontend and API are on different domains), the browser sends it on requests
+made by *any* site; `middleware/csrf.js` therefore rejects state-changing
+requests whose `Origin` header isn't the frontend (`403`). Requests with no
+`Origin` (curl, server-to-server) can't be forged from a victim's browser, so
+they pass.
+
+**Sessions are revalidated on every request.** A signed JWT stays valid for 7
+days on its own, so `requireAuth` also loads the user (one indexed lookup) and
+rejects the token if the account no longer exists or the token was issued
+before `passwordChangedAt`. Found while building account deletion: a copied
+token from a deleted account still passed `requireAuth` and could create
+posts under the dead id (reproduced live). A password change now signs out
+every other session and re-issues the current one; a database error during the
+check is a `500`, not a fake logout.
 
 **Dynamic import for `app.js` in `server.js`.** The Express app was split
 into `app.js` (middleware + routes) and `server.js` (env loading + listen)

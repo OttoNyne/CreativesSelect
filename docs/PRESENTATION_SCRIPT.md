@@ -76,13 +76,15 @@ few seconds while you say this — a picture here does real work.)*
 
 ## 8:00–9:30 — What's next (~1.5 min)
 
-> "CI already runs the tests — 20 backend, 28 frontend — plus lint, the type-
+> "CI already runs the tests — 71 backend, 71 frontend — plus lint, the type-
 > checked build and a dependency audit on every push, and the frontend only
 > deploys when CI is green. If I kept building: the same for the backend
 > everywhere, role-based
 > access for group admins, and stronger input validation across the write
-> routes — right now it's mostly on the auth routes. I'd also want rate
-> limiting on login and signup, since there's none today."
+> routes — right now it's mostly on the auth routes. Login,
+> signup, password changes and account deletion are already throttled and
+> CSRF-protected, so next I'd add an on-demand "sign out everywhere" and
+> browser-level end-to-end tests."
 
 *(Pick 2–3 honestly, not a laundry list — the rubric wants a specific,
 credible next-steps list, not padding.)*

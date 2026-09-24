@@ -71,7 +71,7 @@ Both repos also run their tests (plus lint, the type-checked build and
 ## Demo accounts
 
 Create an account via the Sign Up page — there's no seed script for the
-Mongo-backed setup yet. Passwords must be at least 8 characters.
+Mongo-backed setup yet. Passwords must be at least 8 characters, and you can change your password or delete your account from your profile's edit panel.
 
 ## AI features
 
