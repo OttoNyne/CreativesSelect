@@ -30,7 +30,6 @@ export function ProfilePage() {
   const [isFriend, setIsFriend] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [liveWallpaper, setLiveWallpaper] = useState(false);
   const [wallpaperPrompt, setWallpaperPrompt] = useState("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
@@ -262,14 +261,6 @@ export function ProfilePage() {
                 className="hidden"
                 onChange={handleWallpaperFile}
               />
-              <label className="flex items-center gap-1.5 text-xs text-white/60">
-                <input
-                  type="checkbox"
-                  checked={liveWallpaper}
-                  onChange={(e) => setLiveWallpaper(e.target.checked)}
-                />
-                Live (animated)
-              </label>
               {profile.wallpaperUrl && (
                 <button
                   type="button"
@@ -290,7 +281,6 @@ export function ProfilePage() {
               <GenerateImageButton
                 kind="wallpaper"
                 getPrompt={() => wallpaperPrompt}
-                live={liveWallpaper}
                 onGenerated={(url) =>
                   saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
                 }
