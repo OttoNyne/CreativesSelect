@@ -1,7 +1,9 @@
 import { api } from "./client";
 import type { MediaItem } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+import { API_BASE } from "./base";
+
+const API_URL = API_BASE;
 
 export type UploadPurpose = "avatars" | "wallpapers" | "portfolio" | "tracks";
 
