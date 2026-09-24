@@ -14,5 +14,6 @@ export const tasksApi = {
   update: (id: string, body: Partial<Task>) => api.put<Task>(`/tasks/${id}`, body),
   remove: (id: string) => api.delete<{ message: string }>(`/tasks/${id}`),
   board: () => api.get<{ tasks: BoardTask[] }>("/tasks/board"),
-  offerHelp: (id: string) => api.post<{ message: string }>(`/tasks/${id}/offer`, {}),
+  offerHelp: (id: string, message?: string) =>
+    api.post<{ message: string }>(`/tasks/${id}/offer`, message ? { message } : {}),
 };

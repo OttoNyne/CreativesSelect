@@ -18,6 +18,7 @@ import { MusicPlayer } from "../components/profile/MusicPlayer";
 import { GenerateTextButton } from "../components/ai/GenerateTextButton";
 import { GenerateImageButton } from "../components/ai/GenerateImageButton";
 import { ImageSearchPicker } from "../components/ai/ImageSearchPicker";
+import { DeleteAccount } from "../components/profile/DeleteAccount";
 
 export function ProfilePage() {
   const { username = "" } = useParams();
@@ -310,6 +311,9 @@ export function ProfilePage() {
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
+            <div className="border-t border-white/10 pt-3">
+              <DeleteAccount />
+            </div>
           </div>
         ) : (
           <p className="mt-4 text-sm opacity-80">{profile.bio || "No bio yet."}</p>

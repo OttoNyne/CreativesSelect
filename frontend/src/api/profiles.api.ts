@@ -15,6 +15,7 @@ export interface UpdateProfileInput {
 export const profilesApi = {
   search: (query: string) => api.get<{ users: User[] }>(`/profiles?search=${encodeURIComponent(query)}`),
   get: (username: string) => api.get<{ user: User }>(`/profiles/${username}`),
+  deleteMe: (password: string) => api.delete<void>("/profiles/me", { password }),
   updateMe: (input: UpdateProfileInput) => api.patch<{ user: User }>("/profiles/me", input),
   getTopFriends: (username: string) => api.get<{ topFriends: User[] }>(`/profiles/${username}/top-friends`),
   setTopFriends: (usernames: string[]) =>

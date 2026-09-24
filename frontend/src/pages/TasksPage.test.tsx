@@ -62,22 +62,37 @@ describe("TasksPage (Help wanted)", () => {
     expect(screen.getByText("My requests (1)")).toBeInTheDocument();
   });
 
-  it("offers help once and then shows it was sent", async () => {
+  it("offers help with an optional note and then shows it was sent", async () => {
     api.offerHelp.mockResolvedValue({ message: "Offer sent" });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "Offer help" }));
+    await userEvent.type(screen.getByPlaceholderText(/Add a note/), "Happy to sketch something");
+    await userEvent.click(screen.getByRole("button", { name: "Send offer" }));
 
-    expect(api.offerHelp).toHaveBeenCalledWith("b1");
+    expect(api.offerHelp).toHaveBeenCalledWith("b1", "Happy to sketch something");
     const sent = await screen.findByRole("button", { name: /Offer sent/ });
     expect(sent).toBeDisabled();
+  });
+
+  it("sends an offer with no note if none is typed, and Cancel backs out", async () => {
+    api.offerHelp.mockResolvedValue({ message: "Offer sent" });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Offer help" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(api.offerHelp).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Offer help" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send offer" }));
+    expect(api.offerHelp).toHaveBeenCalledWith("b1", undefined);
   });
 
   it("surfaces the rate-limit message when an offer is refused", async () => {
     api.offerHelp.mockRejectedValue(new ApiError(429, "Offer limit reached (20 per hour) — try again later"));
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "Offer help" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send offer" }));
     expect(await screen.findByText(/Offer limit reached/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Offer help" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Send offer" })).toBeEnabled();
   });
 
   it("posts a public request by default and keeps it private when 'Only me' is ticked", async () => {

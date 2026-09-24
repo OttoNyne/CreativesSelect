@@ -26,6 +26,8 @@ export function TasksPage() {
   const [onlyMe, setOnlyMe] = useState(false);
   const [creating, setCreating] = useState(false);
   const [offered, setOffered] = useState<Set<string>>(new Set());
+  const [offering, setOffering] = useState<string | null>(null);
+  const [offerMessage, setOfferMessage] = useState("");
 
   async function load() {
     try {
@@ -72,8 +74,10 @@ export function TasksPage() {
   async function handleOffer(id: string) {
     setActionError(null);
     try {
-      await tasksApi.offerHelp(id);
+      await tasksApi.offerHelp(id, offerMessage.trim() || undefined);
       setOffered((s) => new Set(s).add(id));
+      setOffering(null);
+      setOfferMessage("");
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Couldn't send your offer.");
     }
@@ -119,14 +123,54 @@ export function TasksPage() {
             </div>
             <div className="font-medium text-white">{t.title}</div>
             {t.description && <p className="whitespace-pre-wrap text-sm text-white/70">{t.description}</p>}
-            <button
-              type="button"
-              onClick={() => handleOffer(t._id)}
-              disabled={offered.has(t._id)}
-              className="rounded-md bg-violet-600 px-3 py-1 text-xs font-medium text-white hover:bg-violet-500 disabled:bg-white/10 disabled:text-white/50"
-            >
-              {offered.has(t._id) ? "Offer sent ✓" : "Offer help"}
-            </button>
+            {offered.has(t._id) ? (
+              <button
+                type="button"
+                disabled
+                className="rounded-md bg-white/10 px-3 py-1 text-xs font-medium text-white/50"
+              >
+                Offer sent ✓
+              </button>
+            ) : offering === t._id ? (
+              <div className="space-y-2">
+                <textarea
+                  autoFocus
+                  value={offerMessage}
+                  onChange={(e) => setOfferMessage(e.target.value)}
+                  maxLength={300}
+                  rows={2}
+                  placeholder="Add a note (optional) — how can you help?"
+                  className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOffer(t._id)}
+                    className="rounded-md bg-violet-600 px-3 py-1 text-xs font-medium text-white hover:bg-violet-500"
+                  >
+                    Send offer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOffering(null);
+                      setOfferMessage("");
+                    }}
+                    className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setOffering(t._id)}
+                className="rounded-md bg-violet-600 px-3 py-1 text-xs font-medium text-white hover:bg-violet-500"
+              >
+                Offer help
+              </button>
+            )}
           </div>
         ))}
       </section>

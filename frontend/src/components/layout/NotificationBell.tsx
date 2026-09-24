@@ -30,6 +30,10 @@ function describe(n: Notification): string {
       return "commented on your post";
     case "profile_comment":
       return "left a comment on your profile";
+    case "help_accepted":
+      return typeof n.payload.title === "string"
+        ? `accepted your offer to help with "${n.payload.title}"`
+        : "accepted your offer to help";
     case "help_offer":
       return typeof n.payload.title === "string"
         ? `offered to help with "${n.payload.title}"`
@@ -92,6 +96,17 @@ export function NotificationBell() {
       await notificationsApi.markRead(n.id);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Couldn't accept that request.");
+    }
+  }
+
+  async function handleAcceptOffer(n: Notification) {
+    try {
+      await notificationsApi.acceptOffer(n.id);
+      setNotifications((ns) =>
+        ns.map((item) => (item.id === n.id ? { ...item, isRead: true, payload: { ...item.payload, accepted: true } } : item))
+      );
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't accept that offer.");
     }
   }
 
@@ -168,7 +183,27 @@ export function NotificationBell() {
                     )}{" "}
                     {describe(n)}
                   </p>
+                  {n.type === "help_offer" && typeof n.payload.message === "string" && (
+                    <p className="mt-1 whitespace-pre-wrap rounded bg-white/5 px-2 py-1 text-xs italic text-white/70">
+                      “{n.payload.message}”
+                    </p>
+                  )}
                   <p className="mt-0.5 text-[10px] text-white/30">{timeAgo(n.createdAt)}</p>
+
+                  {n.type === "help_offer" && (
+                    <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                      {n.payload.accepted ? (
+                        <span className="text-[10px] text-emerald-400">Accepted ✓</span>
+                      ) : (
+                        <button
+                          onClick={() => handleAcceptOffer(n)}
+                          className="rounded bg-violet-600 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-violet-500"
+                        >
+                          Accept offer
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {n.type === "friend_request" && n.friendshipStatus === "pending" && (
                     <div className="mt-1.5 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
