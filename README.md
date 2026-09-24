@@ -3,7 +3,7 @@
 [![GitHub Repo](https://img.shields.io/badge/GitHub-CreativesSelect-181717?logo=github)](https://github.com/OttoNyne/CreativesSelect)
 [![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)](LICENSE)
 
-A social platform for creatives — customizable profiles, friend connections, testimonials, groups/collabs, on-request AI assistance (writing + image generation) for content creation, and a personal Tasks tool, all behind one login.
+A social platform for creatives — customizable profiles, friend connections, testimonials, groups/collabs, on-request AI assistance (writing + image generation) for content creation, and a personal Help wanted list (the `/api/tasks` resource), all behind one login.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system diagram, data model, API reference, and component tree, and [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) for the security audit and penetration-testing writeup.
 
@@ -15,8 +15,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system diagram, 
 The backend used to be a separate Node + Express + TypeScript + Prisma/SQLite
 service in `backend/`. It's since been consolidated into `first-server`
 (Express + Mongoose/MongoDB) so the whole app — the original social features
-plus a Tasks tool — runs on one backend, one database, one login. The old
-`backend/` folder is no longer used and isn't part of the running app.
+plus a Help wanted list — runs on one backend, one database, one login. The old
+`backend/` folder has been removed from this repo.
 
 ## First-time setup
 
@@ -48,7 +48,7 @@ Frontend: http://localhost:5173
 
 ## Running tests
 
-Automated tests (auth + Tasks CRUD) live in the backend repo:
+Automated tests (auth + Help wanted / tasks CRUD) live in the backend repo:
 
 ```bash
 cd ../first-server

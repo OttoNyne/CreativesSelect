@@ -13,7 +13,7 @@ since they all describe the same system.
 customizable profile (theme colors, wallpaper, portfolio), connect with
 friends, join groups for collabs, share posts with optional AI-assisted
 writing and images, and leave testimonials on each other's profiles.
-Alongside that, it includes a personal **Tasks** tool, behind the same login.
+Alongside that, it includes a personal **Help wanted** list (the tasks resource), behind the same login.
 
 **Target users**: hobbyist and professional creatives (artists, musicians,
 writers) who want a space that lets them express a personal aesthetic —
@@ -30,7 +30,7 @@ to track your own to-dos.
 **Value created**: a single account that covers creative self-expression
 (profile theme/wallpaper/portfolio), community (friends, groups, comments,
 notifications), AI-assisted content creation, and personal organization
-(Tasks) — without needing four different apps.
+(Help wanted) — without needing four different apps.
 
 ---
 
@@ -98,7 +98,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 | Model | Fields | Relationships |
 |---|---|---|
 | **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, timestamps | Referenced by nearly every other model as author/owner/participant |
-| **Task** | `owner` → User, `title`, `done`, `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; the personal-productivity resource |
+| **Task** | `owner` → User, `title`, `done`, `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; the personal-productivity resource, shown in the UI as "Help wanted" |
 | **Post** | `author` → User, `content`, `imageUrl`, `isAiText`, `isAiImage`, timestamps | Has many Comments |
 | **Comment** | `post` → Post, `author` → User, `content`, timestamps | Belongs to one Post |
 | **ProfileComment** | `profileOwner` → User, `author` → User, `content`, timestamps | The profile "guestbook"; distinct from post Comments |
@@ -116,7 +116,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 explicit `owner`/`author` ObjectId, and every route that reads or writes it
 filters by `{ ..., owner: req.user.id }` (or the equivalent) — never by the
 resource's own `_id` alone. This is what stops one user from touching
-another's data (see the Tasks mass-assignment fix in the security review).
+another's data (see the Help wanted / tasks mass-assignment fix in the security review).
 
 ---
 
@@ -217,7 +217,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | POST | `/` | Max 5 per user; extracts a YouTube video id from a full URL |
 | DELETE | `/:id` | Owner only; re-numbers remaining positions |
 
-### Tasks — `/api/tasks` (auth) — the full-CRUD user-owned resource
+### Help wanted (tasks) — `/api/tasks` (auth) — the full-CRUD user-owned resource
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/?done=&sort=&page=&limit=` | Owner-scoped; filter/sort/paginate |
@@ -281,7 +281,7 @@ App
 │       │   │   ├── /groups    → GroupsPage
 │       │   │   ├── /groups/:id→ GroupDetailPage
 │       │   │   ├── /search    → SearchPage
-│       │   │   └── /tasks     → TasksPage
+│       │   │   └── /help-wanted → TasksPage (/tasks redirects here)
 │       │   ├── /u/:username → ProfilePage (attachUserIfPresent server-side, not client-gated)
 │       │   │   ├── ThemeEditor, ImagePositioner
 │       │   │   ├── TopFriendsList
@@ -315,7 +315,7 @@ entire client-side auth story.
 **Why MongoDB/Mongoose over a relational DB.** The original prototype used
 Prisma + SQLite; the project was consolidated onto a single Express +
 Mongoose backend (`first-server`) so the whole app — the original social
-features and the Tasks tool — runs on one server, one database, one login,
+features and the Help wanted list — runs on one server, one database, one login,
 instead of two separate backends with two separate auth systems.
 
 **Centralized visibility check (`utils/visibility.js`).** Early on, the

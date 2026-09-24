@@ -18,7 +18,7 @@ easy to run long on the demo section.
 > colors, upload a wallpaper, build a portfolio grid, and get an AI assist
 > when you want help writing a caption or generating an image.
 >
-> Alongside that, there's a personal Tasks tool — because most social apps
+> Alongside that, there's a personal Help wanted list — because most social apps
 > make you juggle a separate to-do app for your own work. Here it's one
 > login, one account, for both.
 >
@@ -38,7 +38,8 @@ actually working smoothly on your machine at recording time):
    hashed with bcrypt server-side (you don't need to show the hash, just say it).
 2. **Land on the Feed**, write a post, optionally hit "Generate with AI" for
    the caption — show the AI-assisted badge that appears on the post.
-3. **Go to Tasks** — this is the full-CRUD resource. Create a task, mark it
+3. **Go to Help wanted** — this is the full-CRUD resource (the tasks API
+   underneath). Post a request, mark it
    done, edit its priority, delete it. Narrate: *"this is scoped to my
    account — no one else can see or touch it, and that's enforced on the
    server, not just hidden in the UI."*
@@ -59,7 +60,7 @@ just "and now I'll click here.")*
 > an httpOnly cookie, not stored in localStorage, so client-side script
 > injection can't steal it.
 >
-> Every user-owned resource — Tasks, posts, profile content — is scoped by
+> Every user-owned resource — Help wanted, posts, profile content — is scoped by
 > owner on every query, not just filtered in the UI. That distinction
 > mattered: I actually found and fixed a bug this week where a task could
 > be reassigned to someone else's account by tampering with a request body,
