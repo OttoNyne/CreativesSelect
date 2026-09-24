@@ -370,6 +370,22 @@ longer contains the string). Accounts that were created with that password
 should still have it changed — that can't be done by the app, since it never
 sees the old value except at login.
 
+### 5.13 Cleaning up generated images without creating a delete-anyone's-file bug
+
+Generated images used to stay on Cloudinary forever after their post was
+deleted. The naive fix — delete the asset a post's `imageUrl` points at — is a
+vulnerability: `imageUrl` is client-supplied, so posting someone else's image
+URL and deleting the post would destroy their image. **Design:** a
+`GeneratedImage` ledger records who generated each stored image, and deletion
+happens only for the generating user, only when nothing else references the
+URL. Cleanup failures are logged and never block the user's own delete.
+
+Verified by six tests (owner match, other posts, wallpaper reference, another
+user's image, unrecorded URLs, Cloudinary failure) and live in production:
+deleting a post removed the image from storage, a wallpaper-referenced image
+survived, and a second live run caught that Cloudinary's CDN kept serving a
+deleted image — fixed by invalidating the cache on delete.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -445,7 +461,12 @@ its own.
   and wouldn't be shared across multiple servers; fine for one free-tier
   instance, not for scaling out. The free Cloudflare allowance is also
   shared by all users, so heavy use degrades the feature to "temporarily
-  unavailable" until it resets. Text generation is still a mock.
+  unavailable" until it resets (text generation is real too, capped at 30
+  per user per hour under the same per-instance rules).
+- **Generated images are only cleaned up when their post is deleted.**
+  Replacing or removing a wallpaper or avatar leaves its old generated image
+  on Cloudinary, and the two images generated before the ledger existed have
+  no ledger entry, so they are never auto-deleted.
 - **Backend deploy gating depends on a dashboard setting.** Both repos run
   tests and `npm audit --audit-level=high` in GitHub Actions on every push and
   PR, and Dependabot opens weekly npm and monthly Actions update PRs (this is

@@ -50,7 +50,7 @@ flowchart LR
         ErrH["errorHandler\n(CastError→400, ValidationError→400,\nMulterError→413, everything else→generic 500)"]
     end
 
-    DB[("MongoDB Atlas\n13 Mongoose models")]
+    DB[("MongoDB Atlas\n14 Mongoose models")]
     Cloudinary[("Cloudinary\navatars, wallpapers,\nportfolio, tracks,\nAI-generated images")]
     Openverse["Openverse API\n(external, keyless image search)"]
     CFAI["Cloudflare Workers AI\n(FLUX.1 schnell image generation)"]
@@ -108,6 +108,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 | **GroupMembership** | `group` → Group, `user` → User, `role` (member/admin), `joinedAt`, unique on (group, user) | Join table between User and Group |
 | **MediaItem** | `owner` → User, `url`, `type` (image/audio/video/embed), `caption`, `isAiImage`, timestamps | A user's portfolio piece |
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
+| **GeneratedImage** | `owner` → User, `url`, `publicId`, timestamps | Ledger of AI images stored on Cloudinary and who generated them; lets the app delete an image safely when its last post is removed |
 | **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
 | **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
 | **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
@@ -153,7 +154,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | GET | `/feed` | Self + accepted friends' posts, newest first, limit 50 |
 | GET | `/user/:username` | Gated by the same visibility check as profiles |
 | POST | `/` | `{content, imageUrl?, isAiText?, isAiImage?}` → `201` |
-| DELETE | `/:id` | Author only |
+| DELETE | `/:id` | Author only; also deletes the post's AI-generated image from Cloudinary if that user generated it and nothing else still uses it |
 
 ### Comments on posts — mounted at `/api`
 | Method | Path | Auth | Notes |
@@ -207,8 +208,8 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### AI — `/api/ai` (auth)
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/text` | `{prompt, kind}` → `{text}`; 400 if prompt missing. Still the mock provider |
-| POST | `/image` | `{prompt, kind, live?}` → `{url}`; 400 if prompt missing. Real Cloudflare Workers AI generation when configured (returns a Cloudinary URL), mock gradient (`data:` URI) otherwise; `429` after 10 per user per hour (real provider only); `503` if the provider is unavailable or its free allowance is spent |
+| POST | `/text` | `{prompt, kind}` → `{text}`; 400 if prompt missing. Real Llama 3.1 8B via Cloudflare Workers AI when configured (max 30 per user per hour, `429` beyond), canned templates otherwise |
+| POST | `/image` | `{prompt, kind}` → `{url}`; 400 if prompt missing. Real Cloudflare Workers AI generation when configured (returns a Cloudinary URL), mock gradient (`data:` URI) otherwise; `429` after 10 per user per hour (real provider only); `503` if the provider is unavailable or its free allowance is spent |
 | GET | `/images/search?q=` | Live Openverse search, no key required |
 
 ### Tracks — `/api/tracks` (auth)
@@ -344,7 +345,7 @@ document — `owner` is set once, at creation, from the authenticated
 session, and can't be reassigned through the update body even by the task's
 own current owner.
 
-**A pluggable AI provider, real for images, mock everywhere else.**
+**A pluggable AI provider: real when configured, mock otherwise.**
 `services/ai/index.js` picks the provider: `CloudflareAIProvider` when both
 Cloudflare credentials are set, `MockAIProvider` otherwise. Every provider
 implements the same `generateText` / `generateImage` / `searchImages`
@@ -353,8 +354,9 @@ purpose — it lets local development, the test suite and any un-configured
 deploy run with zero API keys — but it only hashes the prompt into a
 gradient and never interprets it, which is why users reported "AI pictures
 don't match what I asked for" until the real provider went in.
-`CloudflareAIProvider` extends the mock, so text generation and photo
-search inherit the existing behavior and only `generateImage` is replaced.
+`CloudflareAIProvider` extends the mock, replacing `generateText` (Llama 3.1)
+and `generateImage` (FLUX.1) while photo search inherits the existing
+Openverse behavior.
 Generated images are uploaded to Cloudinary and the CDN URL is stored,
 rather than storing multi-megabyte base64 on a user or post document. Since
 the free daily allowance is shared by every user, `/api/ai/image` is capped
@@ -403,6 +405,18 @@ server's message or recover. Page titles (`lib/usePageTitle.ts`) update per
 route (`Help wanted · CreativesSelect`, `@username · CreativesSelect`), and
 the app ships its own favicon, meta description, focus rings and
 reduced-motion support.
+
+**Deleting generated images safely: a ledger, not a URL check.** A post's
+`imageUrl` is client-supplied, so "delete the Cloudinary asset this post
+points at" would let anyone delete anyone's image by posting its URL. Instead,
+when the provider stores an image, `GeneratedImage` records who generated it;
+deleting a post removes the asset only if a ledger entry exists **for that
+user**, and only if no other post, avatar/wallpaper or portfolio item still
+references the URL. The deletion also purges Cloudinary's CDN cache — found
+during live testing, when a deleted image kept being served from cache — and
+can never fail the user's own action (errors are logged, the post is still
+deleted). Images generated before the ledger existed, and images replaced as
+a wallpaper or avatar, are not cleaned up yet.
 
 **Dynamic import for `app.js` in `server.js`.** The Express app was split
 into `app.js` (middleware + routes) and `server.js` (env loading + listen)
