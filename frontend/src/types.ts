@@ -8,7 +8,8 @@ export interface ProfileTheme {
 
 export interface User {
   id: string;
-  email: string;
+  /** Only present on your own user object. */
+  email?: string;
   username: string;
   displayName: string;
   bio: string | null;
