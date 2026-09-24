@@ -30,9 +30,6 @@ export function LoginPage() {
   return (
     <div className="mx-auto mt-16 max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-6">
       <h1 className="text-xl font-bold text-white">Log in to CreativesSelect</h1>
-      <p className="mt-1 text-sm text-white/50">
-        Demo accounts use password <code className="text-white/70">password123</code>
-      </p>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <input

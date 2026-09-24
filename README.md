@@ -67,9 +67,7 @@ npm test
 ## Demo accounts
 
 Create an account via the Sign Up page — there's no seed script for the
-Mongo-backed setup yet. All accounts created during development use the
-password `password123` by convention, but that's just a habit, not a
-requirement.
+Mongo-backed setup yet. Passwords must be at least 8 characters.
 
 ## AI features
 
