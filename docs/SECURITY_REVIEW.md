@@ -446,10 +446,12 @@ its own.
   instance, not for scaling out. The free Cloudflare allowance is also
   shared by all users, so heavy use degrades the feature to "temporarily
   unavailable" until it resets. Text generation is still a mock.
-- **No automated dependency scanning in CI.** `npm audit` is run manually;
-  there's no scheduled/CI check to catch a newly-disclosed vulnerability in
-  a dependency after this review (this is exactly how the `cloudinary <2.7.0`
-  advisory in §5.1 was found — worth automating).
+- **Dependency scanning is automated, but doesn't gate deploys.** Both repos
+  run `npm audit --audit-level=high` in GitHub Actions on every push and PR,
+  and Dependabot opens weekly npm and monthly Actions update PRs (this is how
+  the `cloudinary <2.7.0` advisory in §5.1 was originally found, by hand).
+  Render and Vercel still deploy on push regardless of CI status, so a red
+  build doesn't stop a release — deploy-on-green would close that.
 - **File uploads aren't content-sniffed.** `multer`'s `fileFilter` trusts the
   client-supplied MIME type, not the actual file bytes. Cloudinary itself
   re-derives the real type on ingest, which limits the practical impact, but

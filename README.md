@@ -1,6 +1,7 @@
 # CreativesSelect
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-CreativesSelect-181717?logo=github)](https://github.com/OttoNyne/CreativesSelect)
+[![CI](https://github.com/OttoNyne/CreativesSelect/actions/workflows/ci.yml/badge.svg)](https://github.com/OttoNyne/CreativesSelect/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)](LICENSE)
 
 A social platform for creatives — customizable profiles, friend connections, testimonials, groups/collabs, on-request AI assistance (writing + image generation) for content creation, and a public **Help wanted** board where creatives post requests and offer to help each other (the `/api/tasks` resource), all behind one login.
@@ -63,6 +64,9 @@ image button, search, and the Help wanted board:
 cd frontend
 npm test
 ```
+
+Both repos also run their tests (plus lint, the type-checked build and
+`npm audit`) in GitHub Actions on every push and pull request.
 
 ## Demo accounts
 

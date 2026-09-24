@@ -76,8 +76,9 @@ few seconds while you say this — a picture here does real work.)*
 
 ## 8:00–9:30 — What's next (~1.5 min)
 
-> "If I kept building: automated CI so the tests — 20 backend, 28 frontend —
-> run on every push instead of by hand, role-based
+> "CI already runs the tests — 20 backend, 28 frontend — plus lint, the type-
+> checked build and a dependency audit on every push. If I kept building:
+> deploy only when CI is green, role-based
 > access for group admins, and stronger input validation across the write
 > routes — right now it's mostly on the auth routes. I'd also want rate
 > limiting on login and signup, since there's none today."
