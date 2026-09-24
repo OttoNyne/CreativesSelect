@@ -13,8 +13,10 @@ import { GroupsPage } from "./pages/GroupsPage";
 import { GroupDetailPage } from "./pages/GroupDetailPage";
 import { SearchPage } from "./pages/SearchPage";
 import { TasksPage } from "./pages/TasksPage";
+import { usePageTitle } from "./lib/usePageTitle";
 
 export default function App() {
+  usePageTitle();
   return (
     <AuthProvider>
       <PlaybackProvider>
