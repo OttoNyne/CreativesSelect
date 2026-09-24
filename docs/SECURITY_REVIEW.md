@@ -332,12 +332,15 @@ designed around the existing visibility rules rather than beside them:
 - **Owner-only writes unchanged.** Update and delete stay owner-scoped
   (`404` for anyone else). While there, `POST /api/tasks` stopped spreading
   the raw body into `Task.create` and now reads a fixed field list.
+- **Rate-limited.** A user can post 10 public requests and send 20 offers per
+  hour (`429` beyond that); private requests aren't capped since they reach
+  no one else. Verified live: the 11th public post was refused.
 - **Offers don't leak existence.** Offering help on a private, resolved,
   missing, blocked or private-profile request all return the same `404`; you
   can't offer on your own request; and repeat offers from one person on one
   request create a single notification.
 
-Covered by six new tests (`tests/board.test.js`) and verified live with a
+Covered by new tests (`tests/board.test.js`) and verified live with a
 second account.
 
 ### 5.11 Account emails were exposed to other users
@@ -417,9 +420,11 @@ its own.
 
 ## 8. Remaining risks / not yet addressed
 
-- **Board spam.** Posting requests and offering help aren't rate-limited,
-  so a script could flood the board or another user's notifications (one
-  offer per person per request is enforced, but not across requests).
+- **Board limits are per instance, in memory.** Public posts are capped at
+  10 per user per hour and help offers at 20, but like the AI caps the
+  counters reset on restart and aren't shared across instances. They stop a
+  single account flooding the board or another user's notifications, not a
+  script that registers many accounts.
 
 - **No rate limiting.** Login, register, and friend-request routes have no
   throttling — a credential-stuffing or spam-request script could hit them

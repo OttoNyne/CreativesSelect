@@ -222,9 +222,9 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 |---|---|---|
 | GET | `/?done=&sort=&page=&limit=` | Owner-scoped; filter/sort/paginate |
 | GET | `/board` | Open (`done=false`), public requests from *other* users, newest first (max 100). Requests from blocked users, and from private-profile users who aren't your friends, are omitted entirely |
-| POST | `/:id/offer` | Offer to help on someone's public, open request → notifies the owner (`help_offer`), once per offerer per request. `400` on your own request; `404` if it's private/missing/not visible to you |
+| POST | `/:id/offer` | Offer to help on someone's public, open request → notifies the owner (`help_offer`), once per offerer per request, max 20 per user per hour (`429`). `400` on your own request; `404` if it's private/missing/not visible to you |
 | GET | `/:id` | Owner-scoped; `404` (not `403`) if not yours |
-| POST | `/` | `{title, description?, isPublic?, priority?, dueDate?}` → `201`; only those fields are read from the body |
+| POST | `/` | `{title, description?, isPublic?, priority?, dueDate?}` → `201`; only those fields are read from the body; public posts capped at 10 per user per hour (`429`) |
 | PUT | `/:id` | Whitelisted fields only (`title`, `description`, `isPublic`, `done`, `priority`, `dueDate`) — `owner` cannot be overwritten via the body |
 | DELETE | `/:id` | Owner-scoped |
 
