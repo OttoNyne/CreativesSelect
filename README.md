@@ -78,9 +78,9 @@ them depends on the kind:
   app falls back to `MockAIProvider`, which only hashes your text into a
   color gradient (it never looks at what you asked for) — fine for local
   development with zero API keys.
-- **Text** (captions, bios) is still the mock provider; only images are real.
-  The wallpaper "Live (animated)" option only affects the mock's gradients —
-  a real generated image can't animate.
+- **Text** (captions, bios, blurbs) is really generated too, by Llama 3.1 8B
+  on the same Cloudflare account, capped at 30 per user per hour. Without the
+  credentials it falls back to canned templates.
 
 Wallpaper selection also has a "Search photos" option that queries
 [Openverse](https://openverse.org) for openly-licensed images matching what
