@@ -446,12 +446,20 @@ its own.
   instance, not for scaling out. The free Cloudflare allowance is also
   shared by all users, so heavy use degrades the feature to "temporarily
   unavailable" until it resets. Text generation is still a mock.
-- **Dependency scanning is automated, but doesn't gate deploys.** Both repos
-  run `npm audit --audit-level=high` in GitHub Actions on every push and PR,
-  and Dependabot opens weekly npm and monthly Actions update PRs (this is how
-  the `cloudinary <2.7.0` advisory in §5.1 was originally found, by hand).
-  Render and Vercel still deploy on push regardless of CI status, so a red
-  build doesn't stop a release — deploy-on-green would close that.
+- **Backend deploy gating depends on a dashboard setting.** Both repos run
+  tests and `npm audit --audit-level=high` in GitHub Actions on every push and
+  PR, and Dependabot opens weekly npm and monthly Actions update PRs (this is
+  how the `cloudinary <2.7.0` advisory in §5.1 was originally found, by hand).
+  The frontend now deploys only from CI on a green run (Vercel's git deploys
+  are disabled, so a red build can't reach production — verified). The backend
+  is configured with `autoDeployTrigger: checksPass` in `render.yaml`, but
+  that only takes effect if the Render service's Auto-Deploy is set to "After
+  CI Checks Pass" in the dashboard; until then a red build can still deploy
+  the API.
+- **Frontend deploys have a CI-token dependency.** Production deploys use a
+  Vercel API token stored as a GitHub Actions secret. It's scoped to one
+  team, can be revoked at any time, and never appears in the repo; if it
+  expires or is revoked, frontend deploys stop until it's replaced.
 - **File uploads aren't content-sniffed.** `multer`'s `fileFilter` trusts the
   client-supplied MIME type, not the actual file bytes. Cloudinary itself
   re-derives the real type on ingest, which limits the practical impact, but
