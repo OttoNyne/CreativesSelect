@@ -102,6 +102,8 @@ export interface ImageSearchResult {
 export interface Task {
   _id: string;
   title: string;
+  description?: string;
+  isPublic?: boolean;
   done: boolean;
   priority: "low" | "medium" | "high";
   dueDate?: string;
@@ -109,10 +111,20 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface BoardTask {
+  _id: string;
+  title: string;
+  description?: string;
+  priority: "low" | "medium" | "high";
+  dueDate?: string;
+  createdAt: string;
+  author: User;
+}
+
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

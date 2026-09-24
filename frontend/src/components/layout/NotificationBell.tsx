@@ -30,6 +30,10 @@ function describe(n: Notification): string {
       return "commented on your post";
     case "profile_comment":
       return "left a comment on your profile";
+    case "help_offer":
+      return typeof n.payload.title === "string"
+        ? `offered to help with "${n.payload.title}"`
+        : "offered to help with your request";
     default:
       return "sent you a notification";
   }
