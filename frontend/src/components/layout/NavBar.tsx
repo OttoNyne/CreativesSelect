@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { to: "/friends", label: "Friends" },
   { to: "/groups", label: "Groups" },
   { to: "/search", label: "Search" },
-  { to: "/tasks", label: "Tasks" },
+  { to: "/help-wanted", label: "Help wanted" },
 ];
 
 export function NavBar() {

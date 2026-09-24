@@ -29,7 +29,8 @@ export default function App() {
             <Route path="/groups" element={<GroupsPage />} />
             <Route path="/groups/:id" element={<GroupDetailPage />} />
             <Route path="/search" element={<SearchPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/help-wanted" element={<TasksPage />} />
+            <Route path="/tasks" element={<Navigate to="/help-wanted" replace />} />
           </Route>
 
           <Route path="/u/:username" element={<ProfilePage />} />
