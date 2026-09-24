@@ -17,5 +17,7 @@ export const authApi = {
   register: (input: RegisterInput) => api.post<{ user: User }>("/auth/register", input),
   login: (input: LoginInput) => api.post<{ user: User }>("/auth/login", input),
   logout: () => api.post<void>("/auth/logout"),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.put<void>("/auth/password", { currentPassword, newPassword }),
   me: () => api.get<{ user: User }>("/auth/me"),
 };
