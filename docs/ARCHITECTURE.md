@@ -383,14 +383,25 @@ rather than adding input validation to each route individually.
 (`first-server`) runs Vitest + Supertest against a dedicated
 `creativeselect_test` database — 20 tests over auth, the Tasks CRUD, and the
 Help wanted board (visibility, blocking, offers, rate limits, email
-privacy). The frontend runs Vitest + Testing Library in jsdom — 25 tests
+privacy). The frontend runs Vitest + Testing Library in jsdom — 28 tests
 that mock the `api/*` modules, so they check what the UI does with server
 responses (errors shown, buttons disabled, requests sent) rather than
 re-testing the server. Covered: the API client (`ApiError`, credentials, 204s),
-`ProtectedRoute`, `GenerateImageButton`, `SearchPage`, and the Help wanted
-page. Test files are type-checked by `tsc -b` as part of the Vercel build, so a
+`ProtectedRoute`, `GenerateImageButton`, `SearchPage`, the Help wanted
+page, and the per-route page titles. Test files are type-checked by `tsc -b` as part of the Vercel build, so a
 type error in a test blocks a deploy. Not yet covered: the profile, groups,
 friends and feed pages, and most backend social routes.
+
+**Failed background requests must not become unhandled rejections.** The
+notification bell polls every 30 seconds and the top-friends list loads on
+every profile view; both originally had no `catch`, so an offline blip, a
+sleeping free-tier server, or a private profile's `403` surfaced as "Uncaught
+(in promise)" console errors. Polls now keep the last known state and retry,
+and user-initiated actions (Edit/Save top friends, mark read) show the
+server's message or recover. Page titles (`lib/usePageTitle.ts`) update per
+route (`Help wanted · CreativesSelect`, `@username · CreativesSelect`), and
+the app ships its own favicon, meta description, focus rings and
+reduced-motion support.
 
 **Dynamic import for `app.js` in `server.js`.** The Express app was split
 into `app.js` (middleware + routes) and `server.js` (env loading + listen)

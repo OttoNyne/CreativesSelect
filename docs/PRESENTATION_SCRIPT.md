@@ -76,7 +76,7 @@ few seconds while you say this — a picture here does real work.)*
 
 ## 8:00–9:30 — What's next (~1.5 min)
 
-> "If I kept building: automated CI so the tests — 20 backend, 25 frontend —
+> "If I kept building: automated CI so the tests — 20 backend, 28 frontend —
 > run on every push instead of by hand, role-based
 > access for group admins, and stronger input validation across the write
 > routes — right now it's mostly on the auth routes. I'd also want rate

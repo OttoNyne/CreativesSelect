@@ -359,6 +359,17 @@ Verified live: another user's search result has no `email` key while
 `/api/auth/me` still returns your own; a regression test covers the board,
 profile, search and `/me`. The frontend never read another user's email.
 
+### 5.12 A shared demo password was advertised on the login page
+
+The login page told every visitor "Demo accounts use password `password123`",
+and the README repeated that all development accounts used it. On a public
+site that is an invitation to try that password against any account, and any
+account that actually used it was effectively open. **Fix:** the hint was
+removed from the login page and README (verified: the deployed bundle no
+longer contains the string). Accounts that were created with that password
+should still have it changed — that can't be done by the app, since it never
+sees the old value except at login.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
