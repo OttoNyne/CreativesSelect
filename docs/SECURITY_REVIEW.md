@@ -340,7 +340,8 @@ designed around the existing visibility rules rather than beside them:
   can't offer on your own request; and repeat offers from one person on one
   request create a single notification.
 
-Covered by new tests (`tests/board.test.js`) and verified live with a
+Covered by backend tests (`tests/board.test.js`); the frontend's handling of
+the `429`s is covered by its own tests and verified live with a
 second account.
 
 ### 5.11 Account emails were exposed to other users

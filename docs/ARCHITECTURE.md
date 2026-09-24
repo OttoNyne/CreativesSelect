@@ -379,6 +379,19 @@ server bug until a second pass added a `ValidationError`→`400` case too —
 fixed once, in the one place every route's errors already flow through,
 rather than adding input validation to each route individually.
 
+**Two test suites, each mocking at its own boundary.** The backend
+(`first-server`) runs Vitest + Supertest against a dedicated
+`creativeselect_test` database — 20 tests over auth, the Tasks CRUD, and the
+Help wanted board (visibility, blocking, offers, rate limits, email
+privacy). The frontend runs Vitest + Testing Library in jsdom — 25 tests
+that mock the `api/*` modules, so they check what the UI does with server
+responses (errors shown, buttons disabled, requests sent) rather than
+re-testing the server. Covered: the API client (`ApiError`, credentials, 204s),
+`ProtectedRoute`, `GenerateImageButton`, `SearchPage`, and the Help wanted
+page. Test files are type-checked by `tsc -b` as part of the Vercel build, so a
+type error in a test blocks a deploy. Not yet covered: the profile, groups,
+friends and feed pages, and most backend social routes.
+
 **Dynamic import for `app.js` in `server.js`.** The Express app was split
 into `app.js` (middleware + routes) and `server.js` (env loading + listen)
 so tests could import the app without opening a real port. Static imports
