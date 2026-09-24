@@ -29,3 +29,35 @@ jobs:
       - run: npm test
       # Fails the build on known high/critical vulnerabilities in dependencies.
       - run: npm audit --audit-level=high
+
+  # Deploys production only after the checks above pass. Inert until the three
+  # secrets exist (Settings -> Secrets and variables -> Actions): VERCEL_TOKEN,
+  # VERCEL_ORG_ID, VERCEL_PROJECT_ID. Once it has deployed successfully, turn
+  # off Vercel's own git deploys (frontend/vercel.json: git.deploymentEnabled)
+  # so this is the only path to production.
+  deploy:
+    needs: frontend
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Skip if Vercel secrets aren't configured
+        if: env.VERCEL_TOKEN == ''
+        run: echo "VERCEL_TOKEN not set — Vercel's own git integration is still deploying."
+      - uses: actions/checkout@v4
+        if: env.VERCEL_TOKEN != ''
+      - uses: actions/setup-node@v4
+        if: env.VERCEL_TOKEN != ''
+        with:
+          node-version: 24
+      # Run from the repo root: the project's Root Directory (frontend) is
+      # applied by Vercel from the project settings.
+      - name: Deploy to Vercel (production)
+        if: env.VERCEL_TOKEN != ''
+        run: |
+          npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
+          npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
