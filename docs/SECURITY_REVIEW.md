@@ -317,6 +317,29 @@ block check, enum-validated reports), `media.routes.js` (ownership checks,
 visibility gating, no mass assignment), and `notifications.routes.js`
 (properly scoped read/read-all, guards against a missing actor).
 
+### 5.10 The Help wanted board: a new place user content becomes public
+
+Turning the private tasks list into a public board added the first
+endpoint that lists *other users'* records outside a profile, so it was
+designed around the existing visibility rules rather than beside them:
+
+- **Private by default.** `Task.isPublic` defaults to `false`; existing
+  tasks stayed private and nothing became public by migration.
+- **Same rules as profiles.** `GET /api/tasks/board` omits requests whose
+  author blocked you (or you blocked), and those from private-profile users
+  who aren't your friends — omitted entirely rather than anonymised, since
+  even the request text is the author's content.
+- **Owner-only writes unchanged.** Update and delete stay owner-scoped
+  (`404` for anyone else). While there, `POST /api/tasks` stopped spreading
+  the raw body into `Task.create` and now reads a fixed field list.
+- **Offers don't leak existence.** Offering help on a private, resolved,
+  missing, blocked or private-profile request all return the same `404`; you
+  can't offer on your own request; and repeat offers from one person on one
+  request create a single notification.
+
+Covered by six new tests (`tests/board.test.js`) and verified live with a
+second account.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -378,6 +401,15 @@ no manual redeploy: the auto-deploy installed 48/49 packages and went live on
 its own.
 
 ## 8. Remaining risks / not yet addressed
+
+- **Board spam.** Posting requests and offering help aren't rate-limited,
+  so a script could flood the board or another user's notifications (one
+  offer per person per request is enforced, but not across requests).
+- **`email` is included in serialized public users.** `User.toPublic()`
+  returns the account email to anyone who may view the profile, so it also
+  appears wherever a user is embedded — including board authors and
+  notification actors. Pre-existing, found while testing the board; the fix
+  is to drop `email` from anything but the user's own `/me` response.
 
 - **No rate limiting.** Login, register, and friend-request routes have no
   throttling — a credential-stuffing or spam-request script could hit them

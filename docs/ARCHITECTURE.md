@@ -13,7 +13,7 @@ since they all describe the same system.
 customizable profile (theme colors, wallpaper, portfolio), connect with
 friends, join groups for collabs, share posts with optional AI-assisted
 writing and images, and leave testimonials on each other's profiles.
-Alongside that, it includes a personal **Help wanted** list (the tasks resource), behind the same login.
+Alongside that, it includes a **Help wanted** board (the tasks resource) where creatives post requests for help, browse each other's, and offer to help, behind the same login.
 
 **Target users**: hobbyist and professional creatives (artists, musicians,
 writers) who want a space that lets them express a personal aesthetic —
@@ -98,7 +98,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 | Model | Fields | Relationships |
 |---|---|---|
 | **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, timestamps | Referenced by nearly every other model as author/owner/participant |
-| **Task** | `owner` → User, `title`, `done`, `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; the personal-productivity resource, shown in the UI as "Help wanted" |
+| **Task** | `owner` → User, `title`, `description`, `isPublic` (default false), `done` (= resolved), `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; shown in the UI as a "Help wanted" request — private by default, listed on the public board when `isPublic` |
 | **Post** | `author` → User, `content`, `imageUrl`, `isAiText`, `isAiImage`, timestamps | Has many Comments |
 | **Comment** | `post` → Post, `author` → User, `content`, timestamps | Belongs to one Post |
 | **ProfileComment** | `profileOwner` → User, `author` → User, `content`, timestamps | The profile "guestbook"; distinct from post Comments |
@@ -108,7 +108,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 | **GroupMembership** | `group` → Group, `user` → User, `role` (member/admin), `joinedAt`, unique on (group, user) | Join table between User and Group |
 | **MediaItem** | `owner` → User, `url`, `type` (image/audio/video/embed), `caption`, `isAiImage`, timestamps | A user's portfolio piece |
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
-| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
+| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
 | **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
 | **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
 
@@ -217,13 +217,15 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | POST | `/` | Max 5 per user; extracts a YouTube video id from a full URL |
 | DELETE | `/:id` | Owner only; re-numbers remaining positions |
 
-### Help wanted (tasks) — `/api/tasks` (auth) — the full-CRUD user-owned resource
+### Help wanted (tasks) — `/api/tasks` (auth) — the full-CRUD user-owned resource plus a public board
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/?done=&sort=&page=&limit=` | Owner-scoped; filter/sort/paginate |
+| GET | `/board` | Open (`done=false`), public requests from *other* users, newest first (max 100). Requests from blocked users, and from private-profile users who aren't your friends, are omitted entirely |
+| POST | `/:id/offer` | Offer to help on someone's public, open request → notifies the owner (`help_offer`), once per offerer per request. `400` on your own request; `404` if it's private/missing/not visible to you |
 | GET | `/:id` | Owner-scoped; `404` (not `403`) if not yours |
-| POST | `/` | `{title, done?, priority?, dueDate?}` → `201` |
-| PUT | `/:id` | Whitelisted fields only — `owner` cannot be overwritten via the body |
+| POST | `/` | `{title, description?, isPublic?, priority?, dueDate?}` → `201`; only those fields are read from the body |
+| PUT | `/:id` | Whitelisted fields only (`title`, `description`, `isPublic`, `done`, `priority`, `dueDate`) — `owner` cannot be overwritten via the body |
 | DELETE | `/:id` | Owner-scoped |
 
 ---
@@ -281,7 +283,7 @@ App
 │       │   │   ├── /groups    → GroupsPage
 │       │   │   ├── /groups/:id→ GroupDetailPage
 │       │   │   ├── /search    → SearchPage
-│       │   │   └── /help-wanted → TasksPage (/tasks redirects here)
+│       │   │   └── /help-wanted → TasksPage: public board + my requests (/tasks redirects here)
 │       │   ├── /u/:username → ProfilePage (attachUserIfPresent server-side, not client-gated)
 │       │   │   ├── ThemeEditor, ImagePositioner
 │       │   │   ├── TopFriendsList

@@ -18,8 +18,8 @@ easy to run long on the demo section.
 > colors, upload a wallpaper, build a portfolio grid, and get an AI assist
 > when you want help writing a caption or generating an image.
 >
-> Alongside that, there's a personal Help wanted list — because most social apps
-> make you juggle a separate to-do app for your own work. Here it's one
+> Alongside that, there's a public Help wanted board — because creatives constantly
+> need a hand, and most social apps make you ask in a separate group chat. Here it's one
 > login, one account, for both.
 >
 > The people this is for: creatives who want more self-expression than a
@@ -39,10 +39,12 @@ actually working smoothly on your machine at recording time):
 2. **Land on the Feed**, write a post, optionally hit "Generate with AI" for
    the caption — show the AI-assisted badge that appears on the post.
 3. **Go to Help wanted** — this is the full-CRUD resource (the tasks API
-   underneath). Post a request, mark it
-   done, edit its priority, delete it. Narrate: *"this is scoped to my
-   account — no one else can see or touch it, and that's enforced on the
-   server, not just hidden in the UI."*
+   underneath). Post a request, tick "Only me" on another to show it stays
+   off the board, mark one resolved, delete one. Then show another user's
+   request on the board and hit **Offer help** — they get a notification.
+   Narrate: *"anyone can see public requests, but only the owner can edit
+   or delete them, and that's enforced on the server, not just hidden in
+   the UI."*
 4. **Go to a profile, toggle Private on** (your own, in Edit Profile) —
    then, in a second browser tab or incognito window, show that a stranger
    visiting that profile gets "This profile is unavailable or private"
