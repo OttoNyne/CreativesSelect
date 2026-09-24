@@ -1,4 +1,12 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
-  "installCommand": "npm ci"
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "installCommand": "npm ci",
+  "git": {
+    "deploymentEnabled": false
+  }
 }
