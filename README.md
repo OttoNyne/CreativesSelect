@@ -64,12 +64,25 @@ requirement.
 
 ## AI features
 
-Content creation (post captions, bios, avatar/wallpaper images) includes
-on-request "Generate with AI" actions, backed by a mock provider
-(`first-server/services/ai/MockAIProvider.js`) so the app runs with zero API
-keys.
+Content creation includes on-request "Generate with AI" actions. What backs
+them depends on the kind:
+
+- **Images** (post images, portfolio pieces, wallpapers) are **really
+  generated** from your description by
+  [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/)
+  (FLUX.1 schnell) whenever the backend has `CLOUDFLARE_ACCOUNT_ID` and
+  `CLOUDFLARE_API_TOKEN` set — see
+  `first-server/services/ai/CloudflareAIProvider.js`. Results are stored on
+  Cloudinary. Each user is capped at 10 generated images per hour, since the
+  free daily allowance is shared by everyone. Without those two variables the
+  app falls back to `MockAIProvider`, which only hashes your text into a
+  color gradient (it never looks at what you asked for) — fine for local
+  development with zero API keys.
+- **Text** (captions, bios) is still the mock provider; only images are real.
+  The wallpaper "Live (animated)" option only affects the mock's gradients —
+  a real generated image can't animate.
 
 Wallpaper selection also has a "Search photos" option that queries
 [Openverse](https://openverse.org) for openly-licensed images matching what
-you type. Unlike the rest of the AI layer, this is real search, not a mock —
-it makes a live outbound request and needs no API key.
+you type. This is real search too — it makes a live outbound request and
+needs no API key.

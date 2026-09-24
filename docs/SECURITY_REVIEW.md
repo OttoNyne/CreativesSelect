@@ -168,9 +168,9 @@ uploaded track vanished the next time the service redeployed or spun down.
 **Fix**: uploads now stream directly to Cloudinary via a small custom
 `multer` `StorageEngine` (`cloudinary.uploader.upload_stream`), storing the
 returned CDN URL instead of a local path. (The mock AI-generated wallpaper
-SVG had the same bug — it now returns an inline `data:` URI instead of
-writing to disk, since it's a tiny synthetic gradient that doesn't need real
-storage.)
+SVG had the same bug — it returned an inline `data:` URI instead of writing
+to disk. That mock has since been replaced by real generation whose results
+are stored on Cloudinary — see §5.8.)
 
 **A dependency conflict blocked the first deploy of this fix.**
 `multer-storage-cloudinary@4.0.0` (the obvious off-the-shelf package) has an
@@ -267,7 +267,49 @@ changes — cascade-delete a post's comments when the post itself is deleted
 any already-orphaned comment can still be removed by its own author
 instead of crashing.
 
-### 5.7 What was checked and found clean this round
+### 5.7 Logout never actually logged anyone out (production)
+`POST /api/auth/logout` returned `204`, but the session cookie was never
+cleared: a following `GET /api/auth/me` still returned `200`, and reloading
+the site left the user signed in. Reproduced live. The auth cookie is set
+`SameSite=None; Secure` in production (required for the cross-domain
+Render/Vercel split), but the route cleared it with
+`res.clearCookie(name, { path: "/" })`, whose `Set-Cookie` header carries
+neither attribute — so the browser doesn't treat it as the same cookie and
+ignores the deletion. **Fix**: `clearAuthCookie(res)` in `middleware/auth.js`
+repeats exactly the `httpOnly` / `sameSite` / `secure` / `path` logic of
+`setAuthCookie`, and the route uses it. Verified live: the clearing header
+now reads `HttpOnly; Secure; SameSite=None` and `/api/auth/me` returns `401`
+afterwards. The frontend's logout also always clears client-side state in a
+`finally`, so a failed request can't leave a user stuck signed in.
+
+### 5.8 AI image generation was a mock, and the real one spends shared money
+Every "AI" image came from `MockAIProvider`, which hashes the prompt into a
+two-color gradient and never interprets it — users correctly reported that
+pictures didn't match what they asked for. It is now real generation via
+Cloudflare Workers AI (FLUX.1 schnell) whenever `CLOUDFLARE_ACCOUNT_ID` and
+`CLOUDFLARE_API_TOKEN` are set, falling back to the mock when they aren't.
+Moving from free-and-fake to real introduced new concerns, handled up front:
+
+- **Cost/abuse.** Any signed-in user could otherwise burn the whole free
+  daily allowance. `/api/ai/image` is capped at 10 per user per hour (in
+  memory, real provider only) and prompts are truncated to 500 characters
+  before being sent.
+- **Secrets.** The token lives only in env vars (`.env`, gitignored, and
+  Render's dashboard, `sync: false`); it is sent server-side only and never
+  echoed or logged.
+- **Information leakage.** Cloudflare's raw error bodies are logged
+  server-side and never forwarded. Bad-token and exhausted-allowance cases
+  return a generic `503 "temporarily unavailable"` (retrying can't help),
+  rate limiting returns `429`.
+- **Storage.** Results are re-hosted on Cloudinary and only the CDN URL is
+  stored — not multi-megabyte base64 on user/post documents.
+- **Earlier wrong turn worth recording.** The first provider tried
+  (BazaarLink) was abandoned after a live check showed the model id in its
+  docs example (`openai/gpt-5.4-image-2`) differed from what its own
+  `/v1/models` listed (`gpt-5.4-image-2`), and the account had no credits;
+  verifying against the live API before shipping caught both.
+
+### 5.9 What was checked and found clean this round
 `ai.routes.js` (input validation, error masking already correct),
 `friends.routes.js` (self-friend/block checks, IDOR-safe accept/decline),
 `moderation.routes.js` (self-block already fixed in round 1, bidirectional
@@ -309,11 +351,42 @@ and slow — the process looks alive on the one health check that doesn't
 depend on the database. Worth either alerting on repeated Mongo connection
 errors, or making `/api/health` also report DB connectivity.
 
-## 7. Remaining risks / not yet addressed
+## 7. Operational incident: every GitHub-triggered frontend deploy was failing
+
+`git push` triggered Vercel builds that failed every time
+(`sh: line 1: vite: command not found`, exit 127) for the project's whole
+history, and nobody noticed: each manual `vercel --prod --force` redeploy
+succeeded and became the production alias, so the live site was always fine —
+the manual redeploy was silently masking a broken pipeline. Failed builds
+never get promoted, so there was no outage, just an unreliable process.
+
+**Root cause** (it took three wrong theories to find): the repo root held a
+stray `package.json` / `package-lock.json` (a `concurrently` dev script
+pointing at a nonexistent `../../../first-server` path — never functional)
+above `frontend/`. Vercel's git-triggered builds treated the repo root as the
+project, installing that unrelated **26-package** lockfile instead of
+`frontend/`'s **49** — so no `vite`. Manual CLI deploys ran from inside
+`frontend/`, so they never saw it. The tell was the install count matching
+the root lockfile exactly even with `npm ci` and a skipped build cache,
+which ruled out the cache-corruption theory first assumed.
+
+**Fix**: Vercel project settings — Root Directory = `frontend` and Install
+Command = `npm ci` (a `vercel.json` `installCommand` alone was ignored) —
+plus deleting the stray root package files and the dead legacy `backend/`
+directory (the retired Prisma/SQLite backend). Verified with a plain push and
+no manual redeploy: the auto-deploy installed 48/49 packages and went live on
+its own.
+
+## 8. Remaining risks / not yet addressed
 
 - **No rate limiting.** Login, register, and friend-request routes have no
   throttling — a credential-stuffing or spam-request script could hit them
   freely.
+- **The AI image cap is per instance, in memory.** It resets on restart
+  and wouldn't be shared across multiple servers; fine for one free-tier
+  instance, not for scaling out. The free Cloudflare allowance is also
+  shared by all users, so heavy use degrades the feature to "temporarily
+  unavailable" until it resets. Text generation is still a mock.
 - **No automated dependency scanning in CI.** `npm audit` is run manually;
   there's no scheduled/CI check to catch a newly-disclosed vulnerability in
   a dependency after this review (this is exactly how the `cloudinary <2.7.0`

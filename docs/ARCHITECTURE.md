@@ -51,8 +51,9 @@ flowchart LR
     end
 
     DB[("MongoDB Atlas\n13 Mongoose models")]
-    Cloudinary[("Cloudinary\navatars, wallpapers,\nportfolio, tracks")]
+    Cloudinary[("Cloudinary\navatars, wallpapers,\nportfolio, tracks,\nAI-generated images")]
     Openverse["Openverse API\n(external, keyless image search)"]
+    CFAI["Cloudflare Workers AI\n(FLUX.1 schnell image generation)"]
 
     UI --> APIClient
     APIClient -- "fetch, cookie sent automatically" --> MW
@@ -60,6 +61,7 @@ flowchart LR
     Routes --> DB
     Routes --> Cloudinary
     Routes --> Openverse
+    Routes --> CFAI
     Routes -.-> ErrH
     Routes -- "JSON response" --> APIClient
     APIClient --> UI
@@ -205,8 +207,8 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### AI — `/api/ai` (auth)
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/text` | `{prompt, kind}` → `{text}`; 400 if prompt missing |
-| POST | `/image` | `{prompt, kind, live?}` → `{url}`; 400 if prompt missing |
+| POST | `/text` | `{prompt, kind}` → `{text}`; 400 if prompt missing. Still the mock provider |
+| POST | `/image` | `{prompt, kind, live?}` → `{url}`; 400 if prompt missing. Real Cloudflare Workers AI generation when configured (returns a Cloudinary URL), mock gradient (`data:` URI) otherwise; `429` after 10 per user per hour (real provider only); `503` if the provider is unavailable or its free allowance is spent |
 | GET | `/images/search?q=` | Live Openverse search, no key required |
 
 ### Tracks — `/api/tracks` (auth)
@@ -230,8 +232,9 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 
 | Layer | Platform | Notes |
 |---|---|---|
-| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL`/`CLOUDINARY_*` set as dashboard-only secrets (`sync: false`), never committed |
-| Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation |
+| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL`/`CLOUDINARY_*`/`CLOUDFLARE_*` set as dashboard-only secrets (`sync: false`), never committed |
+| Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; every `git push` auto-deploys |
+| AI image generation | Cloudflare Workers AI (FLUX.1 schnell), free daily allowance | Needs `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; without them the backend uses the mock provider. Results are re-hosted on Cloudinary |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
@@ -337,6 +340,25 @@ whitelists exactly `title`/`done`/`priority`/`dueDate` into the update
 document — `owner` is set once, at creation, from the authenticated
 session, and can't be reassigned through the update body even by the task's
 own current owner.
+
+**A pluggable AI provider, real for images, mock everywhere else.**
+`services/ai/index.js` picks the provider: `CloudflareAIProvider` when both
+Cloudflare credentials are set, `MockAIProvider` otherwise. Every provider
+implements the same `generateText` / `generateImage` / `searchImages`
+surface, so the routes never know which is active. The mock is kept on
+purpose — it lets local development, the test suite and any un-configured
+deploy run with zero API keys — but it only hashes the prompt into a
+gradient and never interprets it, which is why users reported "AI pictures
+don't match what I asked for" until the real provider went in.
+`CloudflareAIProvider` extends the mock, so text generation and photo
+search inherit the existing behavior and only `generateImage` is replaced.
+Generated images are uploaded to Cloudinary and the CDN URL is stored,
+rather than storing multi-megabyte base64 on a user or post document. Since
+the free daily allowance is shared by every user, `/api/ai/image` is capped
+at 10 per user per hour while the real provider is active; provider errors
+are logged server-side and never forwarded to clients, and account-level
+failures (bad token, exhausted allowance) surface as "temporarily
+unavailable" instead of "try again", since retrying can't fix them.
 
 **A custom Cloudinary storage engine, not the off-the-shelf package.**
 `multer-storage-cloudinary` is the obvious choice for wiring `multer` to
