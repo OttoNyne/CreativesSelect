@@ -340,6 +340,21 @@ designed around the existing visibility rules rather than beside them:
 Covered by six new tests (`tests/board.test.js`) and verified live with a
 second account.
 
+### 5.11 Account emails were exposed to other users
+
+`User.toPublic()` always included the account `email`, and every place a
+user is embedded (search results, comment and post authors, friends lists,
+notification actors, and later the Help wanted board) serialized through it —
+so any logged-in user could read the email of anyone whose profile they
+could view. Found while live-testing the board, when an offer notification
+returned the offerer's email to the recipient.
+
+**Fix:** `toPublic()` omits `email` by default and `toPublicUser` includes it
+only when the viewer is the user themselves (register, login, `/me`).
+Verified live: another user's search result has no `email` key while
+`/api/auth/me` still returns your own; a regression test covers the board,
+profile, search and `/me`. The frontend never read another user's email.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -405,11 +420,6 @@ its own.
 - **Board spam.** Posting requests and offering help aren't rate-limited,
   so a script could flood the board or another user's notifications (one
   offer per person per request is enforced, but not across requests).
-- **`email` is included in serialized public users.** `User.toPublic()`
-  returns the account email to anyone who may view the profile, so it also
-  appears wherever a user is embedded — including board authors and
-  notification actors. Pre-existing, found while testing the board; the fix
-  is to drop `email` from anything but the user's own `/me` response.
 
 - **No rate limiting.** Login, register, and friend-request routes have no
   throttling — a credential-stuffing or spam-request script could hit them
