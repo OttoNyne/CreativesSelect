@@ -55,6 +55,15 @@ cd ../first-server
 npm test
 ```
 
+Frontend tests (Vitest + Testing Library, API layer mocked) live next to the
+code as `*.test.ts(x)` and cover the API client, route protection, the AI
+image button, search, and the Help wanted board:
+
+```bash
+cd frontend
+npm test
+```
+
 ## Demo accounts
 
 Create an account via the Sign Up page — there's no seed script for the
