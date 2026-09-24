@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { profilesApi } from "../../api/profiles.api";
 import { friendsApi } from "../../api/friends.api";
+import { ApiError } from "../../api/client";
 import type { User } from "../../types";
 import { Avatar } from "../common/Avatar";
 
@@ -13,16 +14,24 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    profilesApi.getTopFriends(username).then(({ topFriends }) => {
-      setTopFriends(topFriends);
-      setSelected(topFriends.map((f) => f.username));
-    });
+    profilesApi
+      .getTopFriends(username)
+      .then(({ topFriends }) => {
+        setTopFriends(topFriends);
+        setSelected(topFriends.map((f) => f.username));
+      })
+      // e.g. a private profile: show the empty state rather than an unhandled rejection
+      .catch(() => setTopFriends([]));
   }, [username]);
 
   async function startEditing() {
-    const { friends } = await friendsApi.list();
-    setAllFriends(friends);
-    setEditing(true);
+    try {
+      const { friends } = await friendsApi.list();
+      setAllFriends(friends);
+      setEditing(true);
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't load your friends.");
+    }
   }
 
   function toggle(u: string) {
@@ -39,6 +48,8 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
       const { topFriends } = await profilesApi.setTopFriends(selected);
       setTopFriends(topFriends);
       setEditing(false);
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't save your top friends.");
     } finally {
       setSaving(false);
     }

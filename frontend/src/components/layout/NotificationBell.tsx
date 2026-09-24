@@ -51,6 +51,9 @@ export function NotificationBell() {
     try {
       const { notifications } = await notificationsApi.list();
       setNotifications(notifications);
+    } catch {
+      // A failed poll (offline, server waking up) just keeps the last list; the
+      // next poll retries.
     } finally {
       setLoading(false);
     }
@@ -72,12 +75,12 @@ export function NotificationBell() {
 
   async function handleMarkRead(id: string) {
     setNotifications((ns) => ns.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
-    await notificationsApi.markRead(id);
+    await notificationsApi.markRead(id).catch(() => load());
   }
 
   async function handleMarkAllRead() {
     setNotifications((ns) => ns.map((n) => ({ ...n, isRead: true })));
-    await notificationsApi.markAllRead();
+    await notificationsApi.markAllRead().catch(() => load());
   }
 
   async function handleAccept(n: Notification) {
