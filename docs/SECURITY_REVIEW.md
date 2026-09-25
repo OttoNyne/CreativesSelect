@@ -482,6 +482,34 @@ into `502` "try again", without leaking provider details; the frontend shows the
 message. Covered by new upload tests (which also cover the previously untested upload
 path: success, ledger recording, audio as a video resource, type filtering).
 
+### 5.20 Portfolio items accepted any URL, and top friends accepted anyone
+
+`POST /api/media` stored whatever `url` and `type` the client sent — including `http:`
+links, `javascript:` URLs and arbitrary strings that the frontend then put in `<img>` /
+`<iframe>` sources. It now accepts only `https` image links (or an inline image from the mock AI
+provider) and two video shapes: a YouTube link, or a direct https `.mp4`/`.webm`/`.mov`/`.m4v`
+file. Links are parsed as URLs (a video id smuggled into another site's query string is refused),
+capped at 2000 characters, and the start time and caption are validated. Similarly
+`PUT /me/top-friends` accepted any username, not just friends; it now keeps only accepted friends.
+Display name and bio were also unvalidated (a 1 MB display name, or an object) — now trimmed,
+length-limited and type-checked. Covered by tests including hostile links.
+
+### 5.21 Top-friends "Couldn't save" error: the server and the UI disagreed
+
+Saving top friends worked on the server but always showed "Couldn't save your top friends": the
+route replied `204` with no body while the UI read `{ topFriends }` out of the response, which threw.
+(Before error handling was added to that component the same failure was silent and left the editor
+stuck open.) The route now returns the saved list, matching the read endpoint, and a regression test
+covers the UI path.
+
+### 5.22 Usernames could be taken over the moment they were released
+
+With username changes added, a released name could be claimed instantly — an impersonation and
+link-hijacking risk, the same class as §5.2. Released names are reserved for their previous owner
+for 30 days, changes are limited to 3 a day, and names are restricted to URL-safe characters.
+A real-browser test of the rename flow also caught a race (the profile page re-fetching the old
+address and showing "unavailable"), fixed by ignoring stale responses.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -588,8 +616,17 @@ its own.
 - **Older stored files aren't cleaned up automatically.** Files stored before the
   ledger existed (two AI images) have no ledger entry and are left alone by design.
 - **Test coverage has known gaps.** No frontend tests for the group detail, login
-  and register pages or the portfolio/music components, and no browser-level
-  end-to-end tests (production is checked with scripted live runs instead).
+  and register pages or the music player, and no automated browser-level end-to-end
+  tests (production is checked with scripted live runs and manual browser runs instead).
+- **Linked videos are other people's content.** A YouTube or direct-file link is
+  embedded, not copied: the owner of that video can change or remove it after it's added,
+  and the 30-second limit for links is a playback window, not a measured length.
+  (Uploaded videos are measured and enforced server-side.)
+- **Reactions are open to anyone who can see a profile.** Signed-in visitors can like or
+  dislike any visible portfolio piece (300 per hour each); there's no way for an owner
+  to hide the counts or disable reactions, and dislikes are visible to everyone.
+- **A username change breaks old links.** Old `/u/oldname` addresses stop working
+  (there's no redirect) and the old name is only reserved for 30 days.
 - **Two narrow race conditions**, both low-severity and neither crossing a
   privacy/access boundary: (1) `Friendship`'s unique index is directional
   (`requester`+`addressee`) while the app-level duplicate check is bidirectional —

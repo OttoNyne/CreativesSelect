@@ -58,7 +58,8 @@ npm test
 
 Frontend tests (Vitest + Testing Library, API layer mocked) live next to the
 code as `*.test.ts(x)` and cover the API client, route protection, the AI
-image button, search, and the Help wanted board:
+image button, search, the portfolio (removing pieces, likes/dislikes, video upload and links), profile names, top
+friends and the Help wanted board:
 
 ```bash
 cd frontend

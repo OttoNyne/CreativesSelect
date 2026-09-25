@@ -50,7 +50,7 @@ flowchart LR
         ErrH["errorHandler\n(CastError→400, ValidationError→400,\nMulterError→413, everything else→generic 500)"]
     end
 
-    DB[("MongoDB Atlas\n16 Mongoose models")]
+    DB[("MongoDB Atlas\n18 Mongoose models")]
     Cloudinary[("Cloudinary\navatars, wallpapers,\nportfolio, tracks,\nAI-generated images")]
     Openverse["Openverse API\n(external, keyless image search)"]
     CFAI["Cloudflare Workers AI\n(FLUX.1 schnell image generation)"]
@@ -106,7 +106,9 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 | **TopFriend** | `owner` → User, `target` → User, `position`, unique on (owner, target) | Self-curated top-8 list; no consent required from the target |
 | **Group** | `name`, `description`, `bannerUrl`, `createdBy` → User, timestamps | Has many GroupMemberships |
 | **GroupMembership** | `group` → Group, `user` → User, `role` (member/admin), `joinedAt`, unique on (group, user) | Join table between User and Group |
-| **MediaItem** | `owner` → User, `url`, `type` (image/audio/video/embed), `caption`, `isAiImage`, timestamps | A user's portfolio piece |
+| **MediaItem** | `owner` → User, `url`, `type` (image/audio/video/embed), `caption`, `isAiImage`, `startSeconds` (video window start), `durationSeconds` (uploaded videos), timestamps | A user's portfolio piece: a picture, an uploaded video (`video`), or a linked video (`embed` for YouTube, `video` for a direct file link) |
+| **MediaReaction** | `item` → MediaItem, `user` → User, `value` (+1 like / −1 dislike), unique on (item, user) | One reaction per person per portfolio piece; removed with the piece or the account |
+| **UsernameHistory** | `username`, `user` → User, `expireAt` (TTL) | A username someone gave up, reserved for them for 30 days so it can't be instantly taken over |
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
 | **StoredAsset** | `owner` → User, `url`, `publicId`, `resourceType` (image/video/raw), `kind` (ai/upload), timestamps | Ledger of every file the server itself stored on Cloudinary (AI images and uploads) and whose it is — the only thing that lets the app delete an asset safely |
 | **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
@@ -131,7 +133,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### Auth — `/api/auth`
 | Method | Path | Auth | Body → Response |
 |---|---|---|---|
-| POST | `/register` | public | `{email, username, password, displayName}` → `201 {user}`; `429` after 10 registrations per IP per hour |
+| POST | `/register` | public | `{email, username, password, displayName}` (username 3–30 letters/numbers/underscores) → `201 {user}`; `429` after 10 registrations per IP per hour |
 | POST | `/login` | public | `{email, password}` → `200 {user}`, sets `token` cookie; only *failed* attempts count — `429` (with `Retry-After`) after 10 per email or 30 per IP in 15 minutes |
 | PUT | `/password` | auth | `{currentPassword, newPassword}` → `204`; wrong current password `403` (5 failures / 15 min then `429`); every other session is signed out, this one is re-issued |
 | POST | `/logout` | public | — → `204`, clears cookie |
@@ -141,9 +143,10 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/?search=` | auth | Search by username/displayName (regex, case-insensitive) |
-| PATCH | `/me` | auth | Update own displayName/bio/avatar/wallpaper/isPrivate/theme; a replaced avatar/wallpaper the server stored is deleted from Cloudinary if nothing else uses it |
+| PATCH | `/me` | auth | Update own displayName (1–80 chars, trimmed)/bio (≤1000)/avatar/wallpaper/isPrivate/theme; a replaced avatar/wallpaper the server stored is deleted from Cloudinary if nothing else uses it |
 | DELETE | `/me` | auth | `{password}` → `204`. Permanently deletes the account and everything it owns (posts, comments on them, friendships, media, tracks, requests, notifications, reports, stored files); groups it created are handed to another member or removed if empty |
-| PUT | `/me/top-friends` | auth | `{usernames: string[]}`, max 8 |
+| PUT | `/me/top-friends` | auth | `{usernames: string[]}`, max 8 → `200 {topFriends}` (the saved list, same shape as `GET`). Only accepted friends are kept; anything else is ignored |
+| PUT | `/me/username` | auth | `{username}` → `200 {user}` and a re-issued session cookie. 3–30 letters/numbers/underscores (stored lowercase); `409` if taken or reserved for someone else (a name you give up stays yours for 30 days); `429` after 3 changes a day |
 | DELETE | `/comments/:commentId` | auth | Author or profile owner only |
 | GET | `/:username` | optional | `403` if private and viewer isn't owner/friend/unblocked |
 | GET | `/:username/top-friends` | optional | Same visibility gate |
@@ -189,10 +192,11 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### Media — `/api/media`
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/upload` | auth | multipart, `?purpose=avatars\|wallpapers\|portfolio\|tracks`, 30MB limit → `413` over, streamed to Cloudinary |
-| POST | `/` | auth | Create a MediaItem from a URL (AI-generated / search result) |
-| GET | `/user/:username` | optional | Gated by visibility |
-| DELETE | `/:id` | auth | Owner only |
+| POST | `/upload` | auth | multipart, `?purpose=avatars\|wallpapers\|portfolio\|tracks`, 30MB limit → `413`, streamed to Cloudinary. Portfolio accepts images (≤10 MB on the free plan → `413` with a clear message) **and videos** (mp4/webm/quicktime): the length is measured by the storage provider and a video over **30 seconds** (or of unknown length) is deleted again and refused with `400` |
+| POST | `/` | auth | Add a portfolio item by URL. `{type: "image", url}` (https, or an inline AI image) or `{type: "video", url, startSeconds?}` where the link must be **YouTube** (→ `embed`, canonical URL) or a **direct https .mp4/.webm/.mov/.m4v** file (→ `video`, `#fragment` dropped); anything else `400`. Linked videos can't be measured, so they play as a 30-second window from `startSeconds` |
+| GET | `/user/:username` | optional | Gated by visibility; each item carries `likes`, `dislikes` and (when signed in) the viewer's `myReaction` |
+| PUT | `/:id/reaction` | auth | `{value: 1 \| -1 \| 0}` (like / dislike / clear) → `{likes, dislikes, myReaction}`; one reaction per person; `404` if the item is missing **or the profile isn't visible to you** (private/blocked); 300 per hour |
+| DELETE | `/:id` | auth | Owner only; also removes its reactions and, if nothing else uses it, the stored file |
 
 ### Notifications — `/api/notifications` (auth)
 | Method | Path | Notes |
@@ -397,21 +401,49 @@ rather than adding input validation to each route individually.
 
 **Two test suites, each mocking at its own boundary.** The backend
 (`first-server`) runs Vitest + Supertest against a dedicated
-`creativeselect_test` database — 80 tests over auth (including throttling,
+`creativeselect_test` database — 112 tests over auth (including throttling,
 CSRF and session revocation), the Tasks CRUD and Help wanted board, friends,
-blocking, reports, groups, portfolio media, account deletion, password
-change, uploads and stored-asset cleanup (Cloudinary itself is mocked). The frontend
-runs Vitest + Testing Library in jsdom — 74 tests that mock the `api/*`
-modules, so they check what the UI does with server responses (errors
-shown, buttons disabled, requests sent) rather than re-testing the server.
-Covered: the API client, `ProtectedRoute`, the Feed, Friends, Groups,
-Profile, Search and Help wanted pages, the notification bell, the
-AI image button, delete-account and change-password, and page titles. Test
-files are type-checked by `tsc -b` as part of the Vercel build, so a type
-error in a test blocks a deploy. Not covered: the group detail, login and
-register pages, the portfolio/music components, and any browser-level
-end-to-end test (production behaviour is checked by scripted live runs
+blocking, reports, groups, portfolio media (reactions, video uploads and links),
+profile editing (display name, username, top friends), account deletion, password
+change, uploads and stored-asset cleanup (Cloudinary itself is mocked). The
+frontend runs Vitest + Testing Library in jsdom — 122 tests that mock the `api/*`
+modules, so they check what the UI does with server responses (errors shown,
+buttons disabled, requests sent) rather than re-testing the server. Covered: the
+API client, `ProtectedRoute`, the Feed, Friends, Groups, Profile, Search and Help
+wanted pages, the portfolio (remove, react, video upload/link), the notification
+bell, top friends, profile names, delete-account and change-password, video helpers,
+and page titles. Test files are type-checked by `tsc -b` as part of the Vercel
+build, so a type error in a test blocks a deploy. Not covered: the group detail,
+login and register pages, the music player, and any browser-level end-to-end test
+(production behaviour is checked by scripted live runs and manual browser runs
 against throwaway accounts instead).
+
+**Videos: a 30-second limit that's measured where it can be, and clipped where it can't.**
+Uploaded videos (mp4/webm/iPhone .mov, ≤30 MB) go to Cloudinary, which reports the length
+of the file it has just ingested; the API refuses and deletes anything over 30 seconds
+(0.75 s slack) or of unknown length, so the limit can't be bypassed by skipping the
+browser's own pre-check (which exists only to fail fast, before a 30 MB upload). Playback
+asks Cloudinary for an H.264 MP4 of the file (`f_mp4,vc_h264`) because phones often
+produce HEVC that most browsers can't play, plus a first-frame poster. Linked videos are
+never downloaded, so they can't be measured: a YouTube link becomes a
+`youtube-nocookie.com` embed with `start`/`end` set to a 30-second window, and a direct
+file link plays with a `#t=start,end` media fragment plus a player guard that pauses at the
+end. The link parser accepts only https YouTube links and direct video files — parsed with
+`new URL`, not a regex over the text, so `https://evil.example/?u=youtube.com/watch?v=…`
+is refused — so a stored value is always safe to put in an `<iframe>`/`<video>` `src`.
+
+**Usernames are public addresses, so changes are constrained.** Letters, numbers and
+underscores only (spaces and slashes used to be accepted at registration and broke
+`/u/:username` URLs); unique case-insensitively; 3 changes a day; and the name you give up
+is reserved for you for 30 days (`UsernameHistory`, TTL-indexed) so nobody can instantly
+take it to impersonate you or capture old links. The session cookie is re-issued because it
+carries the username.
+
+**Profile pages ignore answers from requests they've moved past.** After a rename the page
+briefly re-requested the *old* address (now a 404); if that 404 arrived after the new
+profile had loaded it overwrote it with "unavailable". Found in a real-browser test — the
+unit tests had passed because their mocks answered in order. The effect now cancels stale
+results, with a regression test that fails without the guard.
 
 **Failed background requests must not become unhandled rejections.** The
 notification bell polls every 30 seconds and the top-friends list loads on
