@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, ApiError } from "./client";
 import type { MediaItem } from "../types";
 
 import { API_BASE } from "./base";
@@ -22,7 +22,7 @@ export async function uploadFile(
 
   const data = await res.json().catch(() => undefined);
   if (!res.ok) {
-    throw new Error(data?.error ?? "Upload failed");
+    throw new ApiError(res.status, data?.error ?? "Upload failed");
   }
   return data;
 }
