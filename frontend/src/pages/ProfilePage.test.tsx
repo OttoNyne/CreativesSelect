@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { ProfilePage } from "./ProfilePage";
 import { profilesApi } from "../api/profiles.api";
 import { friendsApi } from "../api/friends.api";
@@ -113,6 +113,35 @@ describe("ProfilePage", () => {
     await userEvent.click(screen.getByLabelText("Private profile"));
 
     expect(profiles.updateMe).toHaveBeenCalledWith({ isPrivate: true });
+  });
+
+  it("ignores a late failure from a profile it already navigated away from (rename race)", async () => {
+    let rejectOld!: (e: unknown) => void;
+    profiles.get.mockImplementation((name: string) =>
+      name === "old"
+        ? new Promise((_resolve, reject) => {
+            rejectOld = reject;
+          })
+        : Promise.resolve({ user: { ...zoe, username: name } })
+    );
+    vi.mocked(useAuth).mockReturnValue({ user: me, isLoading: false, setUser: vi.fn(), refresh: async () => {} });
+    render(
+      <MemoryRouter initialEntries={["/u/old"]}>
+        <Link to="/u/zoe">go</Link>
+        <Routes>
+          <Route path="/u/:username" element={<ProfilePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await userEvent.click(screen.getByRole("link", { name: "go" }));
+    expect(await screen.findByRole("heading", { name: "Zoe" })).toBeInTheDocument();
+
+    rejectOld(new ApiError(404, "User not found")); // the old address answers, late
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(screen.getByRole("heading", { name: "Zoe" })).toBeInTheDocument();
+    expect(screen.queryByText(/unavailable or private/)).not.toBeInTheDocument();
   });
 
   it("changing the username moves the page to the new address and shows the new name", async () => {

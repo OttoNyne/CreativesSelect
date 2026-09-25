@@ -41,19 +41,35 @@ export function ProfilePage() {
   const isOwner = viewer?.username === username;
 
   useEffect(() => {
+    // Ignore the result of a request once we've moved on to a different profile.
+    // (Renaming yourself briefly leaves this effect running for the OLD address,
+    // which is now a 404 — without this, that late 404 could overwrite the new,
+    // already-loaded profile with "unavailable".)
+    let cancelled = false;
     setNotFound(false);
     profilesApi
       .get(username)
       .then(({ user }) => {
+        if (cancelled) return;
         setProfile(user);
         setBio(user.bio ?? "");
         setTheme(user.theme);
       })
-      .catch(() => setNotFound(true));
+      .catch(() => {
+        if (!cancelled) setNotFound(true);
+      });
 
     if (viewer && viewer.username !== username) {
-      friendsApi.list().then(({ friends }) => setIsFriend(friends.some((f) => f.username === username)));
+      friendsApi
+        .list()
+        .then(({ friends }) => {
+          if (!cancelled) setIsFriend(friends.some((f) => f.username === username));
+        })
+        .catch(() => {});
     }
+    return () => {
+      cancelled = true;
+    };
     // Only re-fetch when navigating to a different profile or the logged-in
     // identity changes — not on every field-level update to `viewer` (e.g.
     // saveProfile() calling setViewer() after an isPrivate/avatar auto-save),
