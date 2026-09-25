@@ -68,6 +68,17 @@ npm test
 Both repos also run their tests (plus lint, the type-checked build and
 `npm audit`) in GitHub Actions on every push and pull request.
 
+## Use it on your phone
+
+CreativesSelect is a web app — open the site in your phone's browser; there's nothing to download.
+You can install it to your home screen so it opens full-screen like an app:
+
+- **iPhone/iPad (Safari):** tap Share → **Add to Home Screen**.
+- **Android (Chrome):** menu → **Install app** / **Add to Home screen**.
+
+The API is reached through the site's own domain (`/api/...`, proxied by Vercel in
+`frontend/vercel.json`), which keeps the login cookie first-party — required on iOS.
+
 ## Demo accounts
 
 Create an account via the Sign Up page — there's no seed script for the

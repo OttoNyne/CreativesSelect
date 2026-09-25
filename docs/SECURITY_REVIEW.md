@@ -389,7 +389,7 @@ deleted image — fixed by invalidating the cache on delete.
 ### 5.14 Nothing throttled login, and the cross-site cookie had no CSRF defense
 
 Login, registration, password changes and deletion had no throttling — a script could
-guess passwords indefinitely — and the auth cookie is `SameSite=None; Secure` in
+guess passwords indefinitely — and the auth cookie was `SameSite=None; Secure` in
 production, so a browser attaches it to requests made by *any* website. CORS
 doesn't stop a cross-site "simple" request from being sent and acted on.
 
@@ -445,6 +445,42 @@ account untouched. The two weak accounts still need their owners to change the p
 An offer notified the owner but there was no way to respond. Offers can now carry a
 note (≤300 chars, validated as text) and the owner can accept an offer from the
 notification, which notifies the offerer once. Only the offer's recipient can accept it.
+
+### 5.18 Login would not have worked on iPhones: cross-site cookies
+
+The frontend and API were on different sites, so the session cookie was
+`SameSite=None; Secure` and requests were cross-site `fetch`es with credentials. That
+works in Chrome, but Safari — and therefore every browser on iOS — blocks cookies set
+by a different site than the page it's on (Intelligent Tracking Prevention), even with
+`SameSite=None`. On an iPhone, login would appear to succeed and then every page would
+behave as signed out. It was missed because earlier mobile checks were a desktop
+browser resized to phone width, not real Safari.
+
+**Fix.** The frontend now calls `/api/...` on its own domain and `vercel.json` rewrites
+that path to the Render API, so the browser only ever talks to one site and the cookie
+is host-only and first-party. That also allowed tightening it to `SameSite=Lax`.
+Side effects handled: (1) behind the proxy every request arrives from Vercel's
+address, which would have made the per-IP limits (login, registration) apply to the
+whole site at once — the limiter now reads Vercel's `x-vercel-forwarded-for` (test:
+twelve clients behind one proxy register freely; one client is still capped); (2) the
+`Origin` check still works through the proxy; (3) large requests and slow calls still
+pass.
+
+Verified live through the proxy: the cookie has no `Domain` (host-only), is `HttpOnly;
+Secure`, and is `SameSite=Lax`; the limiter recorded my real public IP; AI image
+generation took ~5 s; a 10 MB upload succeeded; the untrusted-origin write was `403`;
+and in a real browser, sign-up → post → reload (still signed in) → logout worked with
+every API call on the site's own domain. **Not tested on a physical iPhone.**
+
+### 5.19 Oversize images returned a generic 500
+
+Found while testing large uploads through the proxy: an image over Cloudinary's 10 MB
+free-plan limit made the upload fail with "Internal server error" (with or without the
+proxy — confirmed by hitting the API directly). Users saw a useless message. The upload
+layer now turns it into `413` "images can be up to 10 MB" and any other storage failure
+into `502` "try again", without leaking provider details; the frontend shows the server's
+message. Covered by new upload tests (which also cover the previously untested upload
+path: success, ledger recording, audio as a video resource, type filtering).
 
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
@@ -518,9 +554,20 @@ its own.
   but a script spreading attempts across many IPs and many accounts is only
   slowed, not stopped (registration: 10 per IP per hour). The limiter also fails
   open if its own database call errors.
-- **CSRF relies on the `Origin` check, not tokens.** Browsers always send
-  `Origin` on cross-site state-changing requests, so this is effective, but a
-  request with no `Origin` header is allowed (non-browser clients only).
+- **CSRF relies on `SameSite=Lax` plus an `Origin` check, not tokens.** Browsers
+  always send `Origin` on cross-site state-changing requests, so this is effective,
+  but a request with no `Origin` header is allowed (non-browser clients only).
+- **Per-IP limits trust `x-vercel-forwarded-for`.** Behind the frontend proxy it's the
+  only way to see the real client, and Vercel overwrites it — but someone calling the API
+  directly can send it themselves, so per-IP limits are best-effort against a deliberate
+  attacker. The strong limits (per email for login, per user elsewhere) don't use it.
+- **The frontend now depends on Vercel's proxy for every API call.** It adds a hop of
+  latency and, if Vercel's rewrite layer has trouble, the whole app does even when the API
+  is up. Request size and duration were checked (10 MB upload, ~5 s AI call), but very
+  long-running requests would need re-checking.
+- **iOS is reasoned and desktop-tested, not device-tested.** The first-party cookie
+  design follows Safari's documented policy and was verified in a desktop browser; it
+  has not been run on a physical iPhone.
 - **The free Cloudflare AI allowance is shared by all users**, so heavy use
   degrades image/text generation to "temporarily unavailable" until it resets.
 - **Backend deploy gating depends on a dashboard setting.** Both repos run tests and

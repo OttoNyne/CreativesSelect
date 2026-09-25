@@ -240,7 +240,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | Layer | Platform | Notes |
 |---|---|---|
 | Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL`/`CLOUDINARY_*`/`CLOUDFLARE_*` set as dashboard-only secrets (`sync: false`), never committed |
-| Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; production deploys come **only from CI**: `vercel.json` sets `git.deploymentEnabled: false`, and the `deploy` job in `.github/workflows/ci.yml` builds and ships with the Vercel CLI (secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) only after lint, build, tests and audit pass on `master`. Side effect: no per-PR preview deployments |
+| Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; production deploys come **only from CI**: `vercel.json` sets `git.deploymentEnabled: false`, and the `deploy` job in `.github/workflows/ci.yml` builds and ships with the Vercel CLI (secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) only after lint, build, tests and audit pass on `master`. Side effect: no per-PR preview deployments. `vercel.json` also **proxies `/api/*` to the Render API** so cookies are first-party (see the same-origin proxy note below), and the site is an **installable web app** (`manifest.webmanifest`, icons, Apple meta tags) |
 | AI image generation | Cloudflare Workers AI (FLUX.1 schnell), free daily allowance | Needs `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; without them the backend uses the mock provider. Results are re-hosted on Cloudinary |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
 | CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load |
@@ -255,16 +255,25 @@ redeployed. Uploads now stream directly to Cloudinary via a small custom
 URL instead of a local path — see the Security Review for the full incident
 and the dependency conflict that complicated the fix.
 
-**Cross-domain auth cookie.** The backend and frontend are deployed to
-different domains (`onrender.com` / `vercel.app`), not different ports on
-the same domain like in local dev. `setAuthCookie` (`middleware/auth.js`)
-switches `sameSite`/`secure` based on `NODE_ENV`: `lax`/non-secure in dev
-(same registrable domain, cookie already flows), `none`/`secure` in
-production (a cross-site fetch only carries a cookie that's explicitly
-`SameSite=None; Secure`, which itself requires HTTPS — true on both
-platforms). Getting this wrong doesn't error visibly — login "succeeds" but
-no protected route ever sees the cookie — so it was verified with a live
-`Set-Cookie` header inspection after deploying, not just read from code.
+**Same-origin API proxy, so the login cookie is first-party.** The frontend
+(`vercel.app`) and the API (`onrender.com`) are different sites. The first design
+used a `SameSite=None; Secure` cookie for that cross-site setup — which works in
+Chrome but **not on iOS**: Safari (and every browser on iOS, which all use its
+engine) blocks cookies set by a different site than the page even when they're
+`SameSite=None`, so login would appear to succeed and then every page would act
+signed out. So the frontend now calls `/api/...` on its own domain and
+`vercel.json` rewrites `/api/:path*` to the Render API (listed before the SPA
+catch-all). The browser only ever talks to one domain; the cookie is host-only
+and first-party, and can be `SameSite=Lax` — stricter, and enough because
+requests are now same-origin. In production `src/api/base.ts` makes the API base
+empty (same origin); in development it's `VITE_API_URL` or
+`http://localhost:5000`. Behind the proxy Render sees Vercel's address, so per-IP
+rate limits read Vercel's `x-vercel-forwarded-for` (the real client IP) via
+`utils/clientIp.js`. Verified live through the proxy: host-only Secure/HttpOnly
+cookie, real client IP reaching the limiter, a 10 MB upload and AI image
+generation passing, and a full browser sign-up → post → reload → logout flow.
+**Not verified on a physical iPhone** — the reasoning is Safari's documented
+cookie policy plus the first-party test in a desktop browser.
 
 **Known limitation**: Render's free tier spins down after inactivity, so the
 first request after idle time is slow (cold start, tens of seconds) —
@@ -388,11 +397,11 @@ rather than adding input validation to each route individually.
 
 **Two test suites, each mocking at its own boundary.** The backend
 (`first-server`) runs Vitest + Supertest against a dedicated
-`creativeselect_test` database — 71 tests over auth (including throttling,
+`creativeselect_test` database — 80 tests over auth (including throttling,
 CSRF and session revocation), the Tasks CRUD and Help wanted board, friends,
 blocking, reports, groups, portfolio media, account deletion, password
-change and stored-asset cleanup (Cloudinary itself is mocked). The frontend
-runs Vitest + Testing Library in jsdom — 71 tests that mock the `api/*`
+change, uploads and stored-asset cleanup (Cloudinary itself is mocked). The frontend
+runs Vitest + Testing Library in jsdom — 74 tests that mock the `api/*`
 modules, so they check what the UI does with server responses (errors
 shown, buttons disabled, requests sent) rather than re-testing the server.
 Covered: the API client, `ProtectedRoute`, the Feed, Friends, Groups,
@@ -437,9 +446,9 @@ Login counts only failed attempts — per email (stops guessing one account from
 many IPs) and per IP (stops one client trying many accounts) — so normal use
 never burns the budget; it fails open if the database call itself errors,
 rather than locking everyone out. `app.set('trust proxy', 1)` makes `req.ip`
-the real client behind Render. Because the auth cookie is `SameSite=None` (the
-frontend and API are on different domains), the browser sends it on requests
-made by *any* site; `middleware/csrf.js` therefore rejects state-changing
+the real client behind Render (and `clientIp()` prefers Vercel's forwarded header when
+requests arrive through the frontend proxy). The cookie is `SameSite=Lax` (it was `None` before the same-origin proxy), which already
+keeps modern browsers from attaching it to cross-site POSTs; `middleware/csrf.js` still rejects state-changing
 requests whose `Origin` header isn't the frontend (`403`). Requests with no
 `Origin` (curl, server-to-server) can't be forged from a victim's browser, so
 they pass.
@@ -452,6 +461,23 @@ token from a deleted account still passed `requireAuth` and could create
 posts under the dead id (reproduced live). A password change now signs out
 every other session and re-issues the current one; a database error during the
 check is a `500`, not a fake logout.
+
+**Installable web app, not an App Store app.** `public/manifest.webmanifest`,
+the `apple-touch-icon` and the `apple-mobile-web-app-*` meta tags make
+"Add to Home Screen" (iOS Safari: Share → Add to Home Screen; Android Chrome: menu →
+Install app) give the site an icon and a full-screen, browser-chrome-free window.
+There is deliberately no service worker: offline caching would risk serving stale
+bundles after a deploy for no real benefit to a server-backed social app. A native
+App Store build would need a wrapper (e.g. Capacitor), an Apple developer account and
+Apple's review for little extra over this. The icons are drawn from the same mark as
+the favicon; the maskable variant leaves a safe margin for Android's shapes.
+
+**Uploads fail with a message, not a 500.** Cloudinary's free plan caps images at
+10 MB; the API used to surface that as a generic "Internal server error" (found while
+testing large uploads through the proxy — it happens with or without the proxy).
+`middleware/upload.js` now maps it to `413` with a plain message and any other storage
+failure to `502` without leaking internals, and the frontend's `uploadFile` throws an
+`ApiError` so the message reaches the user.
 
 **Dynamic import for `app.js` in `server.js`.** The Express app was split
 into `app.js` (middleware + routes) and `server.js` (env loading + listen)
