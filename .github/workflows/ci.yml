@@ -30,13 +30,71 @@ jobs:
       # Fails the build on known high/critical vulnerabilities in dependencies.
       - run: npm audit --audit-level=high
 
+  # Real browsers (Chrome, Safari's engine WebKit, and an iPhone-sized WebKit)
+  # drive the built frontend against a real API and MongoDB — nothing mocked
+  # (the AI provider uses its built-in mock, since CI has no API keys). The API
+  # is checked out from its own repo; the database is a throwaway container.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: OttoNyne/first-server
+          path: api
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install and start the API
+        working-directory: api
+        env:
+          MONGODB_URI: mongodb://localhost:27017/creativeselect_e2e
+          JWT_SECRET: e2e-only-secret
+          CLIENT_URL: http://localhost:4173
+          PORT: "5000"
+        run: |
+          npm ci
+          nohup node server.js > ../api.log 2>&1 &
+          for i in $(seq 1 40); do curl -sf http://localhost:5000/api/health && break; sleep 1; done
+          curl -sf http://localhost:5000/api/health
+      - name: Install the frontend
+        working-directory: frontend
+        run: npm ci
+      - name: Install browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium webkit
+      - name: Browser tests
+        working-directory: frontend
+        run: npx playwright test
+      - name: Keep the report and API log if it failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+            api.log
+          retention-days: 7
+
   # Deploys production only after the checks above pass. Inert until the three
   # secrets exist (Settings -> Secrets and variables -> Actions): VERCEL_TOKEN,
   # VERCEL_ORG_ID, VERCEL_PROJECT_ID. Once it has deployed successfully, turn
   # off Vercel's own git deploys (frontend/vercel.json: git.deploymentEnabled)
   # so this is the only path to production.
   deploy:
-    needs: frontend
+    needs: [frontend, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     env:
