@@ -438,7 +438,7 @@ replacement clean up Cloudinary — only for files the ledger says the user owns
 on posts and portfolio items are client-supplied. A live run confirmed a full lifecycle
 against production: upload and AI image recorded, replaced wallpaper deleted, wrong password
 refused, deletion removed the user's data and every file while leaving another user's
-account untouched. The two weak accounts still need their owners to change the password.
+account untouched. Both weak accounts (the demo and the leftover test account) were then deleted from production, so no account with a known password remains.
 
 ### 5.17 Help offers had no reply path
 
@@ -613,9 +613,6 @@ its own.
 
 ## 8. Remaining risks / not yet addressed
 
-- **Two accounts still use a known weak password.** The audit in §5.16 found
-  the demo account and a leftover test account on `password123`. The
-  change-password feature exists now, but the app can't do it for them.
 - **No on-demand "sign out everywhere".** Sessions are 7-day JWTs. They are now
   revoked automatically by a password change or account deletion (§5.15), but a
   user can't revoke them on demand without changing their password.
