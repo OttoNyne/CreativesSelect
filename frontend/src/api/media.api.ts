@@ -29,13 +29,17 @@ export async function uploadFile(
 
 export interface CreateMediaItemInput {
   url: string;
-  type?: "image" | "audio" | "video";
+  type?: "image" | "video";
   caption?: string;
   isAiImage?: boolean;
+  /** Video links: where the 30-second window starts. */
+  startSeconds?: number;
 }
 
 export const mediaApi = {
   byUser: (username: string) => api.get<{ media: MediaItem[] }>(`/media/user/${username}`),
   create: (input: CreateMediaItemInput) => api.post<{ mediaItem: MediaItem }>("/media", input),
   remove: (id: string) => api.delete<void>(`/media/${id}`),
+  react: (id: string, value: 1 | -1 | 0) =>
+    api.put<{ likes: number; dislikes: number; myReaction: 1 | -1 | 0 }>(`/media/${id}/reaction`, { value }),
 };

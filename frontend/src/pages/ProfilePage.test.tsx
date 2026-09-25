@@ -10,7 +10,7 @@ import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types";
 
-vi.mock("../api/profiles.api", () => ({ profilesApi: { get: vi.fn(), updateMe: vi.fn(), deleteMe: vi.fn() } }));
+vi.mock("../api/profiles.api", () => ({ profilesApi: { get: vi.fn(), updateMe: vi.fn(), deleteMe: vi.fn(), changeUsername: vi.fn() } }));
 vi.mock("../api/friends.api", () => ({ friendsApi: { list: vi.fn(), request: vi.fn() } }));
 vi.mock("../api/moderation.api", () => ({ moderationApi: { block: vi.fn(), report: vi.fn() } }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
@@ -113,6 +113,37 @@ describe("ProfilePage", () => {
     await userEvent.click(screen.getByLabelText("Private profile"));
 
     expect(profiles.updateMe).toHaveBeenCalledWith({ isPrivate: true });
+  });
+
+  it("changing the username moves the page to the new address and shows the new name", async () => {
+    profiles.get.mockImplementation(async (name: string) => ({ user: name === "me2" ? { ...me, username: "me2" } : me }));
+    profiles.changeUsername.mockResolvedValue({ user: { ...me, username: "me2" } });
+    renderAs(me, "me");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const input = screen.getByLabelText(/^Username/);
+    await userEvent.clear(input);
+    await userEvent.type(input, "me2");
+    await userEvent.click(screen.getByRole("button", { name: "Change username" }));
+
+    expect(profiles.changeUsername).toHaveBeenCalledWith("me2");
+    await waitFor(() => expect(profiles.get).toHaveBeenCalledWith("me2"));
+    expect(await screen.findByText("@me2")).toBeInTheDocument();
+  });
+
+  it("lets the owner change their display name from the edit panel", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, displayName: "Painter Me" } });
+    renderAs(me, "me");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const input = screen.getByLabelText("Display name");
+    await userEvent.clear(input);
+    await userEvent.type(input, "Painter Me");
+    await userEvent.click(screen.getByRole("button", { name: "Save name" }));
+
+    expect(profiles.updateMe).toHaveBeenCalledWith({ displayName: "Painter Me" });
+    expect(await screen.findByRole("heading", { name: "Painter Me" })).toBeInTheDocument();
   });
 
   it("alerts with the server's message if saving fails", async () => {

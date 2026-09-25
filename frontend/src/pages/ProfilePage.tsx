@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { profilesApi } from "../api/profiles.api";
 import { friendsApi } from "../api/friends.api";
@@ -20,10 +20,12 @@ import { GenerateImageButton } from "../components/ai/GenerateImageButton";
 import { ImageSearchPicker } from "../components/ai/ImageSearchPicker";
 import { DeleteAccount } from "../components/profile/DeleteAccount";
 import { ChangePassword } from "../components/profile/ChangePassword";
+import { ProfileNames } from "../components/profile/ProfileNames";
 
 export function ProfilePage() {
   const { username = "" } = useParams();
   const { user: viewer, setUser: setViewer } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<User | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -222,6 +224,16 @@ export function ProfilePage() {
 
         {editing && isOwner ? (
           <div className="mt-4 space-y-3">
+            <ProfileNames
+              key={profile.username}
+              profile={profile}
+              onChanged={(updated) => {
+                setProfile(updated);
+                if (isOwner) setViewer(updated);
+                // A new username is a new address: move to it.
+                if (updated.username !== username) navigate(`/u/${updated.username}`, { replace: true });
+              }}
+            />
             <ThemeEditor theme={theme} onChange={setTheme} />
             <textarea
               value={bio}

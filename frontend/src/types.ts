@@ -76,9 +76,17 @@ export interface MediaItem {
   id: string;
   ownerId: string;
   url: string;
-  type: string;
+  type: "image" | "audio" | "video" | "embed";
   caption: string | null;
   isAiImage: boolean;
+  /** Videos: where playback starts (linked videos play as a 30-second window from here). */
+  startSeconds?: number;
+  /** Uploaded videos: measured length in seconds. */
+  durationSeconds?: number | null;
+  likes: number;
+  dislikes: number;
+  /** The signed-in viewer's own reaction: 1 like, -1 dislike, 0 none. */
+  myReaction: 1 | -1 | 0;
   createdAt: string;
 }
 
