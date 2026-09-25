@@ -14,10 +14,12 @@ export function ProfileComments({ username }: { username: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    profilesApi.getComments(username).then(({ comments }) => {
-      setComments(comments);
-      setLoading(false);
-    });
+    profilesApi
+      .getComments(username)
+      .then(({ comments }) => setComments(comments))
+      // e.g. a private profile: show the empty state rather than an unhandled rejection
+      .catch(() => setComments([]))
+      .finally(() => setLoading(false));
   }, [username]);
 
   async function handleSubmit(e: React.FormEvent) {

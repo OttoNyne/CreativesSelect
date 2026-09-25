@@ -19,10 +19,12 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
   const { current, play } = usePlayback();
 
   useEffect(() => {
-    tracksApi.byUser(username).then(({ tracks }) => {
-      setTracks(tracks);
-      setLoading(false);
-    });
+    tracksApi
+      .byUser(username)
+      .then(({ tracks }) => setTracks(tracks))
+      // e.g. a private profile: show the empty state rather than an unhandled rejection
+      .catch(() => setTracks([]))
+      .finally(() => setLoading(false));
   }, [username]);
 
   const atLimit = tracks.length >= MAX_TRACKS;

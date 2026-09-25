@@ -48,8 +48,19 @@ export function RegisterPage() {
           placeholder="Username"
           value={form.username}
           onChange={(e) => update("username", e.target.value.replace(/\s/g, ""))}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          minLength={3}
+          maxLength={30}
+          pattern="[A-Za-z0-9_]+"
+          title="3–30 letters, numbers or underscores"
+          aria-describedby="username-hint"
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
         />
+        <p id="username-hint" className="-mt-1 text-[11px] text-white/30">
+          Your profile address: 3–30 letters, numbers or underscores.
+        </p>
         <input
           type="email"
           required

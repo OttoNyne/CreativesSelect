@@ -19,10 +19,11 @@ export function PostCommentList({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    postsApi.comments(postId).then(({ comments }) => {
-      setComments(comments);
-      setLoading(false);
-    });
+    postsApi
+      .comments(postId)
+      .then(({ comments }) => setComments(comments))
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Couldn't load the comments."))
+      .finally(() => setLoading(false));
   }, [postId]);
 
   async function handleSubmit(e: React.FormEvent) {

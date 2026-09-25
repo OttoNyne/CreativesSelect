@@ -21,6 +21,9 @@ export function NavBar() {
   async function handleLogout() {
     try {
       await authApi.logout();
+    } catch {
+      // The server call failed (e.g. offline). The user still gets logged out on
+      // this device below; the session cookie just expires on its own.
     } finally {
       // Always clear client-side session state, even if the server call
       // failed (e.g. a network blip) -- from the user's perspective,
