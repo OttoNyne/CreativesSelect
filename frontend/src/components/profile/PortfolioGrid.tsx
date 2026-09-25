@@ -8,6 +8,8 @@ import { ImageSearchPicker } from "../ai/ImageSearchPicker";
 import { PortfolioTile } from "./PortfolioTile";
 import type { MediaItem } from "../../types";
 
+const MAX_CAPTION_LENGTH = 200;
+
 export function PortfolioGrid({ username, isOwner }: { username: string; isOwner: boolean }) {
   const { user: viewer } = useAuth();
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -73,7 +75,11 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
   async function handleAiGenerated(url: string) {
     setError(null);
     try {
-      const { mediaItem } = await mediaApi.create({ url, type: "image", caption: prompt || undefined, isAiImage: true });
+      // The prompt becomes the caption, but captions are limited to 200 characters while
+      // prompts can be far longer — an over-long caption used to make the save fail and
+      // lose the generated picture.
+      const caption = prompt.trim().slice(0, MAX_CAPTION_LENGTH) || undefined;
+      const { mediaItem } = await mediaApi.create({ url, type: "image", caption, isAiImage: true });
       setItems((i) => [mediaItem, ...i]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't save that image.");

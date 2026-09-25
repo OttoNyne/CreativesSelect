@@ -17,7 +17,13 @@ vi.mock("../../lib/video", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/video")>()),
   checkVideoFile: vi.fn(),
 }));
-vi.mock("../ai/GenerateImageButton", () => ({ GenerateImageButton: () => <div>generate</div> }));
+vi.mock("../ai/GenerateImageButton", () => ({
+  GenerateImageButton: ({ onGenerated }: { onGenerated: (url: string) => void }) => (
+    <button type="button" onClick={() => onGenerated("https://cdn.example.com/generated.jpg")}>
+      fake-generate
+    </button>
+  ),
+}));
 vi.mock("../ai/ImageSearchPicker", () => ({ ImageSearchPicker: () => <div>search</div> }));
 const api = vi.mocked(mediaApi);
 const upload = vi.mocked(uploadFile);
@@ -189,6 +195,51 @@ describe("PortfolioGrid: videos", () => {
     const { container } = renderGrid(false);
     expect(await screen.findByText(/can't be shown/)).toBeInTheDocument();
     expect(container.querySelector("iframe")).toBeNull();
+  });
+});
+
+describe("PortfolioGrid: generated pictures", () => {
+  it("saves a generated picture to the portfolio, captioned with the prompt and marked as AI", async () => {
+    api.create.mockResolvedValue({ mediaItem: item({ id: "gen", isAiImage: true, caption: "a red kite" }) });
+    renderGrid(true);
+    await userEvent.type(await screen.findByPlaceholderText("Describe an image to generate…"), "  a red kite  ");
+    await userEvent.click(screen.getByRole("button", { name: "fake-generate" }));
+
+    expect(api.create).toHaveBeenCalledWith({
+      url: "https://cdn.example.com/generated.jpg",
+      type: "image",
+      caption: "a red kite",
+      isAiImage: true,
+    });
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Like" })).toHaveLength(3));
+  });
+
+  it("truncates a long prompt to the 200-character caption limit instead of losing the picture (regression)", async () => {
+    api.create.mockResolvedValue({ mediaItem: item({ id: "gen" }) });
+    renderGrid(true);
+    const long = "a highly detailed cinematic oil painting of a lighthouse ".repeat(6); // ~340 characters
+    await userEvent.click(await screen.findByPlaceholderText("Describe an image to generate…"));
+    await userEvent.paste(long);
+    await userEvent.click(screen.getByRole("button", { name: "fake-generate" }));
+
+    expect(api.create).toHaveBeenCalledTimes(1);
+    const sent = api.create.mock.calls[0][0];
+    expect(sent.caption).toHaveLength(200);
+    expect(long.startsWith(sent.caption!)).toBe(true);
+  });
+
+  it("sends no caption when there is no prompt text", async () => {
+    api.create.mockResolvedValue({ mediaItem: item({ id: "gen" }) });
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "fake-generate" }));
+    expect(api.create.mock.calls[0][0].caption).toBeUndefined();
+  });
+
+  it("shows the server's message if saving the generated picture fails", async () => {
+    api.create.mockRejectedValue(new ApiError(400, "Image links must start with https://"));
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "fake-generate" }));
+    expect(await screen.findByText("Image links must start with https://")).toBeInTheDocument();
   });
 });
 
