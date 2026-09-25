@@ -531,6 +531,26 @@ session persistence across reloads in WebKit, the rename flow, top friends, two-
 phone layout. The Vitest run fails on unhandled errors, which is how the logout
 bug was caught.
 
+### 5.24 Generated pictures silently lost: an over-long caption, and a misleading storage error
+
+"Generated images aren't saving to my portfolio" turned out to be two separate problems.
+
+- **A bug of mine.** The portfolio used the generation prompt as the picture's caption. The API
+  caps captions at 200 characters, but prompts can be far longer, so a long prompt made the save
+  fail with a 400 and the picture was lost. The portfolio now trims the caption to 200
+  characters (regression test with a ~340-character prompt; the server-side limit is unchanged).
+- **An external outage that the app described wrongly.** Cloudinary began refusing every
+  upload for the account (`401 action is disabled`) while reads kept working and usage was
+  about 3% of the free allowance. The app reported this as a generic "try again" (502), which
+  invites pointless retries and hides the real cause. Cloudinary's 401/403/420 answers are now
+  reported as `503 File storage is temporarily unavailable` (for both uploads and AI images),
+  without leaking the provider's message to users, and are logged as `STORAGE UNAVAILABLE` so
+  the operator sees it. Other storage failures keep the 502. Covered by new backend tests
+  (uploads and the AI provider).
+
+The account-level block itself can't be fixed in code; it needs the account owner to resolve it
+with Cloudinary (see §8).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -634,6 +654,10 @@ its own.
 - **File uploads aren't content-sniffed.** `multer`'s `fileFilter` trusts the
   client-supplied MIME type; Cloudinary re-derives the real type on ingest, which
   limits the practical impact.
+- **File storage is a single provider.** Uploads and generated images all depend on one
+  Cloudinary account. When it refused uploads (§5.24) the app degraded cleanly to a clear
+  "temporarily unavailable" message, but nothing worked until the account owner resolved it
+  with Cloudinary. There is no second storage provider or upload queue.
 - **Older stored files aren't cleaned up automatically.** Files stored before the
   ledger existed (two AI images) have no ledger entry and are left alone by design.
 - **Test coverage has known gaps.** Real Cloudinary uploads (including the 30-second

@@ -401,11 +401,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 112 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 119 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
-deletion, password change, uploads and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 217 tests with the `api/*`
+deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 221 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, feed, friends, groups and group detail, profile, search, Help wanted,
