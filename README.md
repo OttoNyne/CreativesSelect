@@ -56,18 +56,27 @@ cd ../first-server
 npm test
 ```
 
-Frontend tests (Vitest + Testing Library, API layer mocked) live next to the
-code as `*.test.ts(x)` and cover the API client, route protection, the AI
-image button, search, the portfolio (removing pieces, likes/dislikes, video upload and links), profile names, top
-friends and the Help wanted board:
+Frontend unit tests (Vitest + Testing Library, API layer mocked) live next to the
+code as `*.test.ts(x)` and cover every page and nearly every component:
 
 ```bash
 cd frontend
 npm test
 ```
 
-Both repos also run their tests (plus lint, the type-checked build and
-`npm audit`) in GitHub Actions on every push and pull request.
+Browser end-to-end tests (Playwright — desktop Chrome, desktop Safari's engine and an
+iPhone-sized Safari engine, against a real API and database) live in `frontend/e2e`; see
+[`frontend/e2e/README.md`](frontend/e2e/README.md) for running them locally:
+
+```bash
+cd frontend
+npx playwright install chromium webkit   # once
+npm run e2e                               # needs the API running on :5000 (see the e2e README)
+```
+
+Both repos also run their tests, the browser tests, lint, the type-checked build and
+`npm audit` in GitHub Actions on every push and pull request; the frontend deploy waits for
+all of them.
 
 ## Use it on your phone
 

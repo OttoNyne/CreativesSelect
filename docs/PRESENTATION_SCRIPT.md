@@ -76,7 +76,7 @@ few seconds while you say this — a picture here does real work.)*
 
 ## 8:00–9:30 — What's next (~1.5 min)
 
-> "CI already runs the tests — 112 backend, 122 frontend — plus lint, the type-
+> "CI already runs the tests — 112 backend, 217 frontend unit and 102 browser — plus lint, the type-
 > checked build and a dependency audit on every push, and the frontend only
 > deploys when CI is green. If I kept building: the same for the backend
 > everywhere, role-based

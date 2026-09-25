@@ -247,7 +247,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; production deploys come **only from CI**: `vercel.json` sets `git.deploymentEnabled: false`, and the `deploy` job in `.github/workflows/ci.yml` builds and ships with the Vercel CLI (secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) only after lint, build, tests and audit pass on `master`. Side effect: no per-PR preview deployments. `vercel.json` also **proxies `/api/*` to the Render API** so cookies are first-party (see the same-origin proxy note below), and the site is an **installable web app** (`manifest.webmanifest`, icons, Apple meta tags) |
 | AI image generation | Cloudflare Workers AI (FLUX.1 schnell), free daily allowance | Needs `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; without them the backend uses the mock provider. Results are re-hosted on Cloudinary |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (36 tests × 3 browsers, 102 runs — three phone-only tests run only on the iPhone project). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -399,24 +399,29 @@ server bug until a second pass added a `ValidationError`→`400` case too —
 fixed once, in the one place every route's errors already flow through,
 rather than adding input validation to each route individually.
 
-**Two test suites, each mocking at its own boundary.** The backend
-(`first-server`) runs Vitest + Supertest against a dedicated
-`creativeselect_test` database — 112 tests over auth (including throttling,
-CSRF and session revocation), the Tasks CRUD and Help wanted board, friends,
-blocking, reports, groups, portfolio media (reactions, video uploads and links),
-profile editing (display name, username, top friends), account deletion, password
-change, uploads and stored-asset cleanup (Cloudinary itself is mocked). The
-frontend runs Vitest + Testing Library in jsdom — 122 tests that mock the `api/*`
-modules, so they check what the UI does with server responses (errors shown,
-buttons disabled, requests sent) rather than re-testing the server. Covered: the
-API client, `ProtectedRoute`, the Feed, Friends, Groups, Profile, Search and Help
-wanted pages, the portfolio (remove, react, video upload/link), the notification
-bell, top friends, profile names, delete-account and change-password, video helpers,
-and page titles. Test files are type-checked by `tsc -b` as part of the Vercel
-build, so a type error in a test blocks a deploy. Not covered: the group detail,
-login and register pages, the music player, and any browser-level end-to-end test
-(production behaviour is checked by scripted live runs and manual browser runs
-against throwaway accounts instead).
+**Three layers of tests, each faking only what it must.**
+(1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
+`creativeselect_test` database — 112 tests over auth (throttling, CSRF, session
+revocation), Tasks and the Help wanted board, friends, blocking, reports, groups,
+portfolio media (reactions, video uploads and links), profile editing, account
+deletion, password change, uploads and stored-asset cleanup (Cloudinary is mocked).
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 217 tests with the `api/*`
+modules mocked, so they check what the UI does with server responses (errors shown,
+buttons disabled, requests sent). Every page and nearly every component is covered:
+login, register, feed, friends, groups and group detail, profile, search, Help wanted,
+nav bar, notification bell, post composer/card/comments, portfolio, music player, top
+friends, profile names, testimonials, delete-account, change-password, the AI buttons,
+avatar, the auth context and the video helpers. Test files are type-checked by `tsc -b`
+as part of the Vercel build, so a type error in a test blocks a deploy.
+(3) *Browser end-to-end* (`frontend/e2e`, Playwright): real browsers against the built
+frontend, a real API and MongoDB — sign-up/in/out and a session that survives a reload,
+posting, profile rename, top friends, password change and account deletion, portfolio
+pictures/reactions/video links, friends, groups, private profiles, the Help wanted flow
+between two users, and phone layout (menu, no sideways scrolling, tap targets).
+Not covered by automated tests: real Cloudinary uploads (including the 30-second video
+check), real AI generation and Openverse search — CI has no keys for them, so those are
+checked by scripted and manual runs against production — plus the audio player context,
+theme editor and image positioner units, and a physical iPhone.
 
 **Videos: a 30-second limit that's measured where it can be, and clipped where it can't.**
 Uploaded videos (mp4/webm/iPhone .mov, ≤30 MB) go to Cloudinary, which reports the length
@@ -444,6 +449,18 @@ briefly re-requested the *old* address (now a 404); if that 404 arrived after th
 profile had loaded it overwrote it with "unavailable". Found in a real-browser test — the
 unit tests had passed because their mocks answered in order. The effect now cancels stale
 results, with a regression test that fails without the guard.
+
+**Browser tests run the production topology.** `vite preview` serves the production build
+with `/api` proxied to the API — the same same-origin shape Vercel gives in production — so
+the login cookie is first-party in the tests exactly as it is live. Running the suite in
+WebKit (Safari's engine, desktop and iPhone-sized) is the closest automated check for the
+iOS cookie policy that motivated that design: "still signed in after a reload" passes there.
+Each test creates uniquely named users and claims its own client IP through
+`x-vercel-forwarded-for` (the header the API's per-IP limits already read), so the
+registration limit doesn't throttle a big run and tests never depend on each other or on
+leftover data — the Help wanted test even has to pick its own request off a shared board.
+Locally the suite runs against a throwaway database, never the real one. Writing it also
+surfaced real bugs, not only test mistakes (see the security review §5.23).
 
 **Failed background requests must not become unhandled rejections.** The
 notification bell polls every 30 seconds and the top-friends list loads on

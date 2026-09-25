@@ -510,6 +510,27 @@ for 30 days, changes are limited to 3 a day, and names are restricted to URL-saf
 A real-browser test of the rename flow also caught a race (the profile page re-fetching the old
 address and showing "unavailable"), fixed by ignoring stale responses.
 
+### 5.23 Untested paths hid unhandled errors
+
+Writing tests for the pages and components that had none (login, register, group detail, nav bar,
+music player, comments, post composer/card, AI buttons, auth context) found small but real
+failure-path bugs of the same class as before:
+
+- The music player, post comments and profile testimonials loaded their data with no error
+  handling, so a failed load (e.g. a private profile's `403`) became an unhandled rejection and
+  left "Loading…" on screen forever. They now show the empty state or the server's message.
+- The Log out button let a failed network call escape as an unhandled error (the session was
+  still cleared locally, but the browser console filled with errors). It now catches it.
+- The sign-up form never told people which usernames are allowed, so a name like `my name!` was
+  only rejected by the server (or by the browser after the server rule was tightened). It now
+  states the rule and enforces it in the browser.
+
+The browser end-to-end suite (Chrome, Safari's engine and an iPhone-sized Safari engine, run
+in CI against a real API and database) additionally guards the flows that unit tests can't see:
+session persistence across reloads in WebKit, the rename flow, top friends, two-user flows and
+phone layout. The Vitest run fails on unhandled errors, which is how the logout
+bug was caught.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -615,9 +636,12 @@ its own.
   limits the practical impact.
 - **Older stored files aren't cleaned up automatically.** Files stored before the
   ledger existed (two AI images) have no ledger entry and are left alone by design.
-- **Test coverage has known gaps.** No frontend tests for the group detail, login
-  and register pages or the music player, and no automated browser-level end-to-end
-  tests (production is checked with scripted live runs and manual browser runs instead).
+- **Test coverage has known gaps.** Real Cloudinary uploads (including the 30-second
+  video check), real AI generation and Openverse search aren't in the automated browser
+  tests because CI has no keys for them (they're covered by mocked backend tests plus
+  scripted and manual runs against production). The audio player context, theme editor and
+  image positioner have no unit tests, and nothing has been run on a physical iPhone —
+  WebKit in CI is the closest automated stand-in.
 - **Linked videos are other people's content.** A YouTube or direct-file link is
   embedded, not copied: the owner of that video can change or remove it after it's added,
   and the 30-second limit for links is a playback window, not a measured length.
