@@ -548,8 +548,10 @@ bug was caught.
   the operator sees it. Other storage failures keep the 502. Covered by new backend tests
   (uploads and the AI provider).
 
-The account-level block itself can't be fixed in code; it needs the account owner to resolve it
-with Cloudinary (see §8).
+The account-level block itself couldn't be fixed in code; the account owner resolved it with
+Cloudinary. After that, a live run against production (throwaway account, deleted afterwards)
+generated a picture from a 350-character prompt, saved it to the portfolio with the trimmed
+caption, loaded it from the CDN, and account deletion removed both the record and the file.
 
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
