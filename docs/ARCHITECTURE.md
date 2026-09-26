@@ -276,8 +276,9 @@ rate limits read Vercel's `x-vercel-forwarded-for` (the real client IP) via
 `utils/clientIp.js`. Verified live through the proxy: host-only Secure/HttpOnly
 cookie, real client IP reaching the limiter, a 10 MB upload and AI image
 generation passing, and a full browser sign-up → post → reload → logout flow.
-**Not verified on a physical iPhone** — the reasoning is Safari's documented
-cookie policy plus the first-party test in a desktop browser.
+Confirmed working on physical iPhones by the project owner (a manual check, not automated),
+on top of Safari's documented cookie policy, the first-party test in a desktop browser and
+the WebKit/iPhone-sized runs in CI.
 
 **Known limitation**: Render's free tier spins down after inactivity, so the
 first request after idle time is slow (cold start, tens of seconds) —
@@ -421,7 +422,7 @@ between two users, and phone layout (menu, no sideways scrolling, tap targets).
 Not covered by automated tests: real Cloudinary uploads (including the 30-second video
 check), real AI generation and Openverse search — CI has no keys for them, so those are
 checked by scripted and manual runs against production — plus the audio player context,
-theme editor and image positioner units, and a physical iPhone.
+theme editor and image positioner units.
 
 **Videos: a 30-second limit that's measured where it can be, and clipped where it can't.**
 Uploaded videos (mp4/webm/iPhone .mov, ≤30 MB) go to Cloudinary, which reports the length

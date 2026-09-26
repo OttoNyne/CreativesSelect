@@ -470,7 +470,7 @@ Verified live through the proxy: the cookie has no `Domain` (host-only), is `Htt
 Secure`, and is `SameSite=Lax`; the limiter recorded my real public IP; AI image
 generation took ~5 s; a 10 MB upload succeeded; the untrusted-origin write was `403`;
 and in a real browser, sign-up → post → reload (still signed in) → logout worked with
-every API call on the site's own domain. **Not tested on a physical iPhone.**
+every API call on the site's own domain. The project owner has since confirmed login and the app working on physical iPhones (manual check).
 
 ### 5.19 Oversize images returned a generic 500
 
@@ -633,17 +633,18 @@ its own.
   latency and, if Vercel's rewrite layer has trouble, the whole app does even when the API
   is up. Request size and duration were checked (10 MB upload, ~5 s AI call), but very
   long-running requests would need re-checking.
-- **iOS is reasoned and desktop-tested, not device-tested.** The first-party cookie
-  design follows Safari's documented policy and was verified in a desktop browser; it
-  has not been run on a physical iPhone.
+- **iOS is checked by hand, not automatically.** The first-party cookie design follows
+  Safari's documented policy, is exercised in CI by WebKit and iPhone-sized runs, and was
+  confirmed on physical iPhones by the owner; there is no automated real-device test.
 - **The free Cloudflare AI allowance is shared by all users**, so heavy use
   degrades image/text generation to "temporarily unavailable" until it resets.
-- **Backend deploy gating depends on a dashboard setting.** Both repos run tests and
+- **Backend deploy gating lives in a dashboard setting.** Both repos run tests and
   `npm audit --audit-level=high` in GitHub Actions on every push and PR, and
   Dependabot opens weekly update PRs. The frontend deploys only from a green CI run
   (Vercel's git deploys are disabled — verified). The backend has
   `autoDeployTrigger: checksPass` in `render.yaml`, which only takes effect if
-  the Render service's Auto-Deploy is set to "After CI Checks Pass" in the dashboard.
+  the Render service's Auto-Deploy is set to "After CI Checks Pass" in the dashboard. The
+  owner has confirmed it is set that way; because it isn't in code, it can be changed without a trace in the repo.
 - **The frontend deploy depends on a CI token.** Production deploys use a Vercel API
   token stored as a GitHub Actions secret; if it expires or is revoked, frontend
   deploys pause until it's replaced.
@@ -663,8 +664,8 @@ its own.
   video check), real AI generation and Openverse search aren't in the automated browser
   tests because CI has no keys for them (they're covered by mocked backend tests plus
   scripted and manual runs against production). The audio player context, theme editor and
-  image positioner have no unit tests, and nothing has been run on a physical iPhone —
-  WebKit in CI is the closest automated stand-in.
+  image positioner have no unit tests, and there is no automated real-device
+  test (iPhones were checked by hand; WebKit in CI is the automated stand-in).
 - **Linked videos are other people's content.** A YouTube or direct-file link is
   embedded, not copied: the owner of that video can change or remove it after it's added,
   and the 30-second limit for links is a playback window, not a measured length.
