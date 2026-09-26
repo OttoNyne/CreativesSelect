@@ -35,6 +35,7 @@ describe("FriendsPage", () => {
     renderPage();
     expect(await screen.findByText("Friends (1)")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Zoe" })).toHaveAttribute("href", "/u/zoe");
+    expect(screen.getByRole("link", { name: "Message" })).toHaveAttribute("href", "/messages/zoe");
     expect(screen.getByText("Friend Requests")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Kai" })).toBeInTheDocument();
   });

@@ -10,6 +10,10 @@ import type { User } from "../../types";
 vi.mock("../../api/auth.api", () => ({ authApi: { logout: vi.fn() } }));
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("./NotificationBell", () => ({ NotificationBell: () => <span>bell</span> }));
+vi.mock("../../api/messages.api", () => ({
+  messagesApi: { unreadCount: vi.fn().mockResolvedValue({ unread: 0 }) },
+  MESSAGES_CHANGED_EVENT: "messages:changed",
+}));
 const logout = vi.mocked(authApi.logout);
 const setUser = vi.fn();
 const sam = { id: "1", username: "sam", displayName: "Sam Painter" } as User;
@@ -43,7 +47,7 @@ describe("NavBar", () => {
 
   it("shows every section, the user's own profile link and the bell when signed in", () => {
     renderBar(sam);
-    for (const [label, href] of [["Feed", "/"], ["Friends", "/friends"], ["Groups", "/groups"], ["Search", "/search"], ["Help wanted", "/help-wanted"]]) {
+    for (const [label, href] of [["Feed", "/"], ["Friends", "/friends"], ["Groups", "/groups"], ["Search", "/search"], ["Help wanted", "/help-wanted"], ["Messages", "/messages"]]) {
       expect(screen.getAllByRole("link", { name: label })[0]).toHaveAttribute("href", href);
     }
     expect(screen.getAllByRole("link", { name: /Sam Painter/ })[0]).toHaveAttribute("href", "/u/sam");

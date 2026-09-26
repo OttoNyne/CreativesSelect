@@ -18,7 +18,7 @@ Three Playwright projects, so every test runs on each engine:
 Specs: `auth` (sign up/in/out, session survives a reload, titles, install
 manifest), `feed`, `profile` (rename, bio, privacy, top friends, password,
 delete account), `portfolio` (pictures, likes/dislikes, video links, remove),
-`social` (search, friends, block, groups, private profiles), `help-wanted`
+`social` (search, friends, block, groups, private profiles), `messages` (unread, reply, delete, live arrival, friends-only), `help-wanted`
 (post, offer, accept) and `mobile` (menu, no sideways scrolling, tap targets).
 
 The frontend is served by `vite preview` on `:4173` with `/api` proxied to the

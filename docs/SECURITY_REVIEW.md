@@ -553,6 +553,31 @@ Cloudinary. After that, a live run against production (throwaway account, delete
 generated a picture from a 350-character prompt, saved it to the portfolio with the trimmed
 caption, loaded it from the CDN, and account deletion removed both the record and the file.
 
+### 5.25 Direct messages: a new private channel between users
+
+Messaging is the first feature where one user writes something only another user sees, so it was
+designed against the same abuse and data-exposure questions as the rest of the app, and the
+controls are enforced by the server, not the UI:
+
+- **Friends only.** Sending and reading both require an accepted friendship, so a stranger can't
+  reach anyone — there is no unsolicited-message path. A pending request isn't enough, and the
+  conversation list only ever contains friends.
+- **Blocks and unfriending end it in both directions**: either person blocking the other, or
+  unfriending, makes the thread `403` for reading and sending (old messages stay stored but can't be
+  fetched).
+- **Nothing is readable by a third party.** Every query is scoped to the caller's own pair key; the
+  delete route returns `404` for anyone but the sender (not `403`), so message ids can't be probed.
+- **Input and abuse limits.** Text only, trimmed, 1–2000 characters, validated as a string; 60 sends
+  per user per 10 minutes (`429` + `Retry-After`) so a friend account can't be used to flood someone.
+  Bodies are rendered as plain text by React (never as HTML), so a message can't inject markup.
+- **Data lifecycle.** Deleting an account deletes every message it sent or received.
+- Covered by 12 backend tests (friends-only, blocks, unfriend, sender-only delete, paging, rate limit,
+  account deletion, validation, auth on every route), 19 frontend tests, and 4 browser tests that run in
+  Chrome, Safari's engine and an iPhone-sized viewport.
+
+Known limits, listed in §8: messages aren't end-to-end encrypted, and there is no "report this message"
+button yet.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -658,6 +683,10 @@ its own.
   Cloudinary account. When it refused uploads (§5.24) the app degraded cleanly to a clear
   "temporarily unavailable" message, but nothing worked until the account owner resolved it
   with Cloudinary. There is no second storage provider or upload queue.
+- **Messages are private from other users, not from the operator.** They are stored as plain text in
+  MongoDB (encrypted at rest by the database host, not end-to-end), and there is no way to report a
+  message or block from inside a conversation (blocking works from the profile). Messages arrive by
+  polling every few seconds while a thread is open, not by push.
 - **Older stored files aren't cleaned up automatically.** Files stored before the
   ledger existed (two AI images) have no ledger entry and are left alone by design.
 - **Test coverage has known gaps.** Real Cloudinary uploads (including the 30-second

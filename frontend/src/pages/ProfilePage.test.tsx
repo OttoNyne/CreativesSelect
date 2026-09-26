@@ -79,6 +79,16 @@ describe("ProfilePage", () => {
     renderAs(me, "zoe");
     expect(await screen.findByText("✓ Friends")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add Friend" })).not.toBeInTheDocument();
+    // friends can be messaged from their profile
+    expect(screen.getByRole("link", { name: "Message" })).toHaveAttribute("href", "/messages/zoe");
+  });
+
+  it("doesn't offer messaging for someone who isn't a friend", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    friends.list.mockResolvedValue({ friends: [] });
+    renderAs(me, "zoe");
+    expect(await screen.findByRole("button", { name: "Add Friend" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Message" })).not.toBeInTheDocument();
   });
 
   it("shows the unavailable message for a private or missing profile", async () => {

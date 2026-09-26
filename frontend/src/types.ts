@@ -142,3 +142,20 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  /** True when the signed-in user sent it. */
+  mine: boolean;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface Conversation {
+  user: User;
+  lastMessage: DirectMessage | null;
+  unread: number;
+}

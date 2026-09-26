@@ -4,7 +4,7 @@
 [![CI](https://github.com/OttoNyne/CreativesSelect/actions/workflows/ci.yml/badge.svg)](https://github.com/OttoNyne/CreativesSelect/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)](LICENSE)
 
-A social platform for creatives — customizable profiles, friend connections, testimonials, groups/collabs, on-request AI assistance (writing + image generation) for content creation, and a public **Help wanted** board where creatives post requests and offer to help each other (the `/api/tasks` resource), all behind one login.
+A social platform for creatives — customizable profiles, friend connections, testimonials, friends-only direct messages, groups/collabs, on-request AI assistance (writing + image generation) for content creation, and a public **Help wanted** board where creatives post requests and offer to help each other (the `/api/tasks` resource), all behind one login.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system diagram, data model, API reference, and component tree, and [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) for the security audit and penetration-testing writeup.
 

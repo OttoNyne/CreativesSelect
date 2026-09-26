@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../api/auth.api";
 import { Avatar } from "../common/Avatar";
 import { NotificationBell } from "./NotificationBell";
+import { MessagesLink } from "./MessagesLink";
 
 const NAV_LINKS = [
   { to: "/", label: "Feed" },
@@ -49,6 +50,7 @@ export function NavBar() {
                   {link.label}
                 </Link>
               ))}
+              <MessagesLink className="text-white/70 hover:text-white" />
               <NotificationBell />
               <Link to={`/u/${user.username}`} className="flex items-center gap-2 text-white/90 hover:text-white">
                 <Avatar username={user.username} displayName={user.displayName} avatarUrl={user.avatarUrl} size={28} />
@@ -109,6 +111,10 @@ export function NavBar() {
               {link.label}
             </Link>
           ))}
+          <MessagesLink
+            onClick={() => setMenuOpen(false)}
+            className="block rounded-md px-2 py-2 text-white/70 hover:bg-white/10 hover:text-white"
+          />
           <button
             onClick={() => {
               setMenuOpen(false);

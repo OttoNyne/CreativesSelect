@@ -13,6 +13,7 @@ import { GroupsPage } from "./pages/GroupsPage";
 import { GroupDetailPage } from "./pages/GroupDetailPage";
 import { SearchPage } from "./pages/SearchPage";
 import { TasksPage } from "./pages/TasksPage";
+import { MessagesPage } from "./pages/MessagesPage";
 import { usePageTitle } from "./lib/usePageTitle";
 
 export default function App() {
@@ -28,6 +29,8 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<FeedPage />} />
             <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/messages/:username" element={<MessagesPage />} />
             <Route path="/groups" element={<GroupsPage />} />
             <Route path="/groups/:id" element={<GroupDetailPage />} />
             <Route path="/search" element={<SearchPage />} />

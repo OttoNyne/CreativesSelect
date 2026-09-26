@@ -97,6 +97,12 @@ export function FriendsPage() {
               <Link to={`/u/${f.username}`} className="flex-1 font-medium text-white hover:underline">
                 {f.displayName}
               </Link>
+              <Link
+                to={`/messages/${f.username}`}
+                className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
+              >
+                Message
+              </Link>
               <button onClick={() => handleRemove(f.id)} className="text-xs text-white/40 hover:text-red-400">
                 Unfriend
               </button>

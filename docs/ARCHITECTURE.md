@@ -92,7 +92,7 @@ flowchart LR
 
 ## 3. Data Model
 
-MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
+MongoDB via Mongoose. 19 collections. `ObjectId` refs are named `ref` below;
 `unique` compound indexes are noted where they exist.
 
 | Model | Fields | Relationships |
@@ -112,6 +112,7 @@ MongoDB via Mongoose. 13 collections. `ObjectId` refs are named `ref` below;
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
 | **StoredAsset** | `owner` → User, `url`, `publicId`, `resourceType` (image/video/raw), `kind` (ai/upload), timestamps | Ledger of every file the server itself stored on Cloudinary (AI images and uploads) and whose it is — the only thing that lets the app delete an asset safely |
 | **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
+| **Message** | `sender` → User, `recipient` → User, `pair` ("smaller id:larger id" — one key per two people, indexed with `createdAt`), `body` (≤2000 chars), `readAt`, timestamps | A direct message between two friends; one document is both people's copy, so a delete or account deletion removes it for both |
 | **RateLimitHit** | `key`, `at`, `expireAt` (TTL index) | One row per rate-limited action; stored in MongoDB so limits survive restarts and are shared by every server instance, and expired rows delete themselves |
 | **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
 | **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
@@ -197,6 +198,15 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | GET | `/user/:username` | optional | Gated by visibility; each item carries `likes`, `dislikes` and (when signed in) the viewer's `myReaction` |
 | PUT | `/:id/reaction` | auth | `{value: 1 \| -1 \| 0}` (like / dislike / clear) → `{likes, dislikes, myReaction}`; one reaction per person; `404` if the item is missing **or the profile isn't visible to you** (private/blocked); 300 per hour |
 | DELETE | `/:id` | auth | Owner only; also removes its reactions and, if nothing else uses it, the stored file |
+
+### Messages — `/api/messages` (auth) — direct messages between friends
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/conversations` | One row per **friend**: the latest message and how many of theirs are unread; conversations with messages first (newest on top), then friends you haven't written to. Non-friends never appear |
+| GET | `/unread-count` | `{unread}` — drives the nav badge |
+| GET | `/with/:username?before=` | The thread with one friend, oldest first, 50 per page (`hasMore`, `before=<message id>` for earlier ones). Opening it marks their messages read. `403` unless you are accepted friends and neither has blocked the other; `404` unknown user; `400` yourself |
+| POST | `/with/:username` | `{body}` (trimmed, 1–2000 chars, text only) → `201 {message}`. Same friend/block rules; max 60 per user per 10 minutes (`429` with `Retry-After`) |
+| DELETE | `/:id` | Sender only, removes it for both people; `404` for anyone else (never `403`, so ids aren't probeable) |
 
 ### Notifications — `/api/notifications` (auth)
 | Method | Path | Notes |
@@ -293,13 +303,14 @@ change.
 App
 ├── AuthProvider            (fetches /api/auth/me once; exposes {user, isLoading, setUser})
 │   └── PlaybackProvider     (global "now playing" state — survives navigation)
-│       ├── NavBar           (links + NotificationBell)
+│       ├── NavBar           (links + MessagesLink unread badge + NotificationBell)
 │       ├── Routes
 │       │   ├── /login       → LoginPage
 │       │   ├── /register    → RegisterPage
 │       │   ├── ProtectedRoute (redirects to /login if !user)
 │       │   │   ├── /          → FeedPage        (PostComposer, PostCard[] → PostCommentList)
 │       │   │   ├── /friends   → FriendsPage
+│       │   │   ├── /messages  → MessagesPage (conversation list + open thread; /messages/:username)
 │       │   │   ├── /groups    → GroupsPage
 │       │   │   ├── /groups/:id→ GroupDetailPage
 │       │   │   ├── /search    → SearchPage
@@ -316,7 +327,7 @@ App
 
 **Where API calls live**: each page owns its own data-fetching in a
 `useEffect`/`load()` function, calling a matching `api/*.api.ts` module
-(`posts.api.ts`, `groups.api.ts`, `friends.api.ts`, `tasks.api.ts`,
+(`posts.api.ts`, `groups.api.ts`, `friends.api.ts`, `messages.api.ts`, `tasks.api.ts`,
 `profiles.api.ts`, `notifications.api.ts`, `ai.api.ts`, `media.api.ts`),
 which all wrap the single `api` object in `api/client.ts` — one place that
 sets `credentials: "include"` and turns a non-2xx response into a thrown
@@ -402,15 +413,15 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 119 tests over auth (throttling, CSRF, session
-revocation), Tasks and the Help wanted board, friends, blocking, reports, groups,
+`creativeselect_test` database — 131 tests over auth (throttling, CSRF, session
+revocation), Tasks and the Help wanted board, friends, direct messages, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 221 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 240 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
-login, register, feed, friends, groups and group detail, profile, search, Help wanted,
-nav bar, notification bell, post composer/card/comments, portfolio, music player, top
+login, register, feed, friends, messages, groups and group detail, profile, search, Help wanted,
+nav bar, messages link, notification bell, post composer/card/comments, portfolio, music player, top
 friends, profile names, testimonials, delete-account, change-password, the AI buttons,
 avatar, the auth context and the video helpers. Test files are type-checked by `tsc -b`
 as part of the Vercel build, so a type error in a test blocks a deploy.
@@ -418,7 +429,7 @@ as part of the Vercel build, so a type error in a test blocks a deploy.
 frontend, a real API and MongoDB — sign-up/in/out and a session that survives a reload,
 posting, profile rename, top friends, password change and account deletion, portfolio
 pictures/reactions/video links, friends, groups, private profiles, the Help wanted flow
-between two users, and phone layout (menu, no sideways scrolling, tap targets).
+between two users, direct messages between two friends (unread, reply, delete, live arrival, friends-only), and phone layout (menu, no sideways scrolling, tap targets).
 Not covered by automated tests: real Cloudinary uploads (including the 30-second video
 check), real AI generation and Openverse search — CI has no keys for them, so those are
 checked by scripted and manual runs against production — plus the audio player context,

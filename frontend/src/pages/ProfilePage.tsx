@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { profilesApi } from "../api/profiles.api";
 import { friendsApi } from "../api/friends.api";
@@ -216,7 +216,12 @@ export function ProfilePage() {
             ) : viewer ? (
               <>
                 {isFriend ? (
-                  <span className="rounded-md bg-white/10 px-3 py-1.5 text-sm">✓ Friends</span>
+                  <>
+                    <span className="rounded-md bg-white/10 px-3 py-1.5 text-sm">✓ Friends</span>
+                    <Link to={`/messages/${username}`} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
+                      Message
+                    </Link>
+                  </>
                 ) : (
                   <button
                     onClick={handleFriendRequest}
