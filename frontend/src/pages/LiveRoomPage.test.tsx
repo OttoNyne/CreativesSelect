@@ -254,7 +254,7 @@ describe("LiveRoomPage: as the host", () => {
     holdStreamFor("l1", stream.asStream());
     renderRoom();
     expect(await screen.findByText("You're live — listeners can hear your microphone.")).toBeInTheDocument();
-    expect(mocks.hosts).toHaveLength(1);
+    await hostStarted();
     expect(mocks.hosts[0].opts).toMatchObject({ liveId: "l1", stream });
     expect(mocks.hosts[0].start).toHaveBeenCalled();
     expect(screen.getByText("chat open (host)")).toBeInTheDocument();
@@ -334,7 +334,7 @@ describe("LiveRoomPage: as the host", () => {
     expect(mocks.hosts).toHaveLength(0);
     await userEvent.click(screen.getByRole("button", { name: "Allow microphone" }));
     expect(await screen.findByText("You're live — listeners can hear your microphone.")).toBeInTheDocument();
-    expect(mocks.hosts).toHaveLength(1);
+    await hostStarted();
   });
 
   it("explains a blocked microphone on resume", async () => {
