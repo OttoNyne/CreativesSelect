@@ -752,9 +752,12 @@ its own.
   with only public STUN servers some networks (strict corporate or mobile carrier NATs) cannot connect
   until a TURN relay is added through `LIVE_ICE_SERVERS`. Live audio has been tested between real
   Chrome windows, not yet between physical phones.
-- **Password reset needs an email provider that isn't configured yet.** The feature is built and
-  tested, but until the site owner adds a Resend key and a verified sender, the site honestly reports
-  reset by email as unavailable. Anyone locked out in the meantime needs the owner's help.
+- **Password reset depends on one email provider.** Reset by email is configured through Resend and the
+  owner confirmed the whole flow on the live site (email received, link used, new password worked). It
+  depends on that provider and sender staying valid: if the key is revoked or the sender stops being
+  accepted, the site can't send links, and the owner would have to restore it. (If the sender is Resend's
+  shared test address, only the owner's own address receives mail; a verified domain is needed for other
+  users.) Delivery failures are logged for the operator but invisible to the person asking.
 - **Group chat is readable by anyone who joins the group**, because groups are open by design.
 - **Messages are private from other users, not from the operator.** They are stored as plain text in
   MongoDB (encrypted at rest by the database host, not end-to-end), and there is no way to report a
