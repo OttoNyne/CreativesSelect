@@ -464,7 +464,7 @@ rather than adding input validation to each route individually.
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 359 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 360 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, feed, friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC host and listener logic (against a fake peer connection), profile, search, Help wanted,
