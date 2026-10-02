@@ -19,5 +19,8 @@ export const authApi = {
   logout: () => api.post<void>("/auth/logout"),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.put<void>("/auth/password", { currentPassword, newPassword }),
+  resetAvailable: () => api.get<{ available: boolean }>("/auth/reset-available"),
+  forgotPassword: (email: string) => api.post<{ message: string }>("/auth/forgot-password", { email }),
+  resetPassword: (token: string, newPassword: string) => api.post<void>("/auth/reset-password", { token, newPassword }),
   me: () => api.get<{ user: User }>("/auth/me"),
 };

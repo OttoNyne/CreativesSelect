@@ -91,3 +91,40 @@ test.describe("direct messages", () => {
     await stranger.context.close();
   });
 });
+
+test.describe("group chat", () => {
+  test("members chat in a group and see each other's messages; outsiders can't", async ({ page, browser, baseURL }) => {
+    const me = newUser("host");
+    await signUpViaUi(page, me);
+    const created = await page.request.post("/api/groups", { data: { name: `Chat group ${me.username}`, description: "for chatting" } });
+    const groupId = (await created.json()).group.id as string;
+    const member = await apiUser(browser, baseURL!, "member");
+    expect((await member.request.post(`/api/groups/${groupId}/join`)).status()).toBe(204);
+    const outsider = await apiUser(browser, baseURL!, "outsider");
+
+    await page.goto(`/groups/${groupId}`);
+    await expect(page.getByText("No messages yet — start the conversation.")).toBeVisible();
+    const box = page.getByLabel("Group message");
+    await box.fill("Welcome, everyone!");
+    await page.getByRole("button", { name: "Send", exact: true }).click();
+    await expect(box).toHaveValue("");
+    await expect(page.getByText("Welcome, everyone!")).toBeVisible();
+
+    // The other member sees it, answers, and the answer appears here without a reload.
+    const theirs = await (await member.request.get(`/api/groups/${groupId}/messages`)).json();
+    expect(theirs.messages.map((m: { body: string }) => m.body)).toEqual(["Welcome, everyone!"]);
+    expect((await member.request.post(`/api/groups/${groupId}/messages`, { data: { body: "Glad to be here" } })).status()).toBe(201);
+    await expect(page.getByText("Glad to be here")).toBeVisible({ timeout: 20_000 });
+
+    // Someone who hasn't joined can't read or write.
+    expect((await outsider.request.get(`/api/groups/${groupId}/messages`)).status()).toBe(403);
+    expect((await outsider.request.post(`/api/groups/${groupId}/messages`, { data: { body: "hi" } })).status()).toBe(403);
+
+    // As the group's admin, I can remove someone else's message.
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "Delete message" }).last().click();
+    await expect(page.getByText("Glad to be here")).toHaveCount(0);
+    await member.context.close();
+    await outsider.context.close();
+  });
+});

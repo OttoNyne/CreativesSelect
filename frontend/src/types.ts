@@ -159,3 +159,14 @@ export interface Conversation {
   lastMessage: DirectMessage | null;
   unread: number;
 }
+
+export interface GroupChatMessage {
+  id: string;
+  groupId: string;
+  senderId: string;
+  sender: User | null;
+  /** True when the signed-in user sent it. */
+  mine: boolean;
+  body: string;
+  createdAt: string;
+}

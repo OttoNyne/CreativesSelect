@@ -5,6 +5,7 @@ import { ApiError } from "../api/client";
 import type { Group, GroupMember } from "../types";
 import { Avatar } from "../components/common/Avatar";
 import { useAuth } from "../context/AuthContext";
+import { GroupChat } from "../components/group/GroupChat";
 
 export function GroupDetailPage() {
   const { id = "" } = useParams();
@@ -74,6 +75,8 @@ export function GroupDetailPage() {
           {isMember ? "Leave group" : "Join group"}
         </button>
       </div>
+
+      {isMember && <GroupChat groupId={id} canModerate={members.some((m) => m.user.username === user?.username && m.role === "admin")} />}
 
       <div>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Members</h2>

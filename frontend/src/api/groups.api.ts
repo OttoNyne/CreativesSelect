@@ -1,5 +1,7 @@
 import { api } from "./client";
-import type { Group, GroupMember } from "../types";
+import type { Group, GroupChatMessage, GroupMember } from "../types";
+
+export const MAX_GROUP_MESSAGE_LENGTH = 1000;
 
 export interface CreateGroupInput {
   name: string;
@@ -14,4 +16,10 @@ export const groupsApi = {
   join: (id: string) => api.post<void>(`/groups/${id}/join`),
   leave: (id: string) => api.post<void>(`/groups/${id}/leave`),
   members: (id: string) => api.get<{ members: GroupMember[] }>(`/groups/${id}/members`),
+  messages: (id: string, before?: string) =>
+    api.get<{ messages: GroupChatMessage[]; hasMore: boolean }>(
+      `/groups/${id}/messages${before ? `?before=${encodeURIComponent(before)}` : ""}`
+    ),
+  sendMessage: (id: string, body: string) => api.post<{ message: GroupChatMessage }>(`/groups/${id}/messages`, { body }),
+  deleteMessage: (id: string, messageId: string) => api.delete<void>(`/groups/${id}/messages/${messageId}`),
 };

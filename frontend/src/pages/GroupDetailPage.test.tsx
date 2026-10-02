@@ -10,6 +10,10 @@ import type { Group, GroupMember, User } from "../types";
 
 vi.mock("../api/groups.api", () => ({ groupsApi: { get: vi.fn(), members: vi.fn(), join: vi.fn(), leave: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
+// The chat has its own data loading and tests; here we only check who is shown it.
+vi.mock("../components/group/GroupChat", () => ({
+  GroupChat: ({ canModerate }: { canModerate: boolean }) => <div>group chat{canModerate ? " (moderator)" : ""}</div>,
+}));
 const api = vi.mocked(groupsApi);
 
 const group = { id: "g1", name: "Painters", description: "We paint", memberCount: 2, isMember: false } as Group;
@@ -47,6 +51,22 @@ describe("GroupDetailPage", () => {
     expect(screen.getByText("2 members")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ada" })).toHaveAttribute("href", "/u/ada");
     expect(screen.getByText("Admin")).toBeInTheDocument(); // Zoe is a plain member
+  });
+
+  it("hides the chat from people who haven't joined", async () => {
+    renderAs("someone");
+    await screen.findByRole("heading", { name: "Painters" });
+    expect(screen.queryByText(/group chat/)).not.toBeInTheDocument();
+  });
+
+  it("shows the chat to a member", async () => {
+    renderAs("zoe");
+    expect(await screen.findByText("group chat")).toBeInTheDocument();
+  });
+
+  it("lets a group admin moderate the chat", async () => {
+    renderAs("ada");
+    expect(await screen.findByText("group chat (moderator)")).toBeInTheDocument();
   });
 
   it("offers Join to a non-member, and reloads the roster after joining", async () => {

@@ -5,6 +5,8 @@ const TITLES: [RegExp, string][] = [
   [/^\/$/, "Feed"],
   [/^\/login$/, "Log in"],
   [/^\/register$/, "Sign up"],
+  [/^\/forgot-password$/, "Forgot password"],
+  [/^\/reset-password$/, "Reset password"],
   [/^\/friends$/, "Friends"],
   [/^\/messages(\/[^/]+)?$/, "Messages"],
   [/^\/groups$/, "Groups"],

@@ -14,6 +14,8 @@ import { GroupDetailPage } from "./pages/GroupDetailPage";
 import { SearchPage } from "./pages/SearchPage";
 import { TasksPage } from "./pages/TasksPage";
 import { MessagesPage } from "./pages/MessagesPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { usePageTitle } from "./lib/usePageTitle";
 
 export default function App() {
@@ -25,6 +27,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<FeedPage />} />

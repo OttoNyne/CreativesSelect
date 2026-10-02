@@ -49,6 +49,11 @@ export function LoginPage() {
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
         />
         {error && <p className="text-sm text-red-400">{error}</p>}
+        <div className="text-right">
+          <Link to="/forgot-password" className="text-xs text-violet-400 hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <button
           type="submit"
           disabled={submitting}

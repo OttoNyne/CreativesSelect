@@ -7,6 +7,8 @@ describe("titleForPath", () => {
     expect(titleForPath("/help-wanted")).toBe("Help wanted · CreativesSelect");
     expect(titleForPath("/login")).toBe("Log in · CreativesSelect");
     expect(titleForPath("/groups/abc123")).toBe("Group · CreativesSelect");
+    expect(titleForPath("/forgot-password")).toBe("Forgot password · CreativesSelect");
+    expect(titleForPath("/reset-password")).toBe("Reset password · CreativesSelect");
   });
 
   it("uses the username on profile pages", () => {
