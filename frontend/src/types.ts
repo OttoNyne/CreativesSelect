@@ -170,3 +170,24 @@ export interface GroupChatMessage {
   body: string;
   createdAt: string;
 }
+
+export interface LiveRoom {
+  id: string;
+  title: string;
+  status: "live" | "ended";
+  startedAt: string;
+  host: User;
+  isHost: boolean;
+  listenerCount: number;
+  maxListeners: number;
+}
+
+export interface LiveComment {
+  id: string;
+  userId: string;
+  user: User | null;
+  /** True when the signed-in user wrote it. */
+  mine: boolean;
+  body: string;
+  createdAt: string;
+}

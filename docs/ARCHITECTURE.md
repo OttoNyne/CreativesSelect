@@ -92,7 +92,7 @@ flowchart LR
 
 ## 3. Data Model
 
-MongoDB via Mongoose. 19 collections. `ObjectId` refs are named `ref` below;
+MongoDB via Mongoose. 25 collections. `ObjectId` refs are named `ref` below;
 `unique` compound indexes are noted where they exist.
 
 | Model | Fields | Relationships |
@@ -113,6 +113,12 @@ MongoDB via Mongoose. 19 collections. `ObjectId` refs are named `ref` below;
 | **StoredAsset** | `owner` → User, `url`, `publicId`, `resourceType` (image/video/raw), `kind` (ai/upload), timestamps | Ledger of every file the server itself stored on Cloudinary (AI images and uploads) and whose it is — the only thing that lets the app delete an asset safely |
 | **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
 | **Message** | `sender` → User, `recipient` → User, `pair` ("smaller id:larger id" — one key per two people, indexed with `createdAt`), `body` (≤2000 chars), `readAt`, timestamps | A direct message between two friends; one document is both people's copy, so a delete or account deletion removes it for both |
+| **GroupMessage** | `group` → Group, `sender` → User, `body` (≤1000 chars), timestamps | A message in a group's chat; only members can read or write; removed with its sender's account or its group |
+| **PasswordReset** | `user` → User, `tokenHash` (SHA-256, unique), `expireAt` (TTL, 1 hour) | At most one outstanding "reset my password" link per user; only a hash of the token is stored, so the database never holds a usable link |
+| **LiveSession** | `host` → User, `title` (≤80), `status` (live/ended), `lastHeartbeat`, `endedAt`, `expireAt` (TTL, set when it ends) | One voice-only live broadcast. It counts as live only while its host keeps sending heartbeats |
+| **LiveListener** | `session` → LiveSession, `user` → User, `lastSeen`, `expireAt` (TTL), unique on (session, user) | Someone listening; "active" means they pinged in the last 30 s |
+| **LiveSignal** | `session`, `from` → User, `to` → User, `kind` (offer/answer/ice), `data`, `expireAt` (TTL, 5 min) | A WebRTC handshake message passed between two browsers through the API; never contains audio |
+| **LiveComment** | `session`, `user` → User, `body` (≤200), `expireAt` (TTL, 24 h) | A live chat message |
 | **RateLimitHit** | `key`, `at`, `expireAt` (TTL index) | One row per rate-limited action; stored in MongoDB so limits survive restarts and are shared by every server instance, and expired rows delete themselves |
 | **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
 | **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
@@ -137,6 +143,9 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | POST | `/register` | public | `{email, username, password, displayName}` (username 3–30 letters/numbers/underscores) → `201 {user}`; `429` after 10 registrations per IP per hour |
 | POST | `/login` | public | `{email, password}` → `200 {user}`, sets `token` cookie; only *failed* attempts count — `429` (with `Retry-After`) after 10 per email or 30 per IP in 15 minutes |
 | PUT | `/password` | auth | `{currentPassword, newPassword}` → `204`; wrong current password `403` (5 failures / 15 min then `429`); every other session is signed out, this one is re-issued |
+| GET | `/reset-available` | public | → `{available}`: whether this site can send email at all (so the page can say so instead of promising a link that can't arrive) |
+| POST | `/forgot-password` | public | `{email}` → `200` with the **same** message whether or not the address has an account (the work happens after the reply, so timing doesn't leak it either); `400` for something that isn't an email; `429` after 3 per address or 10 per IP per hour (counted for unknown addresses too); `503` if no mail provider is configured |
+| POST | `/reset-password` | public | `{token, newPassword}` → `204`; the token is single-use, expires after an hour and only the newest link works; `400 This reset link is invalid or has expired` otherwise (10 bad tries / 15 min per IP then `429`). Signs out every existing session; does **not** sign anyone in; emails the owner a "your password was changed" notice |
 | POST | `/logout` | public | — → `204`, clears cookie |
 | GET | `/me` | auth | → `200 {user}` |
 
@@ -189,6 +198,9 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | POST | `/:id/join` | 409 if already a member |
 | POST | `/:id/leave` | — |
 | GET | `/:id/members` | Viewer-aware user serialization (see §7) |
+| GET | `/:id/messages?before=` | **Members only** (`403` if you haven't joined, `404` for no such group): the group's chat, oldest first, 50 per page; people you've blocked or who blocked you are left out |
+| POST | `/:id/messages` | Members only. `{body}` (trimmed, 1–1000 chars, text) → `201 {message}`; 60 per user per 10 minutes (`429` + `Retry-After`) |
+| DELETE | `/:id/messages/:messageId` | The sender, or an admin of the group; `404` for anyone else, and for a message of a different group |
 
 ### Media — `/api/media`
 | Method | Path | Auth | Notes |
@@ -207,6 +219,22 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | GET | `/with/:username?before=` | The thread with one friend, oldest first, 50 per page (`hasMore`, `before=<message id>` for earlier ones). Opening it marks their messages read. `403` unless you are accepted friends and neither has blocked the other; `404` unknown user; `400` yourself |
 | POST | `/with/:username` | `{body}` (trimmed, 1–2000 chars, text only) → `201 {message}`. Same friend/block rules; max 60 per user per 10 minutes (`429` with `Retry-After`) |
 | DELETE | `/:id` | Sender only, removes it for both people; `404` for anyone else (never `403`, so ids aren't probeable) |
+
+### Live (voice) — `/api/live` (auth)
+The audio never touches the server: the host's browser sends it straight to each listener over WebRTC. This API lists rooms, counts listeners, passes the handshake messages between browsers, and carries the live chat.
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/ice` | `{iceServers}` for WebRTC: public STUN by default, or the JSON in `LIVE_ICE_SERVERS` (add a TURN relay there for networks that need one) |
+| GET | `/` | Who is live right now (a host with no heartbeat for 45 s is treated as ended). Hosts you've blocked or who blocked you are omitted; a private-profile host is shown only to their friends and themselves |
+| POST | `/` | `{title}` (1–80 chars) → `201 {live}`; one live per person (starting another ends the first); 5 per hour (`429`) |
+| GET | `/:id` | The room: title, host, `listenerCount`, `maxListeners` (8), `isHost`. `404` — the same answer — for a missing room or one you may not see |
+| POST | `/:id/join` | Become a listener. `409` if it has ended or is full (8 listeners); `400` for the host; 120 per hour |
+| POST | `/:id/heartbeat` | Called every ~10 s by the host (keeps the live alive) and each listener (keeps them counted) → `{status, listenerCount}` |
+| POST | `/:id/leave` | Stop listening (also removes their handshake messages) |
+| POST | `/:id/end` | Host only; ends the live and deletes its listeners and handshake messages |
+| POST / GET | `/:id/signals` | WebRTC handshake. A listener can send only to the host (and only once joined), the host only to listeners; `kind` offer/answer/ice, ≤20 KB, 600 per 5 min; each person reads only what's addressed to them (`?after=` cursor) |
+| GET / POST | `/:id/comments` | Live chat for people in the room (host + joined listeners); ≤200 chars; 20 per minute; blocked users' comments hidden; `409` once ended |
+| DELETE | `/:id/comments/:commentId` | The author or the host |
 
 ### Notifications — `/api/notifications` (auth)
 | Method | Path | Notes |
@@ -253,11 +281,13 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 
 | Layer | Platform | Notes |
 |---|---|---|
-| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL`/`CLOUDINARY_*`/`CLOUDFLARE_*` set as dashboard-only secrets (`sync: false`), never committed |
+| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL`/`CLOUDINARY_*`/`CLOUDFLARE_*`/`RESEND_API_KEY`/`MAIL_FROM`/`LIVE_ICE_SERVERS` set as dashboard-only secrets (`sync: false`), never committed |
 | Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; production deploys come **only from CI**: `vercel.json` sets `git.deploymentEnabled: false`, and the `deploy` job in `.github/workflows/ci.yml` builds and ships with the Vercel CLI (secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) only after lint, build, tests and audit pass on `master`. Side effect: no per-PR preview deployments. `vercel.json` also **proxies `/api/*` to the Render API** so cookies are first-party (see the same-origin proxy note below), and the site is an **installable web app** (`manifest.webmanifest`, icons, Apple meta tags) |
 | AI image generation | Cloudflare Workers AI (FLUX.1 schnell), free daily allowance | Needs `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; without them the backend uses the mock provider. Results are re-hosted on Cloudinary |
+| Password-reset email | [Resend](https://resend.com) HTTP API | Needs `RESEND_API_KEY` and `MAIL_FROM` (a sender on a domain verified with Resend) as Render settings. Until they're set the site says plainly that reset by email isn't available. Resend without a verified domain only delivers to its owner's own address |
+| Live audio | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (36 tests × 3 browsers, 102 runs — three phone-only tests run only on the iPhone project). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (48 tests × 3 browsers, 147 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -290,6 +320,19 @@ Confirmed working on physical iPhones by the project owner (a manual check, not 
 on top of Safari's documented cookie policy, the first-party test in a desktop browser and
 the WebKit/iPhone-sized runs in CI.
 
+**Voice Live: browser-to-browser audio, handshake through polling.** Each listener
+opens a WebRTC connection straight to the host. The two browsers exchange their
+connection details ("offer", "answer", network candidates) as short-lived messages
+through `/api/live/:id/signals`, polled about once a second, rather than over a
+WebSocket, because Vercel's rewrite to the API doesn't carry WebSockets. Every
+attempt carries a random connection id so late messages from an earlier attempt are
+ignored, and a listener whose connection drops retries (up to three times) with a fresh
+one. The cost of this design is the host uploads one copy of the audio per listener, so
+a room is capped at **8 listeners**; a media server (an SFU such as LiveKit) is what a
+larger audience would need, and the API shape would carry over. The host's page ends the
+live — and so turns the microphone off — when they leave it, close the tab, or stop
+sending heartbeats, so a microphone can't stay open out of sight.
+
 **Known limitation**: Render's free tier spins down after inactivity, so the
 first request after idle time is slow (cold start, tens of seconds) —
 disclosed to the user, not fixed, since it's a paid-tier upgrade, not a code
@@ -305,14 +348,18 @@ App
 │   └── PlaybackProvider     (global "now playing" state — survives navigation)
 │       ├── NavBar           (links + MessagesLink unread badge + NotificationBell)
 │       ├── Routes
-│       │   ├── /login       → LoginPage
+│       │   ├── /login       → LoginPage            ("Forgot password?" link)
+│       │   ├── /forgot-password → ForgotPasswordPage
+│       │   ├── /reset-password  → ResetPasswordPage    (token read from the URL #fragment, then removed from the address bar)
 │       │   ├── /register    → RegisterPage
 │       │   ├── ProtectedRoute (redirects to /login if !user)
 │       │   │   ├── /          → FeedPage        (PostComposer, PostCard[] → PostCommentList)
 │       │   │   ├── /friends   → FriendsPage
 │       │   │   ├── /messages  → MessagesPage (conversation list + open thread; /messages/:username)
 │       │   │   ├── /groups    → GroupsPage
-│       │   │   ├── /groups/:id→ GroupDetailPage
+│       │   │   ├── /groups/:id→ GroupDetailPage      (GroupChat for members)
+│       │   │   ├── /live      → LivePage             (who's live + Go live)
+│       │   │   ├── /live/:id  → LiveRoomPage         (host or listener view; LiveChat; lib/live/host.ts + listener.ts hold the WebRTC logic)
 │       │   │   ├── /search    → SearchPage
 │       │   │   └── /help-wanted → TasksPage: public board + my requests (/tasks redirects here)
 │       │   ├── /u/:username → ProfilePage (attachUserIfPresent server-side, not client-gated)
@@ -327,7 +374,7 @@ App
 
 **Where API calls live**: each page owns its own data-fetching in a
 `useEffect`/`load()` function, calling a matching `api/*.api.ts` module
-(`posts.api.ts`, `groups.api.ts`, `friends.api.ts`, `messages.api.ts`, `tasks.api.ts`,
+(`posts.api.ts`, `groups.api.ts`, `friends.api.ts`, `messages.api.ts`, `live.api.ts`, `tasks.api.ts`,
 `profiles.api.ts`, `notifications.api.ts`, `ai.api.ts`, `media.api.ts`),
 which all wrap the single `api` object in `api/client.ts` — one place that
 sets `credentials: "include"` and turns a non-2xx response into a thrown
@@ -413,14 +460,14 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 131 tests over auth (throttling, CSRF, session
-revocation), Tasks and the Help wanted board, friends, direct messages, blocking, reports, groups,
+`creativeselect_test` database — 188 tests over auth (throttling, CSRF, session
+revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 240 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 359 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
-login, register, feed, friends, messages, groups and group detail, profile, search, Help wanted,
+login, register, forgot/reset password, feed, friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC host and listener logic (against a fake peer connection), profile, search, Help wanted,
 nav bar, messages link, notification bell, post composer/card/comments, portfolio, music player, top
 friends, profile names, testimonials, delete-account, change-password, the AI buttons,
 avatar, the auth context and the video helpers. Test files are type-checked by `tsc -b`
@@ -429,8 +476,8 @@ as part of the Vercel build, so a type error in a test blocks a deploy.
 frontend, a real API and MongoDB — sign-up/in/out and a session that survives a reload,
 posting, profile rename, top friends, password change and account deletion, portfolio
 pictures/reactions/video links, friends, groups, private profiles, the Help wanted flow
-between two users, direct messages between two friends (unread, reply, delete, live arrival, friends-only), and phone layout (menu, no sideways scrolling, tap targets).
-Not covered by automated tests: real Cloudinary uploads (including the 30-second video
+between two users, direct messages between two friends (unread, reply, delete, live arrival, friends-only), group chat, the whole forgotten-password flow through an emailed link (read from a mail outbox folder the API writes to in testing), and **voice Live between two real browsers** (real WebRTC audio from a fake microphone in Chrome, measured arriving at the listener), plus phone layout (menu, no sideways scrolling, tap targets).
+Not covered by automated tests: audio over real networks and between real devices, real email delivery, real Cloudinary uploads (including the 30-second video
 check), real AI generation and Openverse search — CI has no keys for them, so those are
 checked by scripted and manual runs against production — plus the audio player context,
 theme editor and image positioner units.

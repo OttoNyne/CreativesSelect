@@ -15,6 +15,8 @@ import { SearchPage } from "./pages/SearchPage";
 import { TasksPage } from "./pages/TasksPage";
 import { MessagesPage } from "./pages/MessagesPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { LivePage } from "./pages/LivePage";
+import { LiveRoomPage } from "./pages/LiveRoomPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { usePageTitle } from "./lib/usePageTitle";
 
@@ -33,6 +35,8 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<FeedPage />} />
             <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/live" element={<LivePage />} />
+            <Route path="/live/:id" element={<LiveRoomPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:username" element={<MessagesPage />} />
             <Route path="/groups" element={<GroupsPage />} />

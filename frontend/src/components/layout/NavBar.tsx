@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { to: "/friends", label: "Friends" },
   { to: "/groups", label: "Groups" },
   { to: "/search", label: "Search" },
+  { to: "/live", label: "Live" },
   { to: "/help-wanted", label: "Help wanted" },
 ];
 

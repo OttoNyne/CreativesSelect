@@ -18,7 +18,7 @@ Three Playwright projects, so every test runs on each engine:
 Specs: `auth` (sign up/in/out, session survives a reload, titles, install
 manifest), `feed`, `profile` (rename, bio, privacy, top friends, password,
 delete account), `portfolio` (pictures, likes/dislikes, video links, remove),
-`social` (search, friends, block, groups, private profiles), `messages` (unread, reply, delete, live arrival, friends-only), `help-wanted`
+`social` (search, friends, block, groups, private profiles), `messages` (direct messages and group chat), `password-reset` (the emailed link, end to end), `live` (voice rooms, incl. real audio between two Chrome windows), `help-wanted`
 (post, offer, accept) and `mobile` (menu, no sideways scrolling, tap targets).
 
 The frontend is served by `vite preview` on `:4173` with `/api` proxied to the
@@ -47,6 +47,14 @@ API on `:5000` — the same same-origin shape as production (Vercel proxies
    npx playwright test --project=iphone -g "menu"   # one project / one test
    npx playwright show-report                 # after a run
    ```
+
+**Two extras the newer specs use.** Emails: the API writes them to files instead of sending them
+when `MAIL_OUTBOX_DIR` is set (ignored in production), and the password-reset test reads the link
+from there — start the API with it (CI does) and run Playwright with the same value, e.g.
+`MAIL_OUTBOX_DIR=/tmp/mail` for both. Without it that one test is skipped. Voice: the Chrome project
+starts with a fake microphone (it plays a test tone), so the live-audio test can run for real; WebKit
+can't fake a microphone, and Playwright's WebKit build has no WebRTC at all, so there those tests check
+the page's "this browser can't play live audio" message instead.
 
 Playwright builds and serves the frontend itself. Each test creates its own
 uniquely named users, and claims its own client IP (`x-vercel-forwarded-for`)

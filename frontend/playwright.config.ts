@@ -27,7 +27,24 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        // A fake microphone (it plays a test tone) lets the live-audio test run for real. Only Chrome
+        // can fake devices; WebKit has no such switch, so the audio test is skipped there.
+        permissions: ["microphone"],
+        launchOptions: {
+          args: [
+            "--use-fake-device-for-media-stream",
+            "--use-fake-ui-for-media-stream",
+            "--autoplay-policy=no-user-gesture-required",
+            // show real local addresses so two pages on one machine can connect without a network
+            "--disable-features=WebRtcHideLocalIpsWithMdns",
+          ],
+        },
+      },
+    },
     { name: "webkit", use: { ...devices["Desktop Safari"] } },
     { name: "iphone", use: { ...devices["iPhone 13"] } },
   ],

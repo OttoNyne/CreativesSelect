@@ -7,6 +7,10 @@ describe("titleForPath", () => {
     expect(titleForPath("/help-wanted")).toBe("Help wanted · CreativesSelect");
     expect(titleForPath("/login")).toBe("Log in · CreativesSelect");
     expect(titleForPath("/groups/abc123")).toBe("Group · CreativesSelect");
+    expect(titleForPath("/messages")).toBe("Messages · CreativesSelect");
+    expect(titleForPath("/messages/zoe")).toBe("Messages · CreativesSelect");
+    expect(titleForPath("/live")).toBe("Live · CreativesSelect");
+    expect(titleForPath("/live/abc123")).toBe("Live · CreativesSelect");
     expect(titleForPath("/forgot-password")).toBe("Forgot password · CreativesSelect");
     expect(titleForPath("/reset-password")).toBe("Reset password · CreativesSelect");
   });

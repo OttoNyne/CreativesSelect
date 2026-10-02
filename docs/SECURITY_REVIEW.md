@@ -578,6 +578,68 @@ controls are enforced by the server, not the UI:
 Known limits, listed in §8: messages aren't end-to-end encrypted, and there is no "report this message"
 button yet.
 
+### 5.26 Group chat: private to members, and a side effect of leaving
+
+Group chat is a second place users write to each other, so it follows the same server-side rules:
+reading **and** writing need membership (`403` if you haven't joined, `404` for no such group), so
+leaving a group ends access; people you've blocked, or who blocked you, are left out of what you see;
+only the sender or a group admin can delete a message (`404` for everyone else, including a message
+from a different group, so ids can't be probed); text only, 1–1000 characters, 60 per person per
+10 minutes. Groups are open to join by design, so anyone can join and then read the chat — that is
+stated in §8, not hidden. Messages are removed with their sender's account and with their group.
+Covered by 10 backend, 11 frontend and 1 browser test.
+
+### 5.27 Forgotten password: an account-recovery path that must not become a takeover or an oracle
+
+Password reset by email is where account takeover and "is this person registered?" lookups usually
+appear, so it was built against both:
+
+- **No account oracle.** `forgot-password` returns the same `200` and message for a registered
+  and an unregistered address, does its work after replying so response time doesn't differ, and the
+  rate limits count every address (real or not) so the limit itself reveals nothing. (The sign-up form
+  already says when an email is taken; that is a known, separate trade-off.)
+- **A token that is worth nothing if the database leaks.** 32 random bytes, stored only as a SHA-256
+  hash; single-use; expires in an hour; requesting a new link invalidates the old one; deleted with
+  the account. It travels in the URL **fragment** (`#token=…`), which browsers never send to a server
+  or in a Referer header, and the page removes it from the address bar after reading it.
+- **Resetting does not sign anyone in**, and it signs **every existing session out** (the same
+  `passwordChangedAt` mechanism as a password change), so someone holding a stolen session loses it.
+  The owner also gets a "your password was changed" email.
+- **Abuse limits**: 3 requests per address and 10 per IP per hour; wrong-token guessing is limited to
+  10 per 15 minutes per IP (the token is 256 bits, so this is belt and braces).
+- **Honest when it can't work.** With no mail provider configured the API answers `503` and the page
+  says reset by email isn't set up, instead of promising a link that can never arrive. In production
+  the mailer never logs the message (it contains the link) and never throws into the request.
+- Inputs are validated as strings (`{"$ne": ""}`-style bodies are rejected).
+Covered by 16 + 7 backend tests (including token hashing, expiry, reuse, session revocation, limits,
+provider failure), 12 frontend tests and 3 browser tests (one follows the real emailed link).
+
+### 5.28 Voice Live: letting strangers' browsers talk to each other
+
+Live audio is the first feature where one person's microphone is streamed to others, so the design
+limits who can do what on the server:
+
+- **Who can see or join.** A live is hidden — and answers `404`, the same as a room that doesn't exist —
+  from anyone blocked in either direction; a private-profile host's live is visible only to their
+  friends. Blocking a host mid-live cuts the listener off at their next heartbeat.
+- **Handshake messages are not a messaging channel.** A listener can send only to the host, and only
+  after joining; the host only to people who joined; each person can read only what is addressed to
+  them; messages are ≤20 KB, typed (offer/answer/ice), rate-limited and deleted after five minutes.
+- **Capacity and abuse limits**: 8 listeners per room (it is also what the host's upload can carry), 5
+  lives started per hour, 120 joins per hour, 20 comments per minute, 200-character comments rendered
+  as plain text. Only people in the room can read or write the chat; the host or the author can delete
+  a comment.
+- **The microphone can't stay on out of sight.** Leaving the host's page, closing the tab, or losing
+  contact ends the live and stops the microphone; a live with no heartbeat for 45 seconds is ended by
+  the server.
+- **No audio is stored or relayed by the server.** Audio is end-to-end between the browsers, protected
+  by WebRTC's own encryption (DTLS-SRTP); the server never sees it, so it can't record or moderate it.
+- Account deletion removes the lives a person hosted and everything in them, and their listening
+  and comments elsewhere.
+Covered by 24 backend tests, 94 frontend tests (including the handshake and reconnection logic against
+a fake peer connection) and 5 browser tests, one of which runs a real host and a real listener in two
+Chrome windows and measures sound arriving.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -683,6 +745,17 @@ its own.
   Cloudinary account. When it refused uploads (§5.24) the app degraded cleanly to a clear
   "temporarily unavailable" message, but nothing worked until the account owner resolved it
   with Cloudinary. There is no second storage provider or upload queue.
+- **Live audio can't be moderated, and is capped small.** Audio goes browser-to-browser, so the
+  server cannot hear, record or filter it; moderation is limited to blocking, deleting comments, and
+  the host ending the live (there is no "report this live" yet). Because the host uploads one copy
+  per listener, a room is limited to 8 listeners — a media server (SFU) is the way past that — and
+  with only public STUN servers some networks (strict corporate or mobile carrier NATs) cannot connect
+  until a TURN relay is added through `LIVE_ICE_SERVERS`. Live audio has been tested between real
+  Chrome windows, not yet between physical phones.
+- **Password reset needs an email provider that isn't configured yet.** The feature is built and
+  tested, but until the site owner adds a Resend key and a verified sender, the site honestly reports
+  reset by email as unavailable. Anyone locked out in the meantime needs the owner's help.
+- **Group chat is readable by anyone who joins the group**, because groups are open by design.
 - **Messages are private from other users, not from the operator.** They are stored as plain text in
   MongoDB (encrypted at rest by the database host, not end-to-end), and there is no way to report a
   message or block from inside a conversation (blocking works from the profile). Messages arrive by

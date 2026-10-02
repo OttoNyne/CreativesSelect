@@ -47,7 +47,7 @@ describe("NavBar", () => {
 
   it("shows every section, the user's own profile link and the bell when signed in", () => {
     renderBar(sam);
-    for (const [label, href] of [["Feed", "/"], ["Friends", "/friends"], ["Groups", "/groups"], ["Search", "/search"], ["Help wanted", "/help-wanted"], ["Messages", "/messages"]]) {
+    for (const [label, href] of [["Feed", "/"], ["Friends", "/friends"], ["Groups", "/groups"], ["Search", "/search"], ["Live", "/live"], ["Help wanted", "/help-wanted"], ["Messages", "/messages"]]) {
       expect(screen.getAllByRole("link", { name: label })[0]).toHaveAttribute("href", href);
     }
     expect(screen.getAllByRole("link", { name: /Sam Painter/ })[0]).toHaveAttribute("href", "/u/sam");
