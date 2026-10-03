@@ -266,3 +266,111 @@ describe("SfuHost: the phone pauses the microphone", () => {
     expect(onMicrophone).not.toHaveBeenCalled();
   });
 });
+
+describe("SfuHost: networks that block the direct audio route", () => {
+  const relayed = (room: ReturnType<typeof lastRoom>) => (room.connectOptions as { rtcConfig?: { iceTransportPolicy?: string } } | undefined)?.rtcConfig?.iceTransportPolicy === "relay";
+
+  it("connects the usual way first", async () => {
+    const { host } = setup();
+    host.start();
+    await settle();
+    expect(relayed(lastRoom())).toBe(false);
+    host.stop();
+  });
+
+  it("goes through the relay once a connection dies within moments of starting, and stays that way", async () => {
+    const { host } = setup();
+    host.start();
+    await settle();
+    lastRoom().emit(RoomEvent.Disconnected); // seconds in: the direct route probably doesn't work here
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(FakeRoom.all).toHaveLength(2);
+    expect(relayed(lastRoom())).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(60_000); // a healthy minute later it drops again
+    lastRoom().emit(RoomEvent.Disconnected);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(FakeRoom.all).toHaveLength(3);
+    expect(relayed(lastRoom())).toBe(true); // doesn't go back to a route that failed
+    host.stop();
+  });
+
+  it("keeps the usual route when a connection that had been healthy for a while drops", async () => {
+    const { host } = setup();
+    host.start();
+    await settle();
+    await vi.advanceTimersByTimeAsync(60_000);
+    lastRoom().emit(RoomEvent.Disconnected);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(FakeRoom.all).toHaveLength(2);
+    expect(relayed(lastRoom())).toBe(false);
+    host.stop();
+  });
+
+  it("goes through the relay when the first connection can't even be made", async () => {
+    FakeRoom.failConnect = new Error("websocket refused");
+    const { host } = setup();
+    host.start();
+    await settle();
+    FakeRoom.failConnect = null;
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(FakeRoom.all).toHaveLength(2);
+    expect(relayed(FakeRoom.all[0])).toBe(false);
+    expect(relayed(FakeRoom.all[1])).toBe(true);
+    expect(FakeRoom.all[1].published).toHaveLength(1);
+    host.stop();
+  });
+});
+
+describe("SfuHost: connection details", () => {
+  it("puts what happens into plain lines", async () => {
+    const lines: string[] = [];
+    const { host } = setup({ onDiagnostic: (l) => lines.push(l) });
+    host.start();
+    await settle();
+    const room = lastRoom();
+    room.emit(RoomEvent.SignalConnected);
+    room.emit(RoomEvent.ConnectionStateChanged, "connected");
+    room.emit(RoomEvent.LocalTrackPublished);
+    room.emit(RoomEvent.SignalReconnecting);
+    room.emit(RoomEvent.Reconnecting);
+    room.emit(RoomEvent.Reconnected);
+    room.emit(RoomEvent.ConnectionQualityChanged, "poor");
+    room.emit(RoomEvent.MediaDevicesError, new Error("Permission denied"));
+    room.emit(RoomEvent.Disconnected, 4);
+    expect(lines).toEqual([
+      "Connecting to the live audio service (try 1)",
+      "Reached the live audio service",
+      "Connection: connected",
+      "Your microphone is being sent",
+      "The connection to the service dropped — reconnecting",
+      "Audio connection dropped — reconnecting",
+      "Audio connection restored",
+      "Connection quality: poor",
+      "Microphone problem: Permission denied",
+      "Disconnected (reason 4)",
+    ]);
+    host.stop();
+  });
+
+  it("says when it is going through the relay, and why a connection failed", async () => {
+    const lines: string[] = [];
+    FakeRoom.failConnect = new Error("websocket refused");
+    const { host } = setup({ onDiagnostic: (l) => lines.push(l) });
+    host.start();
+    await settle();
+    FakeRoom.failConnect = null;
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(lines).toContain("Couldn't connect: websocket refused");
+    expect(lines).toContain("Connecting to the live audio service (try 2, through the relay)");
+    host.stop();
+  });
+
+  it("works without anyone listening in", async () => {
+    const { host } = setup();
+    host.start();
+    await settle();
+    expect(() => lastRoom().emit(RoomEvent.Disconnected, 1)).not.toThrow();
+    host.stop();
+  });
+});

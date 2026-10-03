@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { liveApi } from "../api/live.api";
 import { API_BASE } from "../api/base";
@@ -10,6 +10,8 @@ import { useStage } from "../lib/live/useStage";
 import { ShareButton } from "../components/share/ShareButton";
 import { liveUrl } from "../lib/share";
 import { keepScreenOn } from "../lib/wakeLock";
+import { ConnectionDetails } from "../components/live/ConnectionDetails";
+import { describeNetwork } from "../lib/live/networkInfo";
 import type { HostConnection, MicrophoneState } from "../lib/live/sfuHost";
 import { LiveHost } from "../lib/live/host";
 import { LiveListener, type ListenerState } from "../lib/live/listener";
@@ -70,6 +72,14 @@ function HostRoom({ room }: { room: LiveRoom }) {
   const [failure, setFailure] = useState<string | null>(null);
   const [connection, setConnection] = useState<HostConnection>("live");
   const [mic, setMic] = useState<MicrophoneState>("ok");
+  // What the connection has been doing, for the "connection details" (and whether the phone itself has lost its internet).
+  const [details, setDetails] = useState<string[]>([]);
+  const [phoneOnline, setPhoneOnline] = useState(() => navigator.onLine);
+  const startedAt = useRef(Date.now());
+  const note = useCallback((line: string) => {
+    const seconds = Math.round((Date.now() - startedAt.current) / 1000);
+    setDetails((all) => [...all.slice(-59), `+${seconds}s  ${line}`]);
+  }, []);
   // Big lives have a stage: guests the host brings on to speak. The host hears them through this element.
   const { stage, refresh: refreshStage } = useStage(id, room.mode === "sfu");
   const guestAudioRef = useRef<HTMLAudioElement>(null);
@@ -100,7 +110,11 @@ function HostRoom({ room }: { room: LiveRoom }) {
               onEnded,
               onFailed: setFailure,
               onConnection: setConnection,
-              onMicrophone: setMic,
+              onMicrophone: (state) => {
+                setMic(state);
+                note(`Microphone: ${state}`);
+              },
+              onDiagnostic: note,
               heartbeatMs: room.heartbeatMs,
               onGuestStream: (guests) => {
                 const el = guestAudioRef.current;
@@ -126,6 +140,29 @@ function HostRoom({ room }: { room: LiveRoom }) {
       }, 150);
     };
   }, [stream, id, room.mode, room.heartbeatMs]);
+
+  // Tell the phone itself losing its internet apart from the live audio service dropping.
+  useEffect(() => {
+    note(describeNetwork());
+    const offline = () => {
+      setPhoneOnline(false);
+      note("Your phone says it lost its internet connection");
+    };
+    const online = () => {
+      setPhoneOnline(true);
+      note("Your phone is back online");
+    };
+    const changed = () => note(`Network changed: ${describeNetwork()}`);
+    window.addEventListener("offline", offline);
+    window.addEventListener("online", online);
+    const connection = (navigator as Navigator & { connection?: EventTarget }).connection;
+    connection?.addEventListener("change", changed);
+    return () => {
+      window.removeEventListener("offline", offline);
+      window.removeEventListener("online", online);
+      connection?.removeEventListener("change", changed);
+    };
+  }, [note]);
 
   // A phone that locks its screen pauses the microphone and the connection, so keep it on while live.
   useEffect(() => {
@@ -185,7 +222,12 @@ function HostRoom({ room }: { room: LiveRoom }) {
               End live
             </button>
           </div>
-          {!failure && connection === "reconnecting" && (
+          {!phoneOnline && (
+            <p role="alert" className="mt-3 text-sm text-amber-300">
+              Your phone has lost its internet connection, so listeners can't hear you. The live will pick up again by itself when it is back; stay on this page.
+            </p>
+          )}
+          {phoneOnline && !failure && connection === "reconnecting" && (
             <p role="status" className="mt-3 text-sm text-amber-300">
               Your connection dropped — reconnecting. Listeners may hear a short gap. Stay on this page.
             </p>
@@ -202,6 +244,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
               {failure} Listeners can't hear you — end this live and start a new one to try again.
             </p>
           )}
+          <ConnectionDetails lines={details} open={Boolean(failure) || connection === "reconnecting" || mic !== "ok" || !phoneOnline} />
           <p className="mt-3 text-xs text-white/60">
             Up to {room.maxListeners} people can listen. Leaving this page, or closing the tab, ends your live and turns your microphone off.
           </p>

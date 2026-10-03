@@ -8,6 +8,12 @@ export const RoomEvent = {
   Reconnecting: "reconnecting",
   Reconnected: "reconnected",
   Disconnected: "disconnected",
+  ConnectionStateChanged: "connectionStateChanged",
+  SignalConnected: "signalConnected",
+  SignalReconnecting: "signalReconnecting",
+  MediaDevicesError: "mediaDevicesError",
+  ConnectionQualityChanged: "connectionQualityChanged",
+  LocalTrackPublished: "localTrackPublished",
   ParticipantDisconnected: "participantDisconnected",
 } as const;
 
@@ -45,9 +51,11 @@ export class FakeRoom {
     this.handlers.set(event, handler);
     return this;
   }
-  connect = vi.fn(async (url: string, token: string) => {
+  connectOptions: unknown = undefined;
+  connect = vi.fn(async (url: string, token: string, options?: unknown) => {
     if (FakeRoom.failConnect) throw FakeRoom.failConnect;
     this.connectedWith = { url, token };
+    this.connectOptions = options;
   });
   disconnect = vi.fn(() => {
     this.disconnected = true;

@@ -810,12 +810,13 @@ host connection giving up for good after a single drop.
 
 - **The host reconnects itself** (3 tries, pass minted fresh by the API each time, so the same access rules apply: a refused or
   ended live is not retried), and says so, instead of ending in "end this live and start a new one".
+- **A network that blocks the direct audio route** (some mobile carriers and office Wi-Fi) is handled by a connection that dies within moments of starting being retried through the media server's relay. The pass is still minted by the API with the same rights; only the route differs, and it carries the same encrypted audio. The *Connection details* the host can copy hold only times, connection states and the phone's network type and browser name, nothing about other people.
 - **The microphone can't be silently dead:** if the phone pauses or takes it, the host is told in words.
 - **The screen is kept on while live** (where the browser allows). This does not change the rule that the microphone can't stay on out
   of sight: leaving the page, closing the tab or losing contact for 45 s still ends the live.
 - **Not covered:** a phone's own Wi-Fi or mobile-data switching, battery savers, and apps that take the microphone are outside the page's
   control; the page explains what it sees. A host who locks the screen or switches app for longer than 45 s will still find the live ended.
-Covered by 18 frontend tests and 9 browser runs.
+Covered by 36 frontend tests and 9 browser runs.
 
 ## 6. Operational incident: a stale DB hostname caused a production outage
 

@@ -658,3 +658,47 @@ describe("LiveRoomPage: a host on a phone", () => {
     expect(screen.queryByText(/Your connection dropped/)).not.toBeInTheDocument();
   });
 });
+
+describe("LiveRoomPage: connection details for a host", () => {
+  const big = () => room({ mode: "sfu", isHost: true, maxListeners: 50, heartbeatMs: 20_000, commentPollMs: 6_000 });
+  const start = async () => {
+    api.get.mockResolvedValue({ live: big() });
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    await waitFor(() => expect(mocks.sfuHosts).toHaveLength(1));
+    await screen.findByText(/You're live/);
+    return mocks.sfuHosts[0].opts as { onDiagnostic: (l: string) => void; onConnection: (s: string) => void };
+  };
+
+  it("collects what the connection reports, folded away while all is well", async () => {
+    const opts = await start();
+    act(() => opts.onDiagnostic("Reached the live audio service"));
+    const panel = screen.getByText("Connection details").closest("details")!;
+    expect(panel).not.toHaveAttribute("open");
+    expect(screen.getByText(/Reached the live audio service/)).toBeInTheDocument();
+    expect(screen.getByText(/Reached the live audio service/).textContent).toMatch(/^\+\d+s {2}/);
+  });
+
+  it("opens by itself when the connection drops", async () => {
+    const opts = await start();
+    act(() => opts.onConnection("reconnecting"));
+    await waitFor(() => expect(screen.getByText("Connection details").closest("details")).toHaveAttribute("open"));
+  });
+
+  it("says when the phone itself has lost its internet (not the live audio service), and when it is back", async () => {
+    await start();
+    act(() => void window.dispatchEvent(new Event("offline")));
+    expect(await screen.findByText(/Your phone has lost its internet connection/)).toBeInTheDocument();
+    expect(screen.getByText(/Your phone says it lost its internet connection/)).toBeInTheDocument();
+    act(() => void window.dispatchEvent(new Event("online")));
+    await waitFor(() => expect(screen.queryByText(/Your phone has lost its internet connection/)).not.toBeInTheDocument());
+    expect(screen.getByText(/Your phone is back online/)).toBeInTheDocument();
+  });
+
+  it("shows the service message, not the phone one, when only the service dropped", async () => {
+    const opts = await start();
+    act(() => opts.onConnection("reconnecting"));
+    expect(await screen.findByText(/Your connection dropped — reconnecting/)).toBeInTheDocument();
+    expect(screen.queryByText(/Your phone has lost its internet connection/)).not.toBeInTheDocument();
+  });
+});
