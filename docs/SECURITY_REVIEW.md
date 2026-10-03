@@ -699,6 +699,24 @@ on iOS (nothing here is a security hole, but it is a feature that silently didn'
 Covered by 37 new frontend tests and 2 backend tests. **Not verified on a physical iPhone from here** (no
 browser available to the test tools has iOS's autoplay rules); the owner checks it by hand.
 
+### 5.31 Confirming the email address
+
+Until now anyone could register with an address that wasn't theirs. Sign-up now emails a confirmation link,
+built the same way as the password-reset link: 32 random bytes, stored only as a SHA-256 hash, single-use, valid
+24 hours, only the newest link works, carried in the URL fragment (never sent to a server or in a Referer) and
+removed from the address bar after it's read. Confirming needs no sign-in (it is the email that proves ownership),
+guessing is throttled (20 bad tries per 15 minutes per IP), and asking for another link is limited to 3 an hour.
+A completed password reset also confirms the address, since that link was emailed to it too.
+
+- **The status is private.** `emailVerified` appears only on your own account object, never in profiles, search or
+  any other person's view, the same rule as the address itself.
+- **Sign-up never depends on email.** The message is sent after the reply; if the site can't send email or the
+  provider fails, the account is still created and the person can ask again later.
+- **Optional enforcement.** With `REQUIRE_VERIFIED_EMAIL=true` the two most outward-facing actions — going live and
+  posting a public Help wanted request — need a confirmed address (`403` with a clear reason). It is off by
+  default, so a visitor who signs up with an address they can't read isn't locked out of the rest of the site.
+- Covered by 20 backend tests, 26 frontend tests and 5 browser tests that follow the real emailed link.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -804,6 +822,7 @@ its own.
   Cloudinary account. When it refused uploads (§5.24) the app degraded cleanly to a clear
   "temporarily unavailable" message, but nothing worked until the account owner resolved it
   with Cloudinary. There is no second storage provider or upload queue.
+- **Email confirmation is a reminder, not a gate, unless switched on.** Accounts created before this feature, and new ones, start unconfirmed and can still use almost everything; only going live and public requests are held back, and only when `REQUIRE_VERIFIED_EMAIL=true`. Whether a confirmation email arrives depends on the email provider (see the password-reset risk).
 - **Live notifications can't be switched off.** Every accepted friend is told each time you go live (at most 5 times an hour), and there is no setting to mute a friend's lives short of unfriending them.
 - **Live audio can't be moderated.** The server never hears the audio (browser-to-browser, or relayed by
   the media server), so it cannot record or filter it; moderation is limited to blocking, deleting

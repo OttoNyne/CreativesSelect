@@ -92,7 +92,7 @@ flowchart LR
 
 ## 3. Data Model
 
-MongoDB via Mongoose. 25 collections. `ObjectId` refs are named `ref` below;
+MongoDB via Mongoose. 26 collections. `ObjectId` refs are named `ref` below;
 `unique` compound indexes are noted where they exist.
 
 | Model | Fields | Relationships |
@@ -119,6 +119,7 @@ MongoDB via Mongoose. 25 collections. `ObjectId` refs are named `ref` below;
 | **LiveListener** | `session` → LiveSession, `user` → User, `lastSeen`, `expireAt` (TTL), unique on (session, user) | Someone listening; "active" means they pinged in the last 30 s |
 | **LiveSignal** | `session`, `from` → User, `to` → User, `kind` (offer/answer/ice), `data`, `expireAt` (TTL, 5 min) | A WebRTC handshake message passed between two browsers through the API; never contains audio |
 | **LiveComment** | `session`, `user` → User, `body` (≤200), `expireAt` (TTL, 24 h) | A live chat message |
+| **EmailVerification** | `user` → User, `tokenHash` (SHA-256, unique), `expireAt` (TTL, 24 hours) | One outstanding "confirm your email" link per user; only a hash of the token is stored. Confirming sets `User.emailVerified` |
 | **RateLimitHit** | `key`, `at`, `expireAt` (TTL index) | One row per rate-limited action; stored in MongoDB so limits survive restarts and are shared by every server instance, and expired rows delete themselves |
 | **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
 | **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
@@ -146,8 +147,10 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | GET | `/reset-available` | public | → `{available}`: whether this site can send email at all (so the page can say so instead of promising a link that can't arrive) |
 | POST | `/forgot-password` | public | `{email}` → `200` with the **same** message whether or not the address has an account (the work happens after the reply, so timing doesn't leak it either); `400` for something that isn't an email; `429` after 3 per address or 10 per IP per hour (counted for unknown addresses too); `503` if no mail provider is configured |
 | POST | `/reset-password` | public | `{token, newPassword}` → `204`; the token is single-use, expires after an hour and only the newest link works; `400 This reset link is invalid or has expired` otherwise (10 bad tries / 15 min per IP then `429`). Signs out every existing session; does **not** sign anyone in; emails the owner a "your password was changed" notice |
+| POST | `/verify-email` | public | `{token}` → `204`, sets the account's `emailVerified`. The token (from the emailed link) is single-use and expires after 24 hours; `400 …invalid or has expired` otherwise (20 bad tries / 15 min per IP then `429`). Needs no sign-in, so the link works on any device |
+| POST | `/resend-verification` | auth | → `204`, emails a fresh link (the old one stops working); `400` if already confirmed, `503` if the site can't send email, `502` if sending fails, `429` after 3 an hour |
 | POST | `/logout` | public | — → `204`, clears cookie |
-| GET | `/me` | auth | → `200 {user}` |
+| GET | `/me` | auth | → `200 {user}`; your own user object includes `email` and `emailVerified` (neither is ever shown to anyone else) |
 
 ### Profiles — `/api/profiles`
 | Method | Path | Auth | Notes |
@@ -282,14 +285,14 @@ The audio never touches this API. A live travels one of two ways, fixed when it 
 
 | Layer | Platform | Notes |
 |---|---|---|
-| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL` (one site address, or several separated by commas — the first is used in email links)/`CLOUDINARY_*`/`CLOUDFLARE_*`/`RESEND_API_KEY`/`MAIL_FROM`/`LIVEKIT_*`/`LIVE_MAX_LISTENERS`/`LIVE_ICE_SERVERS` set as dashboard-only secrets (`sync: false`), never committed |
+| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL` (one site address, or several separated by commas — the first is used in email links)/`CLOUDINARY_*`/`CLOUDFLARE_*`/`RESEND_API_KEY`/`MAIL_FROM`/`LIVEKIT_*`/`LIVE_MAX_LISTENERS`/`LIVE_ICE_SERVERS`/`REQUIRE_VERIFIED_EMAIL` set as dashboard-only secrets (`sync: false`), never committed |
 | Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; production deploys come **only from CI**: `vercel.json` sets `git.deploymentEnabled: false`, and the `deploy` job in `.github/workflows/ci.yml` builds and ships with the Vercel CLI (secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) only after lint, build, tests and audit pass on `master`. Side effect: no per-PR preview deployments. `vercel.json` also **proxies `/api/*` to the Render API** so cookies are first-party (see the same-origin proxy note below), and the site is an **installable web app** (`manifest.webmanifest`, icons, Apple meta tags) |
 | AI image generation | Cloudflare Workers AI (FLUX.1 schnell), free daily allowance | Needs `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; without them the backend uses the mock provider. Results are re-hosted on Cloudinary |
 | Password-reset email | [Resend](https://resend.com) HTTP API | Needs `RESEND_API_KEY` and `MAIL_FROM` (a sender on a domain verified with Resend) as Render settings. Until they're set the site says plainly that reset by email isn't available. Resend without a verified domain only delivers to its owner's own address |
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (55 tests × 3 browsers, 168 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (64 tests × 3 browsers, 195 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -359,10 +362,13 @@ App
 │   └── PlaybackProvider     (global "now playing" state — survives navigation)
 │       ├── NavBar           (links + MessagesLink unread badge + NotificationBell)
 │       ├── InstallBanner    (iPhone/iPad only: how to Add to Home Screen; dismissible, remembered 30 days)
+│       ├── VerifyEmailBanner (signed-in people whose email isn't confirmed: reminder with Resend; dismissible for the visit)
 │       ├── Routes
 │       │   ├── /login       → LoginPage            ("Forgot password?" link)
 │       │   ├── /forgot-password → ForgotPasswordPage
 │       │   ├── /reset-password  → ResetPasswordPage    (token read from the URL #fragment, then removed from the address bar)
+│       │   ├── /verify-email    → VerifyEmailPage      (same fragment handling; confirms the address on load)
+│       │   ├── /about, /features, /how-it-works → AboutPage, FeaturesPage, HowItWorksPage (public information pages)
 │       │   ├── /register    → RegisterPage
 │       │   ├── ProtectedRoute (redirects to /login if !user)
 │       │   │   ├── /          → FeedPage        (PostComposer → ImageAdjuster, PostCard[] → FramedImage + PostCommentList)
@@ -472,14 +478,14 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 240 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 262 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 474 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 512 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
-login, register, forgot/reset password, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,
+login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,
 nav bar, messages link, notification bell, post composer/card/comments, portfolio, music player, top
 friends, profile names, testimonials, delete-account, change-password, the AI buttons,
 avatar, the auth context and the video helpers. Test files are type-checked by `tsc -b`

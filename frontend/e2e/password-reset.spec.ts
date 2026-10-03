@@ -9,14 +9,23 @@ test.use({ extraHTTPHeaders: fakeIpHeaders() });
 // and so does e2e/README.md for local runs). Without it the emailed-link test is skipped.
 const OUTBOX = process.env.MAIL_OUTBOX_DIR;
 
+// A message file, or null if it can't be read as one (for instance, if it is being replaced as we look).
+async function readMail(file: string): Promise<{ to: string; subject: string; text: string } | null> {
+  try {
+    return JSON.parse(await readFile(file, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 async function emailTo(address: string, subject: RegExp): Promise<string> {
   let found = "";
   await expect
     .poll(
       async () => {
-        for (const name of await readdir(OUTBOX!).catch(() => [] as string[])) {
-          const mail = JSON.parse(await readFile(path.join(OUTBOX!, name), "utf8"));
-          if (mail.to === address && subject.test(mail.subject)) found = mail.text;
+        for (const name of (await readdir(OUTBOX!).catch(() => [] as string[])).filter((n) => n.endsWith(".json"))) {
+          const mail = await readMail(path.join(OUTBOX!, name));
+          if (mail && mail.to === address && subject.test(mail.subject)) found = mail.text;
         }
         return found;
       },

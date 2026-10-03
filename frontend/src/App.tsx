@@ -3,6 +3,8 @@ import { AuthProvider } from "./context/AuthContext";
 import { PlaybackProvider } from "./context/PlaybackContext";
 import { NavBar } from "./components/layout/NavBar";
 import { InstallBanner } from "./components/layout/InstallBanner";
+import { VerifyEmailBanner } from "./components/layout/VerifyEmailBanner";
+import { SiteFooter } from "./components/layout/SiteFooter";
 import { NowPlayingBar } from "./components/layout/NowPlayingBar";
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
@@ -19,6 +21,10 @@ import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LivePage } from "./pages/LivePage";
 import { LiveRoomPage } from "./pages/LiveRoomPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { VerifyEmailPage } from "./pages/VerifyEmailPage";
+import { AboutPage } from "./pages/AboutPage";
+import { FeaturesPage } from "./pages/FeaturesPage";
+import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { usePageTitle } from "./lib/usePageTitle";
 
 export default function App() {
@@ -28,11 +34,16 @@ export default function App() {
       <PlaybackProvider>
         <NavBar />
         <InstallBanner />
+        <VerifyEmailBanner />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<FeedPage />} />
@@ -52,6 +63,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <SiteFooter />
         <NowPlayingBar />
       </PlaybackProvider>
     </AuthProvider>

@@ -11,6 +11,7 @@ describe("titleForPath", () => {
     expect(titleForPath("/messages/zoe")).toBe("Messages · CreativesSelect");
     expect(titleForPath("/live")).toBe("Live · CreativesSelect");
     expect(titleForPath("/live/abc123")).toBe("Live · CreativesSelect");
+    expect(titleForPath("/verify-email")).toBe("Confirm email · CreativesSelect");
     expect(titleForPath("/forgot-password")).toBe("Forgot password · CreativesSelect");
     expect(titleForPath("/reset-password")).toBe("Reset password · CreativesSelect");
   });

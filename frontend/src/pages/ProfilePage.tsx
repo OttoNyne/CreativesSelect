@@ -20,6 +20,7 @@ import { GenerateImageButton } from "../components/ai/GenerateImageButton";
 import { ImageSearchPicker } from "../components/ai/ImageSearchPicker";
 import { DeleteAccount } from "../components/profile/DeleteAccount";
 import { ChangePassword } from "../components/profile/ChangePassword";
+import { EmailStatus } from "../components/profile/EmailStatus";
 import { ProfileNames } from "../components/profile/ProfileNames";
 
 export function ProfilePage() {
@@ -346,6 +347,7 @@ export function ProfilePage() {
               {saving ? "Saving…" : "Save changes"}
             </button>
             <div className="space-y-3 border-t border-white/10 pt-3">
+              <EmailStatus />
               <ChangePassword />
               <DeleteAccount />
             </div>

@@ -10,6 +10,8 @@ export interface User {
   id: string;
   /** Only present on your own user object. */
   email?: string;
+  /** Whether you've opened the link we emailed to confirm the address. Only on your own user object. */
+  emailVerified?: boolean;
   username: string;
   displayName: string;
   bio: string | null;

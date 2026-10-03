@@ -22,5 +22,7 @@ export const authApi = {
   resetAvailable: () => api.get<{ available: boolean }>("/auth/reset-available"),
   forgotPassword: (email: string) => api.post<{ message: string }>("/auth/forgot-password", { email }),
   resetPassword: (token: string, newPassword: string) => api.post<void>("/auth/reset-password", { token, newPassword }),
+  verifyEmail: (token: string) => api.post<void>("/auth/verify-email", { token }),
+  resendVerification: () => api.post<void>("/auth/resend-verification"),
   me: () => api.get<{ user: User }>("/auth/me"),
 };
