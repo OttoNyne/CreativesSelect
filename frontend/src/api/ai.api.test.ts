@@ -69,3 +69,35 @@ describe("aiApi.discard", () => {
     await expect(aiApi.discard("https://cdn/unused.jpg")).resolves.toBeUndefined();
   });
 });
+
+describe("aiApi.generateImage", () => {
+  it("without a photo, sends the description as JSON, exactly as before", async () => {
+    const fetchFn = mockFetch(200, { url: "https://cdn/a.jpg" });
+    await expect(aiApi.generateImage("a kite", "post")).resolves.toEqual({ url: "https://cdn/a.jpg" });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toMatch(/\/api\/ai\/image$/);
+    expect(init.headers["Content-Type"]).toBe("application/json");
+    expect(JSON.parse(init.body)).toEqual({ prompt: "a kite", kind: "post" });
+  });
+
+  it("with a photo, sends a form with the description, kind, closeness and the photo, with cookies", async () => {
+    const fetchFn = mockFetch(200, { url: "https://cdn/a.jpg", usedReference: true });
+    const photo = new Blob(["jpeg-bytes"], { type: "image/jpeg" });
+    await expect(aiApi.generateImage("a kite", "avatar", { reference: photo, closeness: "loose" })).resolves.toEqual({ url: "https://cdn/a.jpg", usedReference: true });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toMatch(/\/api\/ai\/image$/);
+    expect(init.credentials).toBe("include");
+    expect(init.headers).toBeUndefined(); // the browser sets the form's content type, with its boundary
+    const form = init.body as FormData;
+    expect([form.get("prompt"), form.get("kind"), form.get("closeness")]).toEqual(["a kite", "avatar", "loose"]);
+    expect((form.get("reference") as File).name).toBe("reference.jpg");
+  });
+
+  it("throws the server's reason when a form request is refused", async () => {
+    mockFetch(400, { error: "The reference photo must be a JPEG, PNG or WebP picture." });
+    const err = await aiApi.generateImage("x", "post", { reference: new Blob(["x"]) }).catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.message).toMatch(/JPEG, PNG or WebP/);
+  });
+});
+

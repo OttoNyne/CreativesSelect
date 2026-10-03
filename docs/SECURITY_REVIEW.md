@@ -788,6 +788,19 @@ is a new field on every profile, so both are handled on the server:
   service's, so a profile owner could generate something unwelcome (reports and blocking apply as for any profile content).
 Covered by 28 backend tests (the real-provider path with the network and storage stubbed), 41 frontend tests and 24 browser runs.
 
+### 5.37 Rearranging the playlist, and reference photos for every AI picture
+
+- **Reordering can't be used to touch anything but your own playlist.** `PUT /api/tracks/order` takes a list of ids and accepts it only if
+  it is *exactly* the caller's own tracks, each once; a missing, extra, repeated, foreign or non-string id (or an object such as
+  `{"$ne": ""}`) is a `400` and nothing moves. Updates are also filtered by owner, and it needs a sign-in. A private profile's
+  playlist stays hidden from strangers in its new order too. (Playlists had no route tests before; adding, listing and deleting are now covered.)
+- **One rule for reference photos, everywhere.** The photo check from the wallpaper work — in the request, in memory only, never a link the
+  server fetches, 4 MB, one file, JPEG/PNG/WebP by its first bytes, a closed set of three "how closely" words — now lives in one function used
+  by both `/image` and `/wallpaper`, so every AI picture maker has the same protections and a new one can't forget them. The plain JSON request is unchanged.
+- **Cost:** a photo-based picture counts against the same 10 per hour as any other AI picture (6 for wallpapers); refused requests don't use up an allowance.
+- **Moving songs while one plays** changes only the order of what comes next; it can't start, stop or swap what is playing.
+Covered by 21 backend tests, 22 frontend tests and 30 browser runs.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

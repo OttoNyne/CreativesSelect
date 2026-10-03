@@ -9,6 +9,9 @@ interface PlaybackContextValue {
    *  can continue through the queue — this state lives above the router
    *  outlet, so it survives navigating to another page in the app. */
   play: (track: Track, queue: Track[]) => void;
+  /** The same songs in a new order (the owner rearranged the playlist): what plays after the current one follows the new
+   *  order, and the current song carries on without a break. Ignored if the queue isn't made of exactly these songs. */
+  reorderQueue: (tracks: Track[]) => void;
   playNext: () => void;
   stop: () => void;
   /** Whether an uploaded song is playing right now (YouTube tracks report their own state). */
@@ -94,6 +97,13 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     [startUpload, silenceAudio]
   );
 
+  const reorderQueue = useCallback((tracks: Track[]) => {
+    const old = queueRef.current;
+    if (old.length === 0 || old.length !== tracks.length || !tracks.every((t) => old.some((o) => o.id === t.id))) return;
+    queueRef.current = tracks;
+    setQueue(tracks);
+  }, []);
+
   const playNext = useCallback(() => {
     const list = queueRef.current;
     const prev = currentRef.current;
@@ -133,8 +143,8 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ current, queue, play, playNext, stop, isPlaying, toggle, error }),
-    [current, queue, play, playNext, stop, isPlaying, toggle, error]
+    () => ({ current, queue, play, reorderQueue, playNext, stop, isPlaying, toggle, error }),
+    [current, queue, play, reorderQueue, playNext, stop, isPlaying, toggle, error]
   );
 
   return <PlaybackContext.Provider value={value}>{children}</PlaybackContext.Provider>;

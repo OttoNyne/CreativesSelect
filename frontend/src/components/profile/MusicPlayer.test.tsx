@@ -8,18 +8,19 @@ import { ApiError } from "../../api/client";
 import { usePlayback } from "../../context/PlaybackContext";
 import type { Track } from "../../types";
 
-vi.mock("../../api/tracks.api", () => ({ tracksApi: { byUser: vi.fn(), add: vi.fn(), remove: vi.fn() } }));
+vi.mock("../../api/tracks.api", () => ({ tracksApi: { byUser: vi.fn(), add: vi.fn(), remove: vi.fn(), reorder: vi.fn() } }));
 vi.mock("../../api/media.api", () => ({ uploadFile: vi.fn() }));
 vi.mock("../../context/PlaybackContext", () => ({ usePlayback: vi.fn() }));
 const api = vi.mocked(tracksApi);
 const play = vi.fn();
+const reorderQueue = vi.fn();
 
 function track(over: Partial<Track> = {}): Track {
   return { id: "t1", ownerId: "me", title: "Song one", sourceType: "youtube", url: "dQw4w9WgXcQ", position: 0, createdAt: "", ...over } as Track;
 }
 
 function renderPlayer(isOwner: boolean, current: Track | null = null) {
-  vi.mocked(usePlayback).mockReturnValue({ current, play } as never);
+  vi.mocked(usePlayback).mockReturnValue({ current, play, reorderQueue } as never);
   return render(<MusicPlayer username="me" isOwner={isOwner} />);
 }
 
@@ -27,6 +28,7 @@ beforeEach(() => {
   Object.values(api).forEach((fn) => fn.mockReset());
   vi.mocked(uploadFile).mockReset();
   play.mockReset();
+  reorderQueue.mockReset();
   api.byUser.mockResolvedValue({ tracks: [track(), track({ id: "t2", title: "Upload two", sourceType: "upload" })] });
 });
 
@@ -125,5 +127,114 @@ describe("MusicPlayer", () => {
     renderPlayer(true);
     expect(await screen.findByText("Remove a track to add another.")).toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Paste a YouTube link…")).not.toBeInTheDocument();
+  });
+});
+
+describe("MusicPlayer: rearranging the playlist", () => {
+  const three = () => [track({ id: "t1", title: "One" }), track({ id: "t2", title: "Two" }), track({ id: "t3", title: "Three" })];
+  const titles = () => screen.getAllByTestId("track-row").map((row) => row.querySelector("p.truncate")?.textContent);
+  const saved = (tracks: Track[]) => api.reorder.mockImplementation(async (ids: string[]) => ({ tracks: ids.map((id, position) => ({ ...tracks.find((t) => t.id === id)!, position })) }));
+
+  beforeEach(() => api.byUser.mockResolvedValue({ tracks: three() }));
+
+  it("offers the owner a way to move each song up or down, but not off either end", async () => {
+    renderPlayer(true);
+    await screen.findByText("Two");
+    expect(screen.getByRole("button", { name: "Move One up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move One down" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Move Two up" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Move Three down" })).toBeDisabled();
+  });
+
+  it("gives visitors no way to rearrange, and nothing to drag", async () => {
+    renderPlayer(false);
+    await screen.findByText("Two");
+    expect(screen.queryByRole("button", { name: /^Move / })).not.toBeInTheDocument();
+    for (const row of screen.getAllByTestId("track-row")) expect(row).not.toHaveAttribute("draggable", "true");
+  });
+
+  it("has nothing to rearrange with one song", async () => {
+    api.byUser.mockResolvedValue({ tracks: [track({ id: "t1", title: "Only" })] });
+    renderPlayer(true);
+    await screen.findByText("Only");
+    expect(screen.queryByRole("button", { name: /^Move / })).not.toBeInTheDocument();
+  });
+
+  it("moves a song down, shows it at once, saves the whole order, and keeps the queue in step", async () => {
+    saved(three());
+    renderPlayer(true);
+    await screen.findByText("Two");
+    await userEvent.click(screen.getByRole("button", { name: "Move One down" }));
+    expect(titles()).toEqual(["Two", "One", "Three"]);
+    expect(api.reorder).toHaveBeenCalledWith(["t2", "t1", "t3"]);
+    await waitFor(() => expect(reorderQueue).toHaveBeenCalled());
+    expect(reorderQueue.mock.calls[0][0].map((t: Track) => t.id)).toEqual(["t2", "t1", "t3"]);
+    expect(screen.getByText("Moved One to position 2 of 3.")).toBeInTheDocument();
+  });
+
+  it("moves a song up", async () => {
+    saved(three());
+    renderPlayer(true);
+    await screen.findByText("Two");
+    await userEvent.click(screen.getByRole("button", { name: "Move Three up" }));
+    expect(titles()).toEqual(["One", "Three", "Two"]);
+    expect(api.reorder).toHaveBeenCalledWith(["t1", "t3", "t2"]);
+  });
+
+  it("goes back to the old order and says so if the order can't be saved", async () => {
+    api.reorder.mockRejectedValue(new ApiError(500, "boom"));
+    renderPlayer(true);
+    await screen.findByText("Two");
+    await userEvent.click(screen.getByRole("button", { name: "Move One down" }));
+    expect(await screen.findByText("boom")).toBeInTheDocument();
+    expect(titles()).toEqual(["One", "Two", "Three"]);
+    expect(reorderQueue).not.toHaveBeenCalled();
+  });
+
+  it("holds the buttons while an order is being saved, so two moves can't cross", async () => {
+    let finish: (v: { tracks: Track[] }) => void = () => {};
+    api.reorder.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderPlayer(true);
+    await screen.findByText("Two");
+    await userEvent.click(screen.getByRole("button", { name: "Move One down" }));
+    expect(screen.getByRole("button", { name: "Move Two down" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Three up" })).toBeDisabled();
+    finish({ tracks: [track({ id: "t2", title: "Two" }), track({ id: "t1", title: "One" }), track({ id: "t3", title: "Three" })] });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Move Two down" })).toBeEnabled());
+  });
+
+  it("can also be rearranged by dragging a song onto another's place", async () => {
+    saved(three());
+    renderPlayer(true);
+    await screen.findByText("Two");
+    const rows = screen.getAllByTestId("track-row");
+    expect(rows[0]).toHaveAttribute("draggable", "true");
+    const data = { setData: vi.fn(), effectAllowed: "" };
+    fireEvent.dragStart(rows[0], { dataTransfer: data });
+    fireEvent.dragOver(rows[2], { dataTransfer: data });
+    fireEvent.drop(rows[2], { dataTransfer: data });
+    expect(titles()).toEqual(["Two", "Three", "One"]);
+    expect(api.reorder).toHaveBeenCalledWith(["t2", "t3", "t1"]);
+  });
+
+  it("ignores a drop that isn't from one of its own songs, or onto the same place", async () => {
+    renderPlayer(true);
+    await screen.findByText("Two");
+    const rows = screen.getAllByTestId("track-row");
+    fireEvent.drop(rows[1]); // something dragged in from elsewhere
+    const data = { setData: vi.fn(), effectAllowed: "" };
+    fireEvent.dragStart(rows[1], { dataTransfer: data });
+    fireEvent.drop(rows[1], { dataTransfer: data });
+    expect(api.reorder).not.toHaveBeenCalled();
+    expect(titles()).toEqual(["One", "Two", "Three"]);
+  });
+
+  it("keeps removing and playing working alongside", async () => {
+    api.remove.mockResolvedValue(undefined);
+    renderPlayer(true);
+    await screen.findByText("Two");
+    await userEvent.click(screen.getByRole("button", { name: "Remove Two" }));
+    await waitFor(() => expect(screen.queryByText("Two")).not.toBeInTheDocument());
+    expect(api.remove).toHaveBeenCalledWith("t2");
   });
 });

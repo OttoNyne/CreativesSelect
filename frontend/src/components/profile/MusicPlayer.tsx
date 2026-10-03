@@ -16,7 +16,11 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { current, play } = usePlayback();
+  const [saving, setSaving] = useState(false);
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [dropOn, setDropOn] = useState<number | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const { current, play, reorderQueue } = usePlayback();
 
   useEffect(() => {
     tracksApi
@@ -69,6 +73,30 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
     }
   }
 
+  // Moves a track to a new place in the playlist (by up/down buttons or by dragging), shows it at once, and saves the order.
+  async function moveTrack(from: number, to: number) {
+    if (saving || from === to || to < 0 || to >= tracks.length) return;
+    const before = tracks;
+    const next = [...tracks];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setTracks(next);
+    setAnnouncement(`Moved ${moved.title} to position ${to + 1} of ${next.length}.`);
+    setError(null);
+    setSaving(true);
+    try {
+      const { tracks: saved } = await tracksApi.reorder(next.map((t) => t.id));
+      setTracks(saved);
+      reorderQueue(saved);
+    } catch (err) {
+      setTracks(before);
+      setAnnouncement("");
+      setError(err instanceof ApiError ? err.message : "Couldn't save the new order.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleRemove(id: string) {
     setError(null);
     try {
@@ -96,15 +124,44 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
       <div className="mt-3 space-y-1.5">
         {loading && <p className="text-xs text-white/60">Loading…</p>}
         {!loading && tracks.length === 0 && <p className="text-xs text-white/60">No tracks yet.</p>}
-        {tracks.map((track) => {
+        {tracks.map((track, index) => {
           const isPlaying = current?.id === track.id;
+          const canArrange = isOwner && tracks.length > 1;
           return (
             <div
               key={track.id}
+              data-testid="track-row"
+              draggable={canArrange && !saving}
+              onDragStart={(e) => {
+                setDragging(index);
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", track.id); // Firefox won't start a drag without some data
+              }}
+              onDragOver={(e) => {
+                if (dragging === null) return;
+                e.preventDefault();
+                setDropOn(index);
+              }}
+              onDragLeave={() => setDropOn((d) => (d === index ? null : d))}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragging !== null) void moveTrack(dragging, index);
+                setDragging(null);
+                setDropOn(null);
+              }}
+              onDragEnd={() => {
+                setDragging(null);
+                setDropOn(null);
+              }}
               className={`flex items-center gap-2 rounded-lg border p-2 ${
                 isPlaying ? "border-[var(--profile-accent)] bg-white/5" : "border-white/5 bg-black/20"
-              }`}
+              } ${dragging === index ? "opacity-50" : ""} ${dropOn === index && dragging !== index ? "ring-2 ring-[var(--profile-accent)]" : ""}`}
             >
+              {canArrange && (
+                <span aria-hidden="true" title="Drag to rearrange" className="shrink-0 cursor-grab select-none text-sm text-white/60">
+                  ⠿
+                </span>
+              )}
               <button
                 onClick={() => play(track, tracks)}
                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs ${
@@ -118,8 +175,28 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                 <p className="truncate text-xs font-medium text-white/80">{track.title}</p>
                 <p className="text-[10px] text-white/60">{track.sourceType === "youtube" ? "YouTube" : "Uploaded"}</p>
               </div>
+              {canArrange && (
+                <div className="flex shrink-0 flex-col">
+                  <button
+                    onClick={() => moveTrack(index, index - 1)}
+                    disabled={saving || index === 0}
+                    aria-label={`Move ${track.title} up`}
+                    className="flex h-6 w-9 items-center justify-center text-[11px] text-white/70 hover:text-white disabled:opacity-30"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => moveTrack(index, index + 1)}
+                    disabled={saving || index === tracks.length - 1}
+                    aria-label={`Move ${track.title} down`}
+                    className="flex h-6 w-9 items-center justify-center text-[11px] text-white/70 hover:text-white disabled:opacity-30"
+                  >
+                    ▼
+                  </button>
+                </div>
+              )}
               {isOwner && (
-                <button onClick={() => handleRemove(track.id)} className="shrink-0 text-xs text-white/60 hover:text-red-400">
+                <button onClick={() => handleRemove(track.id)} aria-label={`Remove ${track.title}`} className="shrink-0 text-xs text-white/60 hover:text-red-400">
                   ✕
                 </button>
               )}
@@ -127,6 +204,10 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
           );
         })}
       </div>
+
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
 
       {isOwner && (
         <div className="mt-3 space-y-2 border-t border-white/5 pt-3">

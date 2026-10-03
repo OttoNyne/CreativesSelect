@@ -1,9 +1,9 @@
 import { InfoPage } from "../components/layout/InfoPage";
 
 const FEATURES = [
-  { icon: "🎨", title: "A profile that's yours", text: "Pick your colours, fonts and wallpaper, add a bio, show your top friends, and collect testimonials. Describe a wallpaper (or start from one of your photos) and let AI make it, then choose how it moves." },
+  { icon: "🎨", title: "A profile that's yours", text: "Pick your colours, fonts and wallpaper, add a bio, show your top friends, and collect testimonials. Describe a wallpaper (or start from one of your photos) and let AI make it, then choose how it moves. Any AI picture on the site can start from a reference photo of your own." },
   { icon: "🖼️", title: "Portfolio", text: "Show pictures and short videos (up to 30 seconds). Visitors can like or dislike each piece." },
-  { icon: "🎵", title: "Music", text: "Add up to five tracks — YouTube links or your own uploads — that keep playing as you browse." },
+  { icon: "🎵", title: "Music", text: "Add up to five tracks — YouTube links or your own uploads — arrange them in the order you like, and they keep playing as you browse." },
   { icon: "📝", title: "Feed", text: "Share what you're working on with a picture you can frame: choose its shape, zoom and placement before posting." },
   { icon: "💬", title: "Messages and group chat", text: "Chat privately with friends, or talk with everyone in a group you've joined." },
   { icon: "👥", title: "Friends and groups", text: "Find other creatives, send friend requests, and join or start groups around what you love." },

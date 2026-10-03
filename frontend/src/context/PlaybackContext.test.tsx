@@ -196,3 +196,59 @@ describe("usePlayback", () => {
     spy.mockRestore();
   });
 });
+
+describe("PlaybackProvider: rearranging the playlist while it plays", () => {
+  function Reorder({ queue, reordered }: { queue: Track[]; reordered: Track[] }) {
+    const ctx = usePlayback();
+    return (
+      <div>
+        <button onClick={() => ctx.play(queue[0], queue)}>start</button>
+        <button onClick={() => ctx.reorderQueue(reordered)}>reorder</button>
+        <button onClick={ctx.playNext}>next</button>
+        <p data-testid="current">{ctx.current?.id ?? "none"}</p>
+        <p data-testid="queue">{ctx.queue.map((t) => t.id).join(",")}</p>
+      </div>
+    );
+  }
+  const setup = (queue: Track[], reordered: Track[]) =>
+    render(
+      <PlaybackProvider>
+        <Reorder queue={queue} reordered={reordered} />
+      </PlaybackProvider>
+    );
+  const [a, b, c] = [song("a"), song("b"), song("c")];
+
+  it("what plays next follows the new order, and the current song carries on without a restart", async () => {
+    setup([a, b, c], [c, a, b]);
+    await userEvent.click(screen.getByText("start"));
+    const playCalls = vi.mocked(HTMLMediaElement.prototype.play).mock.calls.length;
+    await userEvent.click(screen.getByText("reorder"));
+    expect(screen.getByTestId("queue")).toHaveTextContent("c,a,b");
+    expect(screen.getByTestId("current")).toHaveTextContent("a");
+    expect(vi.mocked(HTMLMediaElement.prototype.play).mock.calls.length).toBe(playCalls); // not restarted
+    await userEvent.click(screen.getByText("next"));
+    expect(screen.getByTestId("current")).toHaveTextContent("b"); // after a, in the new order
+    await userEvent.click(screen.getByText("next"));
+    expect(screen.getByTestId("current")).toHaveTextContent("c"); // then wraps to the new first
+  });
+
+  it("is ignored when the queue isn't made of exactly those songs (another profile's music, nothing playing)", async () => {
+    setup([a, b, c], [c, a]);
+    await userEvent.click(screen.getByText("start"));
+    await userEvent.click(screen.getByText("reorder"));
+    expect(screen.getByTestId("queue")).toHaveTextContent("a,b,c");
+
+    const other = [song("x"), song("y"), song("z")];
+    setup([a, b, c], other);
+    await userEvent.click(screen.getAllByText("start")[1]);
+    await userEvent.click(screen.getAllByText("reorder")[1]);
+    expect(screen.getAllByTestId("queue")[1]).toHaveTextContent("a,b,c");
+  });
+
+  it("does nothing when nothing is playing", async () => {
+    setup([a, b], [b, a]);
+    await userEvent.click(screen.getByText("reorder"));
+    expect(screen.getByTestId("queue")).toHaveTextContent("");
+    expect(screen.getByTestId("current")).toHaveTextContent("none");
+  });
+});

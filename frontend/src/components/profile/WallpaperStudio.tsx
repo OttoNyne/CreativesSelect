@@ -2,15 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { aiApi, type WallpaperCloseness } from "../../api/ai.api";
 import { ApiError } from "../../api/client";
 import { MovingWallpaper } from "./MovingWallpaper";
+import { ReferencePhotoField } from "../ai/ReferencePhotoField";
 import { WALLPAPER_MOTIONS } from "../../lib/wallpaperMotion";
 import { shrinkForUpload } from "../../lib/resizeImage";
 import type { WallpaperMotion } from "../../types";
-
-const CLOSENESS: { value: WallpaperCloseness; label: string }[] = [
-  { value: "close", label: "Stay close to my photo" },
-  { value: "balanced", label: "Balanced" },
-  { value: "loose", label: "Just inspired by it" },
-];
 
 const MAX_PROMPT = 500;
 const button = "rounded-md border px-3 py-1.5 text-xs font-medium";
@@ -41,7 +36,6 @@ export function WallpaperStudio({
 }) {
   const [prompt, setPrompt] = useState("");
   const [reference, setReference] = useState<File | null>(null);
-  const [referencePreview, setReferencePreview] = useState<string | null>(null);
   const [closeness, setCloseness] = useState<WallpaperCloseness>("balanced");
   // what the next generated wallpaper will do; a still picture isn't the point of this, so it starts moving
   const [newMotion, setNewMotion] = useState<WallpaperMotion>(motion === "none" ? "zoom" : motion);
@@ -49,15 +43,7 @@ export function WallpaperStudio({
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ url: string; usedReference: boolean } | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
   const resultUrl = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!reference) return setReferencePreview(null);
-    const preview = URL.createObjectURL(reference);
-    setReferencePreview(preview);
-    return () => URL.revokeObjectURL(preview);
-  }, [reference]);
 
   // A picture that was made but not used is removed from storage, best effort, when it is replaced or the window closes.
   resultUrl.current = result?.url ?? null;
@@ -67,15 +53,6 @@ export function WallpaperStudio({
     },
     []
   );
-
-  function pickReference(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return setError("Choose a picture (JPEG, PNG or WebP) for the reference.");
-    setError(null);
-    setReference(file);
-  }
 
   async function discardResult() {
     const old = result;
@@ -133,35 +110,7 @@ export function WallpaperStudio({
         />
       </label>
 
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => fileInput.current?.click()} className={chip(false)}>
-            {reference ? "Change reference photo" : "📷 Add a reference photo (optional)"}
-          </button>
-          <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/*" aria-label="Reference photo" className="hidden" onChange={pickReference} />
-          {reference && referencePreview && (
-            <>
-              <img src={referencePreview} alt="Your reference photo" className="h-10 w-16 rounded object-cover" />
-              <button type="button" onClick={() => setReference(null)} className="text-xs text-white/70 hover:text-red-400">
-                Remove photo
-              </button>
-            </>
-          )}
-        </div>
-        {reference && (
-          <fieldset>
-            <legend className="text-xs text-white/70">How closely should it follow your photo?</legend>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {CLOSENESS.map((c) => (
-                <label key={c.value} className={`${chip(closeness === c.value)} cursor-pointer`}>
-                  <input type="radio" name="closeness" value={c.value} checked={closeness === c.value} onChange={() => setCloseness(c.value)} className="sr-only" />
-                  {c.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        )}
-      </div>
+      <ReferencePhotoField file={reference} onFile={setReference} closeness={closeness} onCloseness={setCloseness} disabled={busy} />
 
       <fieldset>
         <legend className="text-xs text-white/70">How should it move?</legend>
