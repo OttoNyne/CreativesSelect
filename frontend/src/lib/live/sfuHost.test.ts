@@ -322,12 +322,62 @@ describe("SfuHost: networks that block the direct audio route", () => {
   });
 });
 
+describe("SfuHost: a connection that starts to drop straight away", () => {
+  const relayed = (room: ReturnType<typeof lastRoom>) => (room.connectOptions as { rtcConfig?: { iceTransportPolicy?: string } } | undefined)?.rtcConfig?.iceTransportPolicy === "relay";
+
+  it("doesn't wait for the media client to keep trying the blocked route: it starts over through the relay at once", async () => {
+    const lines: string[] = [];
+    const connection: string[] = [];
+    const { host, onFailed } = setup({ onDiagnostic: (l) => lines.push(l), onConnection: (c) => connection.push(c) });
+    host.start();
+    await settle();
+    const first = lastRoom();
+    await vi.advanceTimersByTimeAsync(5_000);
+    first.emit(RoomEvent.Reconnecting); // seconds in
+    expect(first.disconnected).toBe(true);
+    expect(lines).toContain("Dropped soon after starting — switching to the relay");
+    first.emit(RoomEvent.Disconnected); // what the real client reports when it is disconnected on purpose
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(FakeRoom.all).toHaveLength(2);
+    expect(relayed(lastRoom())).toBe(true);
+    expect(lastRoom().published).toHaveLength(1);
+    expect(connection.at(-1)).toBe("live");
+    expect(onFailed).not.toHaveBeenCalled();
+    host.stop();
+  });
+
+  it("leaves a drop alone once the connection has been healthy for a while", async () => {
+    const { host } = setup();
+    host.start();
+    await settle();
+    await vi.advanceTimersByTimeAsync(60_000);
+    lastRoom().emit(RoomEvent.Reconnecting);
+    expect(lastRoom().disconnected).toBe(false);
+    expect(FakeRoom.all).toHaveLength(1);
+    host.stop();
+  });
+
+  it("only switches once", async () => {
+    const { host } = setup();
+    host.start();
+    await settle();
+    lastRoom().emit(RoomEvent.Reconnecting);
+    lastRoom().emit(RoomEvent.Disconnected);
+    await vi.advanceTimersByTimeAsync(2_000);
+    const second = lastRoom();
+    second.emit(RoomEvent.Reconnecting); // already on the relay: let the client ride it out
+    expect(second.disconnected).toBe(false);
+    host.stop();
+  });
+});
+
 describe("SfuHost: connection details", () => {
   it("puts what happens into plain lines", async () => {
     const lines: string[] = [];
     const { host } = setup({ onDiagnostic: (l) => lines.push(l) });
     host.start();
     await settle();
+    await vi.advanceTimersByTimeAsync(31_000); // a connection that has been fine for a while (an early drop would switch to the relay)
     const room = lastRoom();
     room.emit(RoomEvent.SignalConnected);
     room.emit(RoomEvent.ConnectionStateChanged, "connected");

@@ -46,7 +46,8 @@ export class SfuHost {
   private guestStream: MediaStream | null = null;
   private attempts = 0;
   private useRelay = false;
-  private connectedAt = 0;
+  /** When the current connection attempt began (a connection that fails soon after this is a sign the direct route is blocked). */
+  private startedAt = 0;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private unwatchMicrophone: () => void = () => {};
   private stopped = false;
@@ -121,7 +122,7 @@ export class SfuHost {
     old?.disconnect();
     this.guestStream = null; // a new connection hands over the guests' audio afresh
     // A connection that dies within moments of starting usually means the direct audio route is blocked on this network.
-    if (Date.now() - this.connectedAt < HEALTHY_AFTER_MS) this.useRelay = true;
+    if (Date.now() - this.startedAt < HEALTHY_AFTER_MS) this.useRelay = true;
     if (this.attempts >= (this.opts.maxAttempts ?? 3)) return this.fail("The connection to the live audio service was lost.");
     this.opts.onConnection?.("reconnecting");
     this.retryTimer = setTimeout(() => void this.connect(), RETRY_DELAY_MS * (this.attempts + 1));
@@ -131,6 +132,7 @@ export class SfuHost {
     if (this.stopped) return;
     this.attempts++;
     const relay = this.useRelay;
+    this.startedAt = Date.now();
     this.opts.onDiagnostic?.(`Connecting to the live audio service (try ${this.attempts}${relay ? ", through the relay" : ""})`);
     try {
       const { liveId, stream } = this.opts;
@@ -144,7 +146,15 @@ export class SfuHost {
       });
       room.on(lk.RoomEvent.Reconnecting, () => {
         this.opts.onDiagnostic?.("Audio connection dropped — reconnecting");
-        if (this.room === room) this.opts.onConnection?.("reconnecting");
+        if (this.room !== room) return;
+        this.opts.onConnection?.("reconnecting");
+        // Dropping soon after starting means the direct audio route probably doesn't work on this network: rather than wait for
+        // the media client to keep trying it, start over now through the relay.
+        if (!this.useRelay && Date.now() - this.startedAt < HEALTHY_AFTER_MS) {
+          this.useRelay = true;
+          this.opts.onDiagnostic?.("Dropped soon after starting — switching to the relay");
+          room.disconnect();
+        }
       });
       room.on(lk.RoomEvent.Reconnected, () => {
         this.opts.onDiagnostic?.("Audio connection restored");
@@ -170,7 +180,6 @@ export class SfuHost {
       if (!track) return this.fail("No microphone audio to broadcast.");
       await room.localParticipant.publishTrack(track, { source: lk.Track.Source.Microphone, name: "microphone" });
       this.attempts = 0;
-      this.connectedAt = Date.now();
       this.opts.onConnection?.("live");
     } catch (err) {
       // the server said no (the live is over, or this isn't allowed): trying again won't help
