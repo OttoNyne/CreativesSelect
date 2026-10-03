@@ -33,7 +33,7 @@ export function RegisterPage() {
   return (
     <div className="mx-auto mt-16 max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-6">
       <h1 className="text-xl font-bold text-white">Join CreativesSelect</h1>
-      <p className="mt-1 text-sm text-white/50">A safe space for creatives to network, collab, and show off work.</p>
+      <p className="mt-1 text-sm text-white/60">A safe space for creatives to network, collab, and show off work.</p>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <input
@@ -41,7 +41,7 @@ export function RegisterPage() {
           placeholder="Display name"
           value={form.displayName}
           onChange={(e) => update("displayName", e.target.value)}
-          className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+          className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <input
           required
@@ -56,9 +56,9 @@ export function RegisterPage() {
           pattern="[A-Za-z0-9_]+"
           title="3–30 letters, numbers or underscores"
           aria-describedby="username-hint"
-          className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+          className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
-        <p id="username-hint" className="-mt-1 text-[11px] text-white/30">
+        <p id="username-hint" className="-mt-1 text-[11px] text-white/60">
           Your profile address: 3–30 letters, numbers or underscores.
         </p>
         <input
@@ -67,7 +67,7 @@ export function RegisterPage() {
           placeholder="Email"
           value={form.email}
           onChange={(e) => update("email", e.target.value)}
-          className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+          className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <input
           type="password"
@@ -76,7 +76,7 @@ export function RegisterPage() {
           placeholder="Password (min 8 characters)"
           value={form.password}
           onChange={(e) => update("password", e.target.value)}
-          className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+          className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         {error && <p className="text-sm text-red-400">{error}</p>}
         <button
@@ -88,7 +88,7 @@ export function RegisterPage() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-white/50">
+      <p className="mt-4 text-center text-sm text-white/60">
         Already have an account?{" "}
         <Link to="/login" className="text-violet-400 hover:underline">
           Log in

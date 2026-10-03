@@ -59,7 +59,7 @@ export function FriendsPage() {
     }
   }
 
-  if (status === "loading") return <div className="p-8 text-center text-white/40">Loading…</div>;
+  if (status === "loading") return <div className="p-8 text-center text-white/60">Loading…</div>;
   if (status === "error") return <div className="p-8 text-center text-red-400">{error}</div>;
 
   return (
@@ -89,7 +89,7 @@ export function FriendsPage() {
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Friends ({friends.length})</h2>
-        {friends.length === 0 && <p className="text-sm text-white/40">No friends yet — search for creatives to connect with.</p>}
+        {friends.length === 0 && <p className="text-sm text-white/60">No friends yet — search for creatives to connect with.</p>}
         <div className="space-y-2">
           {friends.map((f) => (
             <div key={f.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
@@ -103,7 +103,7 @@ export function FriendsPage() {
               >
                 Message
               </Link>
-              <button onClick={() => handleRemove(f.id)} className="text-xs text-white/40 hover:text-red-400">
+              <button onClick={() => handleRemove(f.id)} className="text-xs text-white/60 hover:text-red-400">
                 Unfriend
               </button>
             </div>

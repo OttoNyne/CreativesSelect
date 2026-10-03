@@ -45,7 +45,7 @@ export function PostCard({
           <Link to={`/u/${post.author.username}`} className="font-medium text-white hover:underline">
             {post.author.displayName}
           </Link>
-          <div className="text-xs text-white/40">
+          <div className="text-xs text-white/60">
             @{post.author.username} · {timeAgo(post.createdAt)}
           </div>
         </div>
@@ -83,7 +83,7 @@ export function PostCard({
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-4 border-t border-white/5 pt-2 text-xs text-white/50">
+      <div className="mt-3 flex items-center gap-4 border-t border-white/5 pt-2 text-xs text-white/60">
         <button onClick={() => setShowComments((s) => !s)} className="hover:text-white">
           💬 {commentCount} comment{commentCount === 1 ? "" : "s"}
         </button>

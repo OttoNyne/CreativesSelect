@@ -75,7 +75,7 @@ export function LivePage() {
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
       <div>
         <h1 className="text-xl font-bold text-white">Live</h1>
-        <p className="mt-1 text-sm text-white/50">Voice-only live rooms. Listen in, chat along, or go live yourself.</p>
+        <p className="mt-1 text-sm text-white/60">Voice-only live rooms. Listen in, chat along, or go live yourself.</p>
       </div>
 
       <form onSubmit={handleGoLive} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
@@ -87,7 +87,7 @@ export function LivePage() {
             maxLength={MAX_LIVE_TITLE_LENGTH}
             placeholder="What's your live about?"
             aria-label="Live title"
-            className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+            className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <button
             type="submit"
@@ -97,7 +97,7 @@ export function LivePage() {
             {starting ? "Starting…" : "Go live"}
           </button>
         </div>
-        <p className="mt-2 text-xs text-white/40">
+        <p className="mt-2 text-xs text-white/60">
           Uses your microphone. {maxListeners ? `Up to ${maxListeners} people can listen at once` : "Listeners can join while there's room"}, and your live ends when you leave the room.
         </p>
         {startError && (
@@ -109,9 +109,9 @@ export function LivePage() {
 
       <section aria-label="Live now">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Live now</h2>
-        {lives === null && !loadError && <p className="text-sm text-white/40">Loading…</p>}
+        {lives === null && !loadError && <p className="text-sm text-white/60">Loading…</p>}
         {loadError && lives === null && <p className="text-sm text-red-400">Couldn&apos;t load the lives.</p>}
-        {lives?.length === 0 && <p className="text-sm text-white/40">No one is live right now — be the first.</p>}
+        {lives?.length === 0 && <p className="text-sm text-white/60">No one is live right now — be the first.</p>}
         <div className="space-y-2">
           {lives?.map((l) => (
             <Link
@@ -122,7 +122,7 @@ export function LivePage() {
               <Avatar username={l.host.username} displayName={l.host.displayName} avatarUrl={l.host.avatarUrl} size={40} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium text-white">{l.title}</span>
-                <span className="block truncate text-xs text-white/50">
+                <span className="block truncate text-xs text-white/60">
                   {l.isHost ? "You" : l.host.displayName} · {l.listenerCount} listening
                 </span>
               </span>

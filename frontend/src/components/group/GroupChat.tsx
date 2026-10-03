@@ -108,7 +108,7 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
     <section aria-label="Group chat" className="rounded-xl border border-white/10 bg-white/[0.03]">
       <h2 className="border-b border-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white/60">Group chat</h2>
 
-      {state === "loading" && <p className="p-4 text-sm text-white/40">Loading…</p>}
+      {state === "loading" && <p className="p-4 text-sm text-white/60">Loading…</p>}
       {state === "error" && <p className="p-4 text-sm text-red-400">{error}</p>}
       {state === "ready" && (
         <>
@@ -118,12 +118,12 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
                 Load earlier messages
               </button>
             )}
-            {messages.length === 0 && <p className="py-4 text-center text-sm text-white/40">No messages yet — start the conversation.</p>}
+            {messages.length === 0 && <p className="py-4 text-center text-sm text-white/60">No messages yet — start the conversation.</p>}
             {messages.map((m) => (
               <div key={m.id} className="flex items-start gap-2">
                 {m.sender && <Avatar username={m.sender.username} displayName={m.sender.displayName} avatarUrl={m.sender.avatarUrl} size={28} />}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2 text-xs text-white/40">
+                  <div className="flex items-baseline gap-2 text-xs text-white/60">
                     {m.sender ? (
                       <Link to={`/u/${m.sender.username}`} className="font-medium text-white/80 hover:underline">
                         {m.mine ? "You" : m.sender.displayName}
@@ -159,7 +159,7 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
               rows={1}
               placeholder="Message the group…"
               aria-label="Group message"
-              className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+              className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
             />
             <button
               type="submit"

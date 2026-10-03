@@ -61,9 +61,9 @@ export function ProfileComments({ username }: { username: string }) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Leave a comment on this profile…"
-            className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none"
+            className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
           />
-          <button type="submit" className="rounded-md bg-[var(--profile-accent)] px-3 py-1.5 text-xs font-medium text-white">
+          <button type="submit" className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1.5 text-xs font-medium text-[var(--profile-on-accent)]">
             Post
           </button>
         </form>
@@ -71,8 +71,8 @@ export function ProfileComments({ username }: { username: string }) {
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
       <div className="mt-3 space-y-3">
-        {loading && <p className="text-xs text-white/40">Loading…</p>}
-        {!loading && comments.length === 0 && <p className="text-xs text-white/40">No testimonials yet.</p>}
+        {loading && <p className="text-xs text-white/60">Loading…</p>}
+        {!loading && comments.length === 0 && <p className="text-xs text-white/60">No testimonials yet.</p>}
         {comments.map((c) => (
           <div key={c.id} className="flex gap-2 text-sm">
             <Link to={`/u/${c.author.username}`}>
@@ -85,7 +85,7 @@ export function ProfileComments({ username }: { username: string }) {
               <p className="text-white/70">{c.content}</p>
             </div>
             {user && (user.id === c.author.id || user.username === username) && (
-              <button onClick={() => handleDelete(c.id)} className="self-start text-xs text-white/30 hover:text-red-400">
+              <button onClick={() => handleDelete(c.id)} className="self-start text-xs text-white/60 hover:text-red-400">
                 ✕
               </button>
             )}

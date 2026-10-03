@@ -147,7 +147,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
               {failure} Listeners can't hear you — end this live and start a new one to try again.
             </p>
           )}
-          <p className="mt-3 text-xs text-white/40">
+          <p className="mt-3 text-xs text-white/60">
             Up to {room.maxListeners} people can listen. Leaving this page, or closing the tab, ends your live and turns your microphone off.
           </p>
         </div>
@@ -351,7 +351,7 @@ export function LiveRoomPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      {status === "loading" && <p className="p-8 text-center text-white/40">Loading…</p>}
+      {status === "loading" && <p className="p-8 text-center text-white/60">Loading…</p>}
       {status === "error" && <Ended message={error ?? "This live isn't available."} />}
       {status === "ready" && room && (room.isHost ? room.status === "live" ? <HostRoom key={room.id} room={room} /> : <Ended message="Your live has ended." /> : <ListenerRoom key={room.id} room={room} />)}
     </div>

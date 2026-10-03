@@ -56,7 +56,7 @@ export function GroupDetailPage() {
     }
   }
 
-  if (status === "loading") return <div className="p-8 text-center text-white/40">Loading…</div>;
+  if (status === "loading") return <div className="p-8 text-center text-white/60">Loading…</div>;
   if (status === "error" || !group) return <div className="p-8 text-center text-red-400">{error}</div>;
 
   return (
@@ -65,7 +65,7 @@ export function GroupDetailPage() {
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
         <h1 className="text-xl font-bold text-white">{group.name}</h1>
         <p className="mt-1 text-sm text-white/60">{group.description}</p>
-        <p className="mt-2 text-xs text-white/30">{group.memberCount} members</p>
+        <p className="mt-2 text-xs text-white/60">{group.memberCount} members</p>
         <button
           onClick={isMember ? handleLeave : handleJoin}
           className={`mt-3 rounded-md px-3 py-1.5 text-sm font-medium ${

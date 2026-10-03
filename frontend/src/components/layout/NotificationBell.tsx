@@ -168,9 +168,9 @@ export function NotificationBell() {
           </div>
 
           <div className="max-h-96 overflow-y-auto">
-            {loading && <p className="p-3 text-xs text-white/40">Loading…</p>}
+            {loading && <p className="p-3 text-xs text-white/60">Loading…</p>}
             {!loading && notifications.length === 0 && (
-              <p className="p-3 text-xs text-white/40">You're all caught up.</p>
+              <p className="p-3 text-xs text-white/60">You're all caught up.</p>
             )}
             {notifications.map((n) => (
               <div
@@ -228,7 +228,7 @@ export function NotificationBell() {
                       “{n.payload.message}”
                     </p>
                   )}
-                  <p className="mt-0.5 text-[10px] text-white/30">{timeAgo(n.createdAt)}</p>
+                  <p className="mt-0.5 text-[10px] text-white/60">{timeAgo(n.createdAt)}</p>
 
                   {n.type === "help_offer" && (
                     <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>

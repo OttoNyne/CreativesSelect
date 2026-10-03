@@ -31,7 +31,7 @@ export function SearchPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search creatives…"
-          className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+          className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <button type="submit" className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
           Search
@@ -40,7 +40,7 @@ export function SearchPage() {
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <div className="space-y-2">
-        {searched && results.length === 0 && <p className="text-sm text-white/40">No creatives found.</p>}
+        {searched && results.length === 0 && <p className="text-sm text-white/60">No creatives found.</p>}
         {results.map((u) => (
           <Link
             key={u.id}
@@ -50,7 +50,7 @@ export function SearchPage() {
             <Avatar username={u.username} displayName={u.displayName} avatarUrl={u.avatarUrl} size={36} />
             <div>
               <div className="font-medium text-white">{u.displayName}</div>
-              <div className="text-xs text-white/40">@{u.username}</div>
+              <div className="text-xs text-white/60">@{u.username}</div>
             </div>
           </Link>
         ))}

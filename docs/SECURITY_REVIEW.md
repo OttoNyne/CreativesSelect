@@ -726,6 +726,16 @@ Notifications now link to the post, message thread, profile or live room they co
 
 The link target is chosen on the client from ids already in the notification, and every target is an in-app route (no URL taken from the payload), so a notification can't be used to send someone to another site. Covered by 13 backend tests, 31 frontend tests and 6 browser tests.
 
+### 5.33 Text unreadable on light backgrounds, wallpapers and mid-tones
+
+Profile owners choose their own colours and wallpaper, but every page is styled as white text on dark panels, so a light or mid-tone background (or a text colour close to the background) could leave a profile — or a visitor's view of it — unreadable. It also affected the default dark pages: the faintest greys (`text-white/30`, `/40`) and some solid buttons were below the 4.5:1 WCAG AA minimum.
+
+- **Colours are parsed, never trusted.** Theme colours are stored as free-form strings. They now pass through a hex parser and anything else falls back to the default, so a malformed or hostile value can't reach the page's CSS variables.
+- **Contrast is enforced on the way out,** so it also covers profiles saved before this change: text and accent colours are nudged to 4.5:1; a light background flips the styling; a mid-tone gets a panel; a wallpaper gets a scrim sized for the worst case (an all-white photo). The theme editor tells the owner when a chosen text colour will be adjusted.
+- **An automated check, not just a look.** A browser test drives axe-core's contrast rule over every signed-out and signed-in page, error messages, group chat, search, notifications, the picture adjuster, and eight themed profiles (white, cream with unreadable light text, black with dark text, bright yellow, mid-grey, saturated blue, ...), on Chrome, Safari's engine and an iPhone-sized screen. It first found real failures (the grey text, a violet button at 4.4:1) which are fixed.
+- **A phone layout bug surfaced by it:** on a visitor's view of a profile the Add Friend / Report / Block buttons ran off the edge of the screen; the row now wraps.
+- **Not covered:** axe cannot measure text over a photograph, so wallpapers rely on the worst-case calculation (unit-tested) plus a visual check rather than a measured one. Browsers older than about 2022 that lack `color-mix` keep the un-flipped faded colours on light profiles.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

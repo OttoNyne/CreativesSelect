@@ -54,14 +54,14 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
   }
 
   const input =
-    "min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/30 focus:outline-none";
+    "min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:outline-none";
   const button =
     "rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 disabled:opacity-40";
 
   return (
     <div className="space-y-3 rounded-md border border-white/10 bg-black/20 p-3">
       <form onSubmit={saveName} className="space-y-1">
-        <label className="block text-xs text-white/50" htmlFor="display-name">
+        <label className="block text-xs text-white/60" htmlFor="display-name">
           Display name
         </label>
         <div className="flex gap-2">
@@ -80,12 +80,12 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
       </form>
 
       <form onSubmit={saveUsername} className="space-y-1">
-        <label className="block text-xs text-white/50" htmlFor="username">
-          Username <span className="text-white/30">— your profile address (/u/{username.trim().toLowerCase() || "…"})</span>
+        <label className="block text-xs text-white/60" htmlFor="username">
+          Username <span className="text-white/60">— your profile address (/u/{username.trim().toLowerCase() || "…"})</span>
         </label>
         <div className="flex gap-2">
           <div className="flex min-w-0 flex-1 items-center rounded-md border border-white/10 bg-black/30 pl-3 focus-within:border-white/30">
-            <span className="text-sm text-white/40">@</span>
+            <span className="text-sm text-white/60">@</span>
             <input
               id="username"
               value={username}
@@ -101,7 +101,7 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
             {userBusy ? "Changing…" : "Change username"}
           </button>
         </div>
-        <p className="text-[11px] text-white/30">
+        <p className="text-[11px] text-white/60">
           {USERNAME_HINT}. Old links to your profile stop working, you can change it 3 times a day, and your old name stays
           reserved for you for 30 days.
         </p>

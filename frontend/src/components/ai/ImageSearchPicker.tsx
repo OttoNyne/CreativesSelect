@@ -55,7 +55,7 @@ export function ImageSearchPicker({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Describe the image you want…"
-              className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-sky-500 focus:outline-none"
+              className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-sky-500 focus:outline-none"
             />
             <button
               type="submit"
@@ -69,7 +69,7 @@ export function ImageSearchPicker({
           {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
           {searched && !loading && results.length === 0 && !error && (
-            <p className="mt-2 text-xs text-white/40">No photos found for that.</p>
+            <p className="mt-2 text-xs text-white/60">No photos found for that.</p>
           )}
 
           {results.length > 0 && (
@@ -87,7 +87,7 @@ export function ImageSearchPicker({
               ))}
             </div>
           )}
-          <p className="mt-2 text-[10px] text-white/30">Openly-licensed photos via Openverse.</p>
+          <p className="mt-2 text-[10px] text-white/60">Openly-licensed photos via Openverse.</p>
         </div>
       )}
     </div>

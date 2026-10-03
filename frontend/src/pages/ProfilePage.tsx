@@ -7,7 +7,8 @@ import { moderationApi } from "../api/moderation.api";
 import { uploadFile } from "../api/media.api";
 import { assetUrl, ApiError } from "../api/client";
 import type { User, ProfileTheme } from "../types";
-import { profileThemeStyle } from "../theme/applyProfileTheme";
+import { profileThemeStyle, readableTheme } from "../theme/applyProfileTheme";
+import { PANEL_STYLE, WALLPAPER_SCRIM } from "../theme/contrast";
 import { Avatar } from "../components/common/Avatar";
 import { ImagePositioner } from "../components/common/ImagePositioner";
 import { ThemeEditor } from "../components/profile/ThemeEditor";
@@ -145,22 +146,28 @@ export function ProfilePage() {
   }
 
   if (notFound) {
-    return <div className="p-8 text-center text-white/50">This profile is unavailable or private.</div>;
+    return <div className="p-8 text-center text-white/60">This profile is unavailable or private.</div>;
   }
 
   if (!profile) {
-    return <div className="p-8 text-center text-white/50">Loading profile…</div>;
+    return <div className="p-8 text-center text-white/60">Loading profile…</div>;
   }
 
   const wallpaperUrl = assetUrl(profile.wallpaperUrl);
   const isVideoWallpaper = profile.wallpaperType === "video" && Boolean(wallpaperUrl);
 
+  // data-scheme="light" flips the page's white-on-dark styling for a bright background (see index.css), so text stays readable.
+  const { scheme, panel } = readableTheme(profile.theme, Boolean(wallpaperUrl));
+
   return (
     <div
+      data-scheme={scheme}
+      data-wallpaper={wallpaperUrl ? "true" : undefined}
       style={profileThemeStyle(
         profile.theme,
         isVideoWallpaper ? undefined : wallpaperUrl,
         profile.wallpaperPosition,
+        Boolean(wallpaperUrl),
       )}
       className="min-h-[calc(100vh-56px)]"
     >
@@ -175,12 +182,15 @@ export function ProfilePage() {
             muted
             playsInline
           />
-          <div className="fixed inset-0 -z-10 bg-black/40" />
+          <div className="fixed inset-0 -z-10" style={{ background: `rgba(0,0,0,${WALLPAPER_SCRIM})` }} />
         </>
       )}
 
-      <div className="mx-auto max-w-3xl px-4 pt-8">
-        <div className="flex items-end gap-4">
+      <div
+        className={`mx-auto max-w-3xl px-4 pt-8 ${panel ? "min-h-[calc(100vh-56px)] pb-6 sm:rounded-b-2xl" : ""}`}
+        style={panel ? { background: PANEL_STYLE[panel] } : undefined}
+      >
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
           <div className="relative">
             <Avatar
               username={profile.username}
@@ -200,12 +210,12 @@ export function ProfilePage() {
             <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
           </div>
 
-          <div className="pb-2">
-            <h1 className="text-2xl font-bold">{profile.displayName}</h1>
-            <p className="text-sm opacity-60">@{profile.username}</p>
+          <div className="min-w-0 pb-2">
+            <h1 className="break-words text-2xl font-bold">{profile.displayName}</h1>
+            <p className="text-sm text-[var(--profile-muted)]">@{profile.username}</p>
           </div>
 
-          <div className="ml-auto flex gap-2 pb-2">
+          <div className="ml-auto flex flex-wrap gap-2 pb-2">
             {isOwner ? (
               <button
                 onClick={() => setEditing((e) => !e)}
@@ -227,8 +237,8 @@ export function ProfilePage() {
                   <button
                     onClick={handleFriendRequest}
                     disabled={requestSent}
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-                    style={{ background: "var(--profile-accent)" }}
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
+                    style={{ background: "var(--profile-accent-fill)" }}
                   >
                     {requestSent ? "Request sent" : "Add Friend"}
                   </button>
@@ -256,17 +266,17 @@ export function ProfilePage() {
                 if (updated.username !== username) navigate(`/u/${updated.username}`, { replace: true });
               }}
             />
-            <ThemeEditor theme={theme} onChange={setTheme} />
+            <ThemeEditor theme={theme} onChange={setTheme} hasWallpaper={Boolean(wallpaperUrl)} />
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={3}
               placeholder="Tell people what you make…"
-              className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm placeholder:opacity-40 focus:outline-none"
+              className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm placeholder:text-white/55 focus:outline-none"
             />
             <div className="flex flex-wrap items-center gap-2">
               <GenerateTextButton kind="bio" getPrompt={() => bio || profile.displayName} onGenerated={setBio} />
-              <label className="ml-auto flex items-center gap-2 text-sm opacity-70">
+              <label className="ml-auto flex items-center gap-2 text-sm text-[var(--profile-muted)]">
                 <input
                   type="checkbox"
                   checked={profile.isPrivate}
@@ -276,7 +286,7 @@ export function ProfilePage() {
               </label>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-white/40">Avatar:</span>
+              <span className="text-xs text-white/60">Avatar:</span>
               <ImageSearchPicker
                 label="🔍 Search photos for avatar"
                 onSelect={(url) => saveProfile({ avatarUrl: url })}
@@ -301,7 +311,7 @@ export function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => saveProfile({ wallpaperUrl: null })}
-                  className="text-xs text-white/40 hover:text-red-400"
+                  className="text-xs text-white/60 hover:text-red-400"
                 >
                   Remove wallpaper
                 </button>
@@ -312,7 +322,7 @@ export function ProfilePage() {
                 value={wallpaperPrompt}
                 onChange={(e) => setWallpaperPrompt(e.target.value)}
                 placeholder="Describe a wallpaper to generate…"
-                className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:outline-none"
+                className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:outline-none"
               />
               <GenerateImageButton
                 kind="wallpaper"
@@ -341,8 +351,8 @@ export function ProfilePage() {
             <button
               onClick={() => saveProfile({ bio, theme })}
               disabled={saving}
-              className="rounded-md px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-              style={{ background: "var(--profile-accent)" }}
+              className="rounded-md px-4 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
+              style={{ background: "var(--profile-accent-fill)" }}
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
@@ -353,7 +363,7 @@ export function ProfilePage() {
             </div>
           </div>
         ) : (
-          <p className="mt-4 text-sm opacity-80">{profile.bio || "No bio yet."}</p>
+          <p className="mt-4 text-sm">{profile.bio || "No bio yet."}</p>
         )}
 
         <div className="mt-6 grid grid-cols-1 gap-4 pb-10 sm:grid-cols-2">

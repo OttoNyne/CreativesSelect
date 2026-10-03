@@ -83,19 +83,19 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
     <div className="rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Music</h2>
-        <span className="text-xs text-white/30">
+        <span className="text-xs text-white/60">
           {tracks.length}/{MAX_TRACKS}
         </span>
       </div>
       {tracks.length > 1 && (
-        <p className="mt-1 text-[10px] text-white/30">
+        <p className="mt-1 text-[10px] text-white/60">
           Plays straight through the queue until you pause — keeps going as you browse elsewhere in the app.
         </p>
       )}
 
       <div className="mt-3 space-y-1.5">
-        {loading && <p className="text-xs text-white/40">Loading…</p>}
-        {!loading && tracks.length === 0 && <p className="text-xs text-white/40">No tracks yet.</p>}
+        {loading && <p className="text-xs text-white/60">Loading…</p>}
+        {!loading && tracks.length === 0 && <p className="text-xs text-white/60">No tracks yet.</p>}
         {tracks.map((track) => {
           const isPlaying = current?.id === track.id;
           return (
@@ -108,7 +108,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
               <button
                 onClick={() => play(track, tracks)}
                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs ${
-                  isPlaying ? "bg-[var(--profile-accent)] text-white" : "bg-white/10 text-white/70 hover:bg-white/20"
+                  isPlaying ? "bg-[var(--profile-accent-fill)] text-[var(--profile-on-accent)]" : "bg-white/10 text-white/70 hover:bg-white/20"
                 }`}
                 title={isPlaying ? "Playing" : "Play"}
               >
@@ -116,10 +116,10 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
               </button>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium text-white/80">{track.title}</p>
-                <p className="text-[10px] text-white/30">{track.sourceType === "youtube" ? "YouTube" : "Uploaded"}</p>
+                <p className="text-[10px] text-white/60">{track.sourceType === "youtube" ? "YouTube" : "Uploaded"}</p>
               </div>
               {isOwner && (
-                <button onClick={() => handleRemove(track.id)} className="shrink-0 text-xs text-white/30 hover:text-red-400">
+                <button onClick={() => handleRemove(track.id)} className="shrink-0 text-xs text-white/60 hover:text-red-400">
                   ✕
                 </button>
               )}
@@ -131,7 +131,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
       {isOwner && (
         <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
           {atLimit ? (
-            <p className="text-xs text-white/30">Remove a track to add another.</p>
+            <p className="text-xs text-white/60">Remove a track to add another.</p>
           ) : (
             <>
               <form onSubmit={handleAddYoutube} className="flex flex-col gap-1.5 sm:flex-row">
@@ -139,17 +139,17 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                   value={youtubeTitle}
                   onChange={(e) => setYoutubeTitle(e.target.value)}
                   placeholder="Track title"
-                  className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none sm:w-32"
+                  className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none sm:w-32"
                 />
                 <input
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
                   placeholder="Paste a YouTube link…"
-                  className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none"
+                  className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="rounded-md bg-[var(--profile-accent)] px-3 py-1 text-xs font-medium text-white"
+                  className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent)]"
                 >
                   Add
                 </button>
@@ -159,7 +159,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                   value={uploadCaption}
                   onChange={(e) => setUploadCaption(e.target.value)}
                   placeholder="Caption (optional)"
-                  className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none"
+                  className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
                 />
                 <button
                   type="button"

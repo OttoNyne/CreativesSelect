@@ -38,7 +38,7 @@ export function PostPage() {
       <Link to="/" className="text-sm text-violet-400 hover:underline">
         ← Back to your feed
       </Link>
-      {state === "loading" && <p className="p-8 text-center text-white/40">Loading…</p>}
+      {state === "loading" && <p className="p-8 text-center text-white/60">Loading…</p>}
       {state === "missing" && (
         <p role="alert" className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-white/70">
           This post isn&apos;t available. It may have been deleted, or it&apos;s from someone you can&apos;t see.

@@ -43,9 +43,9 @@ export function FeedPage() {
       {actionError && <p className="text-sm text-red-400">{actionError}</p>}
       <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} />
 
-      {status === "loading" && <div className="text-center text-white/40">Loading feed…</div>}
+      {status === "loading" && <div className="text-center text-white/60">Loading feed…</div>}
       {status === "ready" && posts.length === 0 && (
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center text-white/50">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center text-white/60">
           No posts yet — add some friends or post something of your own.
         </div>
       )}

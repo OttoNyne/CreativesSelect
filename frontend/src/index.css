@@ -1,9 +1,23 @@
 @import "tailwindcss";
 
+/* Solid buttons carry white labels. Tailwind's stock shades of these are a little too light for that (under 4.5:1), so they are
+   set a step deeper; the lighter shade is kept for hover. */
+@theme {
+  --color-violet-600: #6d28d9;
+  --color-violet-500: #7c3aed;
+  --color-red-600: #b91c1c;
+  --color-red-500: #dc2626;
+  --color-sky-600: #0369a1;
+}
+
 :root {
   --profile-bg: #12121a;
   --profile-text: #f5f5f7;
+  --profile-muted: #c4c4c9;
   --profile-accent: #8b5cf6;
+  --profile-accent-text: #a78bfa;
+  --profile-accent-fill: #7c3aed;
+  --profile-on-accent: #ffffff;
   --profile-font: inherit;
 }
 
@@ -44,4 +58,35 @@ a {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+}
+
+/*
+ * Profiles can be given a light background. The pages are written as white text on dark panels (text-white/70,
+ * bg-black/30, border-white/10 ...), and Tailwind builds those from the --color-white / --color-black variables, so on a
+ * light profile (data-scheme="light", set by ProfilePage) we swap them: white becomes near-black and black becomes white.
+ * Every text, border and panel colour inside flips together and stays readable. Coloured text gets a darker shade, and
+ * saturated buttons keep their white label.
+ */
+[data-scheme="light"] {
+  color-scheme: light;
+  --color-white: #111118;
+  --color-black: #ffffff;
+  --color-violet-300: #5b21b6;
+  --color-violet-400: #5b21b6;
+  --color-red-200: #991b1b;
+  --color-red-300: #991b1b;
+  --color-red-400: #b91c1c;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #047857;
+  --color-fuchsia-300: #86198f;
+  --color-amber-300: #92400e;
+  --color-sky-300: #075985;
+}
+[data-scheme="light"] :is(.bg-violet-500, .bg-violet-600, .bg-red-500, .bg-red-600, .bg-sky-600, .bg-fuchsia-500/80) {
+  --color-white: #ffffff;
+}
+
+/* On a wallpaper the cards get a darker tint, so the faded text on them stays readable over any photo. */
+[data-wallpaper="true"] :is(.bg-black\/20, .bg-black\/30) {
+  background-color: rgba(0, 0, 0, 0.6);
 }

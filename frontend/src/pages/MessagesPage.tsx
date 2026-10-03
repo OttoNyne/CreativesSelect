@@ -19,7 +19,7 @@ function timeLabel(iso: string): string {
 function ConversationList({ conversations, active }: { conversations: Conversation[]; active?: string }) {
   if (conversations.length === 0) {
     return (
-      <p className="p-4 text-sm text-white/40">
+      <p className="p-4 text-sm text-white/60">
         You can message your friends.{" "}
         <Link to="/search" className="text-violet-400 hover:underline">
           Find creatives
@@ -42,7 +42,7 @@ function ConversationList({ conversations, active }: { conversations: Conversati
             <Avatar username={c.user.username} displayName={c.user.displayName} avatarUrl={c.user.avatarUrl} size={36} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-white">{c.user.displayName}</span>
-              <span className="block truncate text-xs text-white/40">
+              <span className="block truncate text-xs text-white/60">
                 {c.lastMessage ? `${c.lastMessage.mine ? "You: " : ""}${c.lastMessage.body}` : "No messages yet"}
               </span>
             </span>
@@ -161,7 +161,7 @@ function Thread({ username }: { username: string }) {
     }
   }
 
-  if (state === "loading") return <div className="p-6 text-center text-white/40">Loading…</div>;
+  if (state === "loading") return <div className="p-6 text-center text-white/60">Loading…</div>;
   if (state === "error") {
     return (
       <div className="p-6 text-center">
@@ -191,7 +191,7 @@ function Thread({ username }: { username: string }) {
             Load earlier messages
           </button>
         )}
-        {messages.length === 0 && <p className="py-8 text-center text-sm text-white/40">No messages yet — say hello.</p>}
+        {messages.length === 0 && <p className="py-8 text-center text-sm text-white/60">No messages yet — say hello.</p>}
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.mine ? "justify-end" : "justify-start"}`}>
             <div
@@ -200,7 +200,7 @@ function Thread({ username }: { username: string }) {
               }`}
             >
               {m.body}
-              <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-white/50">
+              <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-white/60">
                 <span>{timeLabel(m.createdAt)}</span>
                 {m.mine && m.readAt && <span>Seen</span>}
                 {m.mine && (
@@ -230,7 +230,7 @@ function Thread({ username }: { username: string }) {
           rows={1}
           placeholder="Write a message…"
           aria-label="Message"
-          className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+          className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <button
           type="submit"
@@ -281,7 +281,7 @@ export function MessagesPage() {
       <h1 className="mb-3 text-lg font-semibold text-white">Messages</h1>
       <div className="flex h-[70vh] min-h-[420px] overflow-hidden rounded-xl border border-white/10 bg-black/20">
         <aside className={`${username ? "hidden md:block" : "block"} w-full overflow-y-auto border-white/10 md:w-72 md:border-r`}>
-          {listState === "loading" && <p className="p-4 text-sm text-white/40">Loading…</p>}
+          {listState === "loading" && <p className="p-4 text-sm text-white/60">Loading…</p>}
           {listState === "error" && <p className="p-4 text-sm text-red-400">Couldn&apos;t load your conversations.</p>}
           {listState === "ready" && <ConversationList conversations={conversations} active={username} />}
         </aside>
@@ -289,7 +289,7 @@ export function MessagesPage() {
           {username ? (
             <Thread key={username} username={username} />
           ) : (
-            <p className="p-8 text-center text-sm text-white/40">Choose a friend to start chatting.</p>
+            <p className="p-8 text-center text-sm text-white/60">Choose a friend to start chatting.</p>
           )}
         </section>
       </div>

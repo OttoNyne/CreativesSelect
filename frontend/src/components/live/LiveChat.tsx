@@ -74,7 +74,7 @@ export function LiveChat({ liveId, isHost, open, pollMs = DEFAULT_POLL_MS }: { l
     <section aria-label="Live chat" className="flex min-h-0 flex-col rounded-xl border border-white/10 bg-white/[0.03]">
       <h2 className="border-b border-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white/60">Live chat</h2>
       <div ref={listRef} className="h-64 space-y-2 overflow-y-auto px-4 py-3">
-        {comments.length === 0 && <p className="py-4 text-center text-sm text-white/40">No comments yet.</p>}
+        {comments.length === 0 && <p className="py-4 text-center text-sm text-white/60">No comments yet.</p>}
         {comments.map((c) => (
           <div key={c.id} className="flex items-start gap-2 text-sm">
             {c.user && <Avatar username={c.user.username} displayName={c.user.displayName} avatarUrl={c.user.avatarUrl} size={24} />}
@@ -84,12 +84,12 @@ export function LiveChat({ liveId, isHost, open, pollMs = DEFAULT_POLL_MS }: { l
                   {c.mine ? "You" : c.user.displayName}
                 </Link>
               ) : (
-                <span className="mr-1.5 text-white/40">Former member</span>
+                <span className="mr-1.5 text-white/60">Former member</span>
               )}
               {c.body}
             </p>
             {(c.mine || isHost) && (
-              <button onClick={() => handleDelete(c.id)} aria-label="Delete comment" className="text-xs text-white/30 hover:text-white">
+              <button onClick={() => handleDelete(c.id)} aria-label="Delete comment" className="text-xs text-white/60 hover:text-white">
                 ✕
               </button>
             )}
@@ -105,7 +105,7 @@ export function LiveChat({ liveId, isHost, open, pollMs = DEFAULT_POLL_MS }: { l
             maxLength={MAX_LIVE_COMMENT_LENGTH}
             placeholder="Say something…"
             aria-label="Comment"
-            className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+            className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <button
             type="submit"
@@ -116,7 +116,7 @@ export function LiveChat({ liveId, isHost, open, pollMs = DEFAULT_POLL_MS }: { l
           </button>
         </form>
       ) : (
-        <p className="border-t border-white/10 p-3 text-center text-xs text-white/40">Join the live to chat.</p>
+        <p className="border-t border-white/10 p-3 text-center text-xs text-white/60">Join the live to chat.</p>
       )}
     </section>
   );

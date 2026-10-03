@@ -60,7 +60,7 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Top Friends</h2>
         {isOwner && !editing && (
-          <button onClick={startEditing} className="text-xs text-[var(--profile-accent)] hover:underline">
+          <button onClick={startEditing} className="text-xs text-[var(--profile-accent-text)] hover:underline">
             Edit
           </button>
         )}
@@ -68,7 +68,7 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
 
       {!editing && (
         <div className="mt-3 grid grid-cols-4 gap-3">
-          {topFriends.length === 0 && <p className="col-span-4 text-xs text-white/40">No top friends picked yet.</p>}
+          {topFriends.length === 0 && <p className="col-span-4 text-xs text-white/60">No top friends picked yet.</p>}
           {topFriends.map((f) => (
             <Link key={f.id} to={`/u/${f.username}`} className="flex flex-col items-center gap-1 text-center">
               <Avatar username={f.username} displayName={f.displayName} avatarUrl={f.avatarUrl} size={56} />
@@ -80,7 +80,7 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
 
       {editing && (
         <div className="mt-3">
-          <p className="text-xs text-white/40">Pick up to 8 friends ({selected.length}/8)</p>
+          <p className="text-xs text-white/60">Pick up to 8 friends ({selected.length}/8)</p>
           <div className="mt-2 grid grid-cols-4 gap-2">
             {allFriends.map((f) => (
               <button
@@ -95,13 +95,13 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
                 <span className="text-xs text-white/80">{f.displayName}</span>
               </button>
             ))}
-            {allFriends.length === 0 && <p className="col-span-4 text-xs text-white/40">No friends yet.</p>}
+            {allFriends.length === 0 && <p className="col-span-4 text-xs text-white/60">No friends yet.</p>}
           </div>
           <div className="mt-3 flex gap-2">
             <button
               onClick={save}
               disabled={saving}
-              className="rounded-md bg-[var(--profile-accent)] px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+              className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save"}
             </button>

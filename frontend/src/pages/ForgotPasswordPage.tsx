@@ -4,7 +4,7 @@ import { authApi } from "../api/auth.api";
 import { ApiError } from "../api/client";
 
 const inputClass =
-  "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none";
+  "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -60,14 +60,14 @@ export function ForgotPasswordPage() {
             If <span className="font-medium text-white">{sentTo}</span> has an account, a link to choose a new password is on its way. It
             works for one hour.
           </p>
-          <p className="text-white/50">Nothing there? Check your spam folder, or try again in a few minutes.</p>
+          <p className="text-white/60">Nothing there? Check your spam folder, or try again in a few minutes.</p>
           <Link to="/login" className="inline-block text-violet-400 hover:underline">
             Back to log in
           </Link>
         </div>
       ) : (
         <>
-          <p className="mt-2 text-sm text-white/50">Enter your account email and we&apos;ll send you a link to choose a new one.</p>
+          <p className="mt-2 text-sm text-white/60">Enter your account email and we&apos;ll send you a link to choose a new one.</p>
           <form onSubmit={handleSubmit} className="mt-5 space-y-3">
             <input
               type="email"
@@ -91,7 +91,7 @@ export function ForgotPasswordPage() {
               {submitting ? "Sending…" : "Send reset link"}
             </button>
           </form>
-          <p className="mt-4 text-center text-sm text-white/50">
+          <p className="mt-4 text-center text-sm text-white/60">
             <Link to="/login" className="text-violet-400 hover:underline">
               Back to log in
             </Link>

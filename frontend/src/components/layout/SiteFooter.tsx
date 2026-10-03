@@ -9,7 +9,7 @@ const LINKS = [
 // Shown at the bottom of every page, so the information pages are one tap away, signed in or not.
 export function SiteFooter() {
   return (
-    <footer className="mt-10 border-t border-white/10 px-4 py-6 pb-20 text-sm text-white/50">
+    <footer className="mt-10 border-t border-white/10 px-4 py-6 pb-20 text-sm text-white/60">
       <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 sm:flex-row">
         <p>
           <span className="font-semibold text-white/70">CreativesSelect</span> — a home for creatives.

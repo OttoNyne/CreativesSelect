@@ -55,7 +55,7 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
       </div>
 
       <div role="group" aria-label="Picture shape" className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-[11px] uppercase tracking-wide text-white/40">Shape</span>
+        <span className="mr-1 text-[11px] uppercase tracking-wide text-white/60">Shape</span>
         {ASPECT_OPTIONS.map((o) => (
           <button
             key={o.value}
@@ -72,7 +72,7 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
-        <label className="block text-[11px] text-white/50">
+        <label className="block text-[11px] text-white/60">
           Zoom <span className="text-white/70">{value.zoom.toFixed(2).replace(/\.?0+$/, "")}×</span>
           <input
             type="range"
@@ -85,7 +85,7 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
             className={slider}
           />
         </label>
-        <label className="block text-[11px] text-white/50">
+        <label className="block text-[11px] text-white/60">
           Left – right
           <input
             type="range"
@@ -99,7 +99,7 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
             className={`${slider} disabled:opacity-40`}
           />
         </label>
-        <label className="block text-[11px] text-white/50">
+        <label className="block text-[11px] text-white/60">
           Up – down
           <input
             type="range"
@@ -116,7 +116,7 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] text-white/40">
+        <p className="text-[11px] text-white/60">
           {positionMatters ? "Drag the picture, or use the sliders, to choose what shows." : "Pick a shape or zoom in to choose which part shows."}
         </p>
         <button

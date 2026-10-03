@@ -34,7 +34,7 @@ export function DeleteAccount() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs text-white/40 hover:text-red-400"
+        className="text-xs text-white/60 hover:text-red-400"
       >
         Delete my account…
       </button>
@@ -52,7 +52,7 @@ export function DeleteAccount() {
         placeholder="Enter your password to confirm"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/30 focus:border-red-400 focus:outline-none"
+        className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-red-400 focus:outline-none"
       />
       {error && <p className="text-xs text-red-400">{error}</p>}
       <div className="flex gap-2">

@@ -198,3 +198,54 @@ describe("ProfilePage", () => {
     alertSpy.mockRestore();
   });
 });
+
+describe("ProfilePage on different backgrounds", () => {
+  const withTheme = (theme: User["theme"], extra: Partial<User> = {}) => ({ ...zoe, theme, ...extra }) as User;
+  const pageOf = async () => (await screen.findByRole("heading", { name: "Zoe" })).closest("[data-scheme]") as HTMLElement;
+
+  it("uses the dark styling and no panel on the default theme", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    const page = await pageOf();
+    expect(page).toHaveAttribute("data-scheme", "dark");
+    expect(page.style.getPropertyValue("--profile-text")).toBe("#f5f5f7");
+    expect(page.querySelector("[style*='rgba(12,12,18']")).toBeNull();
+  });
+
+  it("switches to the light styling on a light background", async () => {
+    profiles.get.mockResolvedValue({ user: withTheme({ bgColor: "#ffffff", textColor: "#111111" }) });
+    renderAs(me, "zoe");
+    expect(await pageOf()).toHaveAttribute("data-scheme", "light");
+  });
+
+  it("corrects a text colour that can't be read against the background", async () => {
+    profiles.get.mockResolvedValue({ user: withTheme({ bgColor: "#ffffff", textColor: "#fafafa" }) });
+    renderAs(me, "zoe");
+    const page = await pageOf();
+    expect(page.style.getPropertyValue("--profile-text")).not.toBe("#fafafa");
+  });
+
+  it("puts the content on a panel when the background is a mid-tone", async () => {
+    profiles.get.mockResolvedValue({ user: withTheme({ bgColor: "#808080", textColor: "#808080" }) });
+    renderAs(me, "zoe");
+    const page = await pageOf();
+    expect(page).toHaveAttribute("data-scheme", "dark");
+    expect(page.querySelector("[style*='rgba(12, 12, 18']")).not.toBeNull();
+  });
+
+  it("uses a light panel on a bright mid-tone such as yellow", async () => {
+    profiles.get.mockResolvedValue({ user: withTheme({ bgColor: "#ffd60a" }) });
+    renderAs(me, "zoe");
+    const page = await pageOf();
+    expect(page).toHaveAttribute("data-scheme", "light");
+    expect(page.querySelector("[style*='rgba(255, 255, 255']")).not.toBeNull();
+  });
+
+  it("stays dark, flagged as a wallpaper page, when there is a wallpaper, whatever the background colour", async () => {
+    profiles.get.mockResolvedValue({ user: withTheme({ bgColor: "#ffffff" }, { wallpaperUrl: "https://x/w.jpg" }) });
+    renderAs(me, "zoe");
+    const page = await pageOf();
+    expect(page).toHaveAttribute("data-scheme", "dark");
+    expect(page).toHaveAttribute("data-wallpaper", "true");
+  });
+});

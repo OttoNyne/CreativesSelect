@@ -93,7 +93,7 @@ export function ImagePositioner({
           style={{ left: posX, top: posY }}
         />
       </div>
-      <p className="text-[11px] text-white/40">Click or drag to set the focal point.</p>
+      <p className="text-[11px] text-white/60">Click or drag to set the focal point.</p>
     </div>
   );
 }

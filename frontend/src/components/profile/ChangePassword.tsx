@@ -40,7 +40,7 @@ export function ChangePassword() {
   }
 
   const field =
-    "w-full rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none";
+    "w-full rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 
   if (!open) {
     return (

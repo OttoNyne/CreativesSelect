@@ -4,7 +4,7 @@ import { authApi } from "../api/auth.api";
 import { ApiError } from "../api/client";
 
 const inputClass =
-  "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none";
+  "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 
 // The emailed link is /reset-password#token=…  The token is in the fragment so it is
 // never sent to a server or leaked in a Referer; it's read once and then removed

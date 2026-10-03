@@ -66,7 +66,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
         onChange={(e) => setContent(e.target.value)}
         placeholder="Share what you're working on…"
         rows={3}
-        className="w-full resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+        className="w-full resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
       />
 
       {imageUrl && (

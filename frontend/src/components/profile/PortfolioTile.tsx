@@ -50,7 +50,7 @@ export function PortfolioTile({
               className="aspect-video w-full"
             />
           ) : (
-            <p className="p-3 text-xs text-white/40">This video link can't be shown.</p>
+            <p className="p-3 text-xs text-white/60">This video link can't be shown.</p>
           )
         ) : item.type === "video" ? (
           <video
@@ -111,7 +111,7 @@ export function PortfolioTile({
         >
           👎 {item.dislikes}
         </button>
-        {item.caption && <span className="ml-auto truncate text-[11px] text-white/40">{item.caption}</span>}
+        {item.caption && <span className="ml-auto truncate text-[11px] text-white/60">{item.caption}</span>}
       </div>
     </div>
   );

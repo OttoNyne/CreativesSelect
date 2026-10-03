@@ -118,7 +118,7 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
   }
 
   const field =
-    "min-w-0 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/30 focus:border-[var(--profile-accent)] focus:outline-none";
+    "min-w-0 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none";
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/20 p-4">
@@ -129,7 +129,7 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
             <button
               type="button"
               onClick={() => setShowLink((s) => !s)}
-              className="text-xs text-[var(--profile-accent)] hover:underline"
+              className="text-xs text-[var(--profile-accent-text)] hover:underline"
             >
               + Video link
             </button>
@@ -137,7 +137,7 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="text-xs text-[var(--profile-accent)] hover:underline disabled:opacity-50"
+              className="text-xs text-[var(--profile-accent-text)] hover:underline disabled:opacity-50"
             >
               {uploading ? "Uploading…" : "+ Upload"}
             </button>
@@ -154,7 +154,7 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
 
       {isOwner && (
         <div className="mt-2 space-y-2">
-          <p className="text-[11px] text-white/30">
+          <p className="text-[11px] text-white/60">
             Pictures up to 10 MB. Videos up to {MAX_VIDEO_SECONDS} seconds and 30 MB — upload one, or paste a YouTube or
             direct video link (it plays as a {MAX_VIDEO_SECONDS}-second clip).
           </p>
@@ -178,7 +178,7 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
               <button
                 type="submit"
                 disabled={!linkUrl.trim() || linkBusy}
-                className="rounded-md bg-[var(--profile-accent)] px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+                className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
               >
                 {linkBusy ? "Adding…" : "Add video"}
               </button>
@@ -199,7 +199,7 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {items.length === 0 && <p className="col-span-3 text-xs text-white/40">No portfolio pieces yet.</p>}
+        {items.length === 0 && <p className="col-span-3 text-xs text-white/60">No portfolio pieces yet.</p>}
         {items.map((item) => (
           <PortfolioTile
             key={item.id}

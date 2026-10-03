@@ -70,7 +70,7 @@ export function GroupsPage() {
     }
   }
 
-  if (status === "loading") return <div className="p-8 text-center text-white/40">Loading…</div>;
+  if (status === "loading") return <div className="p-8 text-center text-white/60">Loading…</div>;
   if (status === "error") return <div className="p-8 text-center text-red-400">{error}</div>;
 
   return (
@@ -81,7 +81,7 @@ export function GroupsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search groups…"
-            className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+            className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <button type="submit" className="rounded-md border border-white/15 px-3 py-2 text-sm text-white/70">
             Search
@@ -102,14 +102,14 @@ export function GroupsPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Group name"
-            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What's this group about?"
             rows={2}
-            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-violet-500 focus:outline-none"
+            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <button type="submit" className="rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium text-white">
             Create
@@ -118,15 +118,15 @@ export function GroupsPage() {
       )}
 
       <div className="space-y-2">
-        {groups.length === 0 && <p className="text-sm text-white/40">No groups found.</p>}
+        {groups.length === 0 && <p className="text-sm text-white/60">No groups found.</p>}
         {groups.map((g) => (
           <div key={g.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
             <div className="flex-1">
               <Link to={`/groups/${g.id}`} className="font-medium text-white hover:underline">
                 {g.name}
               </Link>
-              <p className="text-xs text-white/50">{g.description}</p>
-              <p className="text-xs text-white/30">{g.memberCount} members</p>
+              <p className="text-xs text-white/60">{g.description}</p>
+              <p className="text-xs text-white/60">{g.memberCount} members</p>
             </div>
             {g.isMember ? (
               <button

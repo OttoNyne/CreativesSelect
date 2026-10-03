@@ -33,7 +33,7 @@ export function AboutPage() {
           </p>
         </section>
 
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-white/60">
           CreativesSelect is a student-built capstone project. Explore the <Link to="/features" className="text-violet-400 hover:underline">features</Link> or
           see <Link to="/how-it-works" className="text-violet-400 hover:underline">how it works</Link>.
         </p>

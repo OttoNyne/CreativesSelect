@@ -95,7 +95,7 @@ export function NowPlayingBar() {
 
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-white">{current.title}</p>
-            <p role="status" className={`truncate text-xs ${ytError || error ? "text-amber-300" : "text-white/40"}`}>
+            <p role="status" className={`truncate text-xs ${ytError || error ? "text-amber-300" : "text-white/60"}`}>
               {status}
             </p>
           </div>

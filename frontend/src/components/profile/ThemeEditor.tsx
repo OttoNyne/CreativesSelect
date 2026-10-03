@@ -1,4 +1,6 @@
 import type { ProfileTheme } from "../../types";
+import { readableTheme, resolveTheme } from "../../theme/applyProfileTheme";
+import { parseColor, toHex } from "../../theme/contrast";
 
 const FONT_OPTIONS = [
   { label: "System sans-serif", value: "system-ui, sans-serif" },
@@ -15,10 +17,17 @@ const LAYOUT_OPTIONS = [
 export function ThemeEditor({
   theme,
   onChange,
+  hasWallpaper = false,
 }: {
   theme: ProfileTheme;
   onChange: (theme: ProfileTheme) => void;
+  /** With a wallpaper the page darkens it, so the text is checked against that instead of the background colour. */
+  hasWallpaper?: boolean;
 }) {
+  // The page never shows text a visitor can't read: if the chosen text colour is too close to the background it is nudged.
+  const chosenText = toHex(parseColor(resolveTheme(theme).textColor) ?? [245, 245, 247]);
+  const textAdjusted = readableTheme(theme, hasWallpaper).text !== chosenText;
+
   function set<K extends keyof ProfileTheme>(key: K, value: ProfileTheme[K]) {
     onChange({ ...theme, [key]: value });
   }
@@ -66,6 +75,11 @@ export function ThemeEditor({
           ))}
         </select>
       </label>
+      {textAdjusted && (
+        <p role="status" className="col-span-2 text-xs text-amber-300 sm:col-span-4">
+          That text colour is too close to the background to read, so visitors will see a slightly lighter or darker shade of it.
+        </p>
+      )}
       <label className="col-span-2 flex flex-col gap-1 text-xs text-white/60 sm:col-span-4">
         Layout
         <select
