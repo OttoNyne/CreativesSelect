@@ -221,18 +221,19 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | DELETE | `/:id` | Sender only, removes it for both people; `404` for anyone else (never `403`, so ids aren't probeable) |
 
 ### Live (voice) — `/api/live` (auth)
-The audio never touches the server: the host's browser sends it straight to each listener over WebRTC. This API lists rooms, counts listeners, passes the handshake messages between browsers, and carries the live chat.
+The audio never touches this API. A live travels one of two ways, fixed when it starts: **`sfu`** (when LiveKit is configured) — the host sends it once to a media server that fans it out to **50–100 listeners** — or **`mesh`** — straight between browsers over WebRTC, which only carries 8. This API lists rooms, counts listeners, creates media rooms and hands out access tokens, passes the handshake messages for browser-to-browser lives, and carries the live chat.
 | Method | Path | Notes |
 |---|---|---|
+| POST | `/:id/token` | Big lives only (`400` for a browser-to-browser live). A one-hour LiveKit pass for people already in the room: the host's can publish a microphone and listen, everyone else's can only listen; nobody can send data through it. Returns `{url, token}` |
 | GET | `/ice` | `{iceServers}` for WebRTC: public STUN by default, or the JSON in `LIVE_ICE_SERVERS` (add a TURN relay there for networks that need one) |
-| GET | `/` | Who is live right now (a host with no heartbeat for 45 s is treated as ended). Hosts you've blocked or who blocked you are omitted; a private-profile host is shown only to their friends and themselves |
-| POST | `/` | `{title}` (1–80 chars) → `201 {live}`; one live per person (starting another ends the first); 5 per hour (`429`). Tells the host's accepted friends with a `live_started` notification (host, title, link to the room); those notifications are removed when the live ends, and a failure to send them never stops the live starting |
-| GET | `/:id` | The room: title, host, `listenerCount`, `maxListeners` (8), `isHost`. `404` — the same answer — for a missing room or one you may not see |
-| POST | `/:id/join` | Become a listener. `409` if it has ended or is full (8 listeners); `400` for the host; 120 per hour |
+| GET | `/` | `{lives, config}` — `config` is what a live started now would allow (`{mode, maxListeners}`). Who is live right now (a host with no heartbeat for 45 s is treated as ended). Hosts you've blocked or who blocked you are omitted; a private-profile host is shown only to their friends and themselves |
+| POST | `/` | `{title}` (1–80 chars) → `201 {live}` (`503` if the media server can't create the room; nothing starts and nobody is notified); one live per person (starting another ends the first); 5 per hour (`429`). Tells the host's accepted friends with a `live_started` notification (host, title, link to the room); those notifications are removed when the live ends, and a failure to send them never stops the live starting |
+| GET | `/:id` | The room: title, host, `listenerCount`, `maxListeners` (8, or 50–100 for a big live), `mode`, `isHost`, and how often the room's clients should check in and poll the chat (slower for big rooms). `404` — the same answer — for a missing room or one you may not see |
+| POST | `/:id/join` | Become a listener. `409` if it has ended or is full (the room's capacity); `400` for the host; 120 per hour |
 | POST | `/:id/heartbeat` | Called every ~10 s by the host (keeps the live alive) and each listener (keeps them counted) → `{status, listenerCount}` |
 | POST | `/:id/leave` | Stop listening (also removes their handshake messages) |
 | POST | `/:id/end` | Host only; ends the live and deletes its listeners and handshake messages |
-| POST / GET | `/:id/signals` | WebRTC handshake. A listener can send only to the host (and only once joined), the host only to listeners; `kind` offer/answer/ice, ≤20 KB, 600 per 5 min; each person reads only what's addressed to them (`?after=` cursor) |
+| POST / GET | `/:id/signals` | WebRTC handshake (browser-to-browser lives only; `400` for a big live). A listener can send only to the host (and only once joined), the host only to listeners; `kind` offer/answer/ice, ≤20 KB, 600 per 5 min; each person reads only what's addressed to them (`?after=` cursor) |
 | GET / POST | `/:id/comments` | Live chat for people in the room (host + joined listeners); ≤200 chars; 20 per minute; blocked users' comments hidden; `409` once ended |
 | DELETE | `/:id/comments/:commentId` | The author or the host |
 
@@ -281,11 +282,12 @@ The audio never touches the server: the host's browser sends it straight to each
 
 | Layer | Platform | Notes |
 |---|---|---|
-| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL` (one site address, or several separated by commas — the first is used in email links)/`CLOUDINARY_*`/`CLOUDFLARE_*`/`RESEND_API_KEY`/`MAIL_FROM`/`LIVE_ICE_SERVERS` set as dashboard-only secrets (`sync: false`), never committed |
+| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL` (one site address, or several separated by commas — the first is used in email links)/`CLOUDINARY_*`/`CLOUDFLARE_*`/`RESEND_API_KEY`/`MAIL_FROM`/`LIVEKIT_*`/`LIVE_MAX_LISTENERS`/`LIVE_ICE_SERVERS` set as dashboard-only secrets (`sync: false`), never committed |
 | Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; production deploys come **only from CI**: `vercel.json` sets `git.deploymentEnabled: false`, and the `deploy` job in `.github/workflows/ci.yml` builds and ships with the Vercel CLI (secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) only after lint, build, tests and audit pass on `master`. Side effect: no per-PR preview deployments. `vercel.json` also **proxies `/api/*` to the Render API** so cookies are first-party (see the same-origin proxy note below), and the site is an **installable web app** (`manifest.webmanifest`, icons, Apple meta tags) |
 | AI image generation | Cloudflare Workers AI (FLUX.1 schnell), free daily allowance | Needs `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; without them the backend uses the mock provider. Results are re-hosted on Cloudinary |
 | Password-reset email | [Resend](https://resend.com) HTTP API | Needs `RESEND_API_KEY` and `MAIL_FROM` (a sender on a domain verified with Resend) as Render settings. Until they're set the site says plainly that reset by email isn't available. Resend without a verified domain only delivers to its owner's own address |
-| Live audio | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
+| Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
+| Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
 | CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (53 tests × 3 browsers, 162 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
@@ -328,8 +330,15 @@ WebSocket, because Vercel's rewrite to the API doesn't carry WebSockets. Every
 attempt carries a random connection id so late messages from an earlier attempt are
 ignored, and a listener whose connection drops retries (up to three times) with a fresh
 one. The cost of this design is the host uploads one copy of the audio per listener, so
-a room is capped at **8 listeners**; a media server (an SFU such as LiveKit) is what a
-larger audience would need, and the API shape would carry over. The host's page ends the
+a browser-to-browser room is capped at **8 listeners**. For 50–100 listeners the same
+room can instead run through a media server (an SFU, LiveKit): the host publishes once,
+the server fans the audio out, and this API only creates the room, issues one-hour
+pass tokens (publish for the host, listen-only for everyone else) and closes the room
+with the live. Which way a live travels is decided when it starts, so changing the
+settings never disturbs a live in progress; the media-server client library is loaded
+only when a big live is opened, so it adds nothing to ordinary pages. In a big room the
+clients check in every 20 s and poll the chat every 6 s, and the chat remembers
+membership and blocks for a few seconds, to keep database load down. The host's page ends the
 live — and so turns the microphone off — when they leave it, close the tab, or stop
 sending heartbeats, so a microphone can't stay open out of sight.
 
@@ -460,14 +469,14 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 210 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 240 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 390 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 458 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
-login, register, forgot/reset password, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC host and listener logic (against a fake peer connection), profile, search, Help wanted,
+login, register, forgot/reset password, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,
 nav bar, messages link, notification bell, post composer/card/comments, portfolio, music player, top
 friends, profile names, testimonials, delete-account, change-password, the AI buttons,
 avatar, the auth context and the video helpers. Test files are type-checked by `tsc -b`

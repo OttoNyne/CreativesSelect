@@ -632,7 +632,7 @@ limits who can do what on the server:
 - **Handshake messages are not a messaging channel.** A listener can send only to the host, and only
   after joining; the host only to people who joined; each person can read only what is addressed to
   them; messages are ≤20 KB, typed (offer/answer/ice), rate-limited and deleted after five minutes.
-- **Capacity and abuse limits**: 8 listeners per room (it is also what the host's upload can carry), 5
+- **Capacity and abuse limits**: 8 listeners per browser-to-browser room (what the host's upload can carry) or 50–100 through the media server, 5
   lives started per hour, 120 joins per hour, 20 comments per minute, 200-character comments rendered
   as plain text. Only people in the room can read or write the chat; the host or the author can delete
   a comment.
@@ -646,6 +646,17 @@ limits who can do what on the server:
 Covered by 24 backend tests, 94 frontend tests (including the handshake and reconnection logic against
 a fake peer connection) and 5 browser tests, one of which runs a real host and a real listener in two
 Chrome windows and measures sound arriving.
+
+**Big lives (50–100 listeners) through a media server.** The extra moving part is a LiveKit project, so
+the server keeps the same discipline: access tokens are minted only by this API, only for people already
+in the room (the host, or someone who joined — which already passed the block and private-profile checks),
+last one hour, are signed with the project secret that never leaves the server, let only the host publish
+(a microphone, nothing else) and let nobody send data through the room. The browser is handed only the
+project's public address and its own token. When someone is blocked they are removed from the media room
+as well as from our list; ending a live, a silent host or deleting the host's account closes the room.
+If the media server can't create the room the live doesn't start (and friends aren't notified); with the
+three settings absent the site falls back to browser-to-browser mode. Covered by 27 backend tests (real
+token signing checked against the project secret, with the management client mocked) and 37 frontend tests.
 
 ### 5.29 Telling friends when someone goes live, and framing a post's picture
 
@@ -665,6 +676,28 @@ Two small additions that each touch user data:
   no framing and are shown exactly as they were.
 Covered by 7 + 5 backend tests, the picture controls and bell by 30 frontend tests, and 5 browser tests (Chrome,
 Safari's engine, iPhone-sized).
+
+### 5.30 Music didn't play on iPhones
+
+Songs added to a profile wouldn't play on iPhones. Reading the player showed several causes that only bite
+on iOS (nothing here is a security hole, but it is a feature that silently didn't work):
+
+- **iPhone audio files were refused at upload.** A `.m4a` from Voice Memos or Files arrives labelled
+  `audio/x-m4a` (or `audio/m4a`, `audio/aac`; a `.wav` as `audio/x-wav`), but the server's allow-list only
+  knew `audio/mp4`/`audio/wav`. The list now includes the iPhone labels; non-audio files and audio sent as a
+  picture/portfolio upload are still refused.
+- **Songs were started outside the tap.** iPhones only let a page start sound from a tap, and then allow that
+  same audio element to play further songs. The player created a new `<audio>` element after the tap; it now
+  keeps one element for the whole app and calls `play()` from the tap itself, shows a real play/pause button,
+  and says "Tap play to start the music" if the browser still refuses.
+- **The YouTube player was a 96×56 pixel box set to autoplay.** YouTube requires an embedded player to be at
+  least 200 px tall, an iPhone won't start a video by itself, and without `playsinline` it jumps to
+  full-screen. It is now shown at a proper size above the bar with `playsinline`, reports when autoplay is
+  blocked ("Tap play to start"), and explains videos that can't be embedded, with a link to watch on YouTube.
+- Songs in formats Safari can't play (ogg, opus, webm) are requested from Cloudinary as MP3.
+
+Covered by 37 new frontend tests and 2 backend tests. **Not verified on a physical iPhone from here** (no
+browser available to the test tools has iOS's autoplay rules); the owner checks it by hand.
 
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
@@ -772,13 +805,16 @@ its own.
   "temporarily unavailable" message, but nothing worked until the account owner resolved it
   with Cloudinary. There is no second storage provider or upload queue.
 - **Live notifications can't be switched off.** Every accepted friend is told each time you go live (at most 5 times an hour), and there is no setting to mute a friend's lives short of unfriending them.
-- **Live audio can't be moderated, and is capped small.** Audio goes browser-to-browser, so the
-  server cannot hear, record or filter it; moderation is limited to blocking, deleting comments, and
-  the host ending the live (there is no "report this live" yet). Because the host uploads one copy
-  per listener, a room is limited to 8 listeners — a media server (SFU) is the way past that — and
-  with only public STUN servers some networks (strict corporate or mobile carrier NATs) cannot connect
-  until a TURN relay is added through `LIVE_ICE_SERVERS`. Live audio has been tested between real
-  Chrome windows, not yet between physical phones.
+- **Live audio can't be moderated.** The server never hears the audio (browser-to-browser, or relayed by
+  the media server), so it cannot record or filter it; moderation is limited to blocking, deleting
+  comments, and the host ending the live (there is no "report this live" yet).
+- **Big lives depend on a LiveKit project and a small database.** Without LiveKit configured, lives fall
+  back to browser-to-browser audio, capped at 8 listeners, where some networks need a TURN relay
+  (`LIVE_ICE_SERVERS`). LiveKit's free plan has its own ceiling on concurrent participants across the
+  whole project, so several large lives at once can exhaust it. A full room of 100 also asks a lot of the
+  free database tier (roughly 70 operations a second from check-ins and chat polling, against a free-tier
+  ceiling around 100), so the first thing to feel it would be slower chat. Live audio has been tested
+  between real Chrome windows; phones are tested by the owner, not automatically.
 - **Password reset depends on one email provider.** Reset by email is configured through Resend and the
   owner confirmed the whole flow on the live site (email received, link used, new password worked). It
   depends on that provider and sender staying valid: if the key is revoked or the sender stops being
