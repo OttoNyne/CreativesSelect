@@ -801,6 +801,22 @@ Covered by 28 backend tests (the real-provider path with the network and storage
 - **Moving songs while one plays** changes only the order of what comes next; it can't start, stop or swap what is playing.
 Covered by 21 backend tests, 22 frontend tests and 30 browser runs.
 
+### 5.38 Hosting a live from a phone
+
+A report that going live from an Android phone dropped the connection led to hardening the host's side for how phones behave.
+A short loss of network was reproduced with an Android-style Chrome against the live site (4 s and 12 s offline) and the live survived,
+so the changes target what real phones add: the screen locking, the microphone being paused or taken by the system, and the
+host connection giving up for good after a single drop.
+
+- **The host reconnects itself** (3 tries, pass minted fresh by the API each time, so the same access rules apply: a refused or
+  ended live is not retried), and says so, instead of ending in "end this live and start a new one".
+- **The microphone can't be silently dead:** if the phone pauses or takes it, the host is told in words.
+- **The screen is kept on while live** (where the browser allows). This does not change the rule that the microphone can't stay on out
+  of sight: leaving the page, closing the tab or losing contact for 45 s still ends the live.
+- **Not covered:** a phone's own Wi-Fi or mobile-data switching, battery savers, and apps that take the microphone are outside the page's
+  control; the page explains what it sees. A host who locks the screen or switches app for longer than 45 s will still find the live ended.
+Covered by 18 frontend tests and 9 browser runs.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

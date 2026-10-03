@@ -4,6 +4,18 @@
 export class FakeTrack {
   enabled = true;
   stopped = false;
+  private listeners = new Map<string, Set<() => void>>();
+  addEventListener(type: string, fn: () => void) {
+    if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+    this.listeners.get(type)!.add(fn);
+  }
+  removeEventListener(type: string, fn: () => void) {
+    this.listeners.get(type)?.delete(fn);
+  }
+  /** Pretend the phone muted, unmuted or ended the microphone. */
+  fire(type: "mute" | "unmute" | "ended") {
+    this.listeners.get(type)?.forEach((fn) => fn());
+  }
   stop() {
     this.stopped = true;
   }

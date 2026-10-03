@@ -9,6 +9,8 @@ import { HostStage, ListenerStage } from "../components/live/StagePanel";
 import { useStage } from "../lib/live/useStage";
 import { ShareButton } from "../components/share/ShareButton";
 import { liveUrl } from "../lib/share";
+import { keepScreenOn } from "../lib/wakeLock";
+import type { HostConnection, MicrophoneState } from "../lib/live/sfuHost";
 import { LiveHost } from "../lib/live/host";
 import { LiveListener, type ListenerState } from "../lib/live/listener";
 import { SfuHost } from "../lib/live/sfuHost";
@@ -66,6 +68,8 @@ function HostRoom({ room }: { room: LiveRoom }) {
   const [muted, setMuted] = useState(false);
   const [ended, setEnded] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const [connection, setConnection] = useState<HostConnection>("live");
+  const [mic, setMic] = useState<MicrophoneState>("ok");
   // Big lives have a stage: guests the host brings on to speak. The host hears them through this element.
   const { stage, refresh: refreshStage } = useStage(id, room.mode === "sfu");
   const guestAudioRef = useRef<HTMLAudioElement>(null);
@@ -95,6 +99,8 @@ function HostRoom({ room }: { room: LiveRoom }) {
               onListenerCount: setListeners,
               onEnded,
               onFailed: setFailure,
+              onConnection: setConnection,
+              onMicrophone: setMic,
               heartbeatMs: room.heartbeatMs,
               onGuestStream: (guests) => {
                 const el = guestAudioRef.current;
@@ -120,6 +126,12 @@ function HostRoom({ room }: { room: LiveRoom }) {
       }, 150);
     };
   }, [stream, id, room.mode, room.heartbeatMs]);
+
+  // A phone that locks its screen pauses the microphone and the connection, so keep it on while live.
+  useEffect(() => {
+    if (!stream) return;
+    return keepScreenOn();
+  }, [stream]);
 
   // Closing the tab or navigating away from the site also ends it right away.
   useEffect(() => {
@@ -173,6 +185,18 @@ function HostRoom({ room }: { room: LiveRoom }) {
               End live
             </button>
           </div>
+          {!failure && connection === "reconnecting" && (
+            <p role="status" className="mt-3 text-sm text-amber-300">
+              Your connection dropped — reconnecting. Listeners may hear a short gap. Stay on this page.
+            </p>
+          )}
+          {!failure && mic !== "ok" && (
+            <p role="alert" className="mt-3 text-sm text-amber-300">
+              {mic === "ended"
+                ? "Your phone has stopped the microphone, so listeners can't hear you. Another app may have taken it. End this live and start again."
+                : "Your phone has paused the microphone, so listeners can't hear you right now. Keep this page open with the screen on (it pauses when the screen locks or you switch apps)."}
+            </p>
+          )}
           {failure && (
             <p role="alert" className="mt-3 text-sm text-red-400">
               {failure} Listeners can't hear you — end this live and start a new one to try again.

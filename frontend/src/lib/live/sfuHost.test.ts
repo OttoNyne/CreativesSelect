@@ -81,20 +81,26 @@ describe("SfuHost", () => {
     expect(a.onFailed).toHaveBeenCalledWith("Join this live first");
     a.host.stop();
 
+    // a network failure is tried again a few times before it is given up on
     FakeRoom.failConnect = new Error("websocket refused");
     const b = setup();
     b.host.start();
     await settle();
+    expect(b.onFailed).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(20_000);
     expect(b.onFailed).toHaveBeenCalledWith("Couldn't connect to the live audio service.");
+    expect(FakeRoom.all).toHaveLength(3);
     b.host.stop();
   });
 
-  it("says so if the connection is lost for good", async () => {
+  it("says so if the connection is lost and can't be restored", async () => {
     const { host, onFailed } = setup();
     host.start();
     await settle();
+    FakeRoom.failConnect = new Error("still offline");
     lastRoom().emit(RoomEvent.Disconnected);
-    expect(onFailed).toHaveBeenCalledWith("The connection to the live audio service was lost.");
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(onFailed).toHaveBeenCalledWith("Couldn't connect to the live audio service.");
     host.stop();
   });
 
@@ -156,5 +162,107 @@ describe("SfuHost: hearing guests on stage", () => {
     expect((onGuestStream.mock.calls[0][0] as FakeMediaStream).tracks).toEqual([two.mediaStreamTrack]);
     host.stop();
     vi.unstubAllGlobals();
+  });
+});
+
+describe("SfuHost: a connection that drops", () => {
+  it("starts over by itself with a fresh pass, keeping the same microphone, and says what is going on", async () => {
+    const connection: string[] = [];
+    const { host, api, stream, onFailed } = setup({ onConnection: (c) => connection.push(c) });
+    host.start();
+    await settle();
+    const first = lastRoom();
+    expect(connection.at(-1)).toBe("live");
+
+    first.emit(RoomEvent.Disconnected);
+    expect(connection.at(-1)).toBe("reconnecting");
+    expect(first.disconnected).toBe(true);
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(FakeRoom.all).toHaveLength(2);
+    expect(api.token).toHaveBeenCalledTimes(2);
+    expect(lastRoom().published).toEqual([{ track: stream.tracks[0], options: { source: "microphone", name: "microphone" } }]);
+    expect(connection.at(-1)).toBe("live");
+    expect(onFailed).not.toHaveBeenCalled();
+    host.stop();
+  });
+
+  it("shows reconnecting while the media client rides out a short drop itself, then live again", async () => {
+    const connection: string[] = [];
+    const { host } = setup({ onConnection: (c) => connection.push(c) });
+    host.start();
+    await settle();
+    lastRoom().emit(RoomEvent.Reconnecting);
+    expect(connection.at(-1)).toBe("reconnecting");
+    lastRoom().emit(RoomEvent.Reconnected);
+    expect(connection.at(-1)).toBe("live");
+    host.stop();
+  });
+
+  it("counts a successful reconnection as a fresh start, so a phone that drops now and then is never given up on", async () => {
+    const { host, onFailed } = setup({ maxAttempts: 2 });
+    host.start();
+    await settle();
+    for (let i = 0; i < 5; i++) {
+      lastRoom().emit(RoomEvent.Disconnected);
+      await vi.advanceTimersByTimeAsync(2_000);
+    }
+    expect(FakeRoom.all).toHaveLength(6);
+    expect(onFailed).not.toHaveBeenCalled();
+    host.stop();
+  });
+
+  it("gives up with a message after repeated failures", async () => {
+    const { host, onFailed } = setup({ maxAttempts: 2 });
+    host.start();
+    await settle();
+    FakeRoom.failConnect = new Error("offline");
+    lastRoom().emit(RoomEvent.Disconnected);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(onFailed).toHaveBeenCalledTimes(1);
+    host.stop();
+  });
+
+  it("doesn't start over once stopped, and doesn't answer a refusal from the server with retries", async () => {
+    const a = setup();
+    a.host.start();
+    await settle();
+    a.host.stop();
+    lastRoom().emit(RoomEvent.Disconnected);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(FakeRoom.all).toHaveLength(1);
+
+    FakeRoom.reset();
+    const b = setup();
+    b.api.token.mockRejectedValue(new ApiError(409, "This live has ended"));
+    b.host.start();
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(b.onFailed).toHaveBeenCalledWith("This live has ended");
+    expect(b.api.token).toHaveBeenCalledTimes(1);
+    b.host.stop();
+  });
+});
+
+describe("SfuHost: the phone pauses the microphone", () => {
+  it("reports the microphone being paused, coming back, and being taken for good", async () => {
+    const states: string[] = [];
+    const { host, stream } = setup({ onMicrophone: (m) => states.push(m) });
+    host.start();
+    await settle();
+    stream.tracks[0].fire("mute");
+    stream.tracks[0].fire("unmute");
+    stream.tracks[0].fire("ended");
+    expect(states).toEqual(["paused", "ok", "ended"]);
+    host.stop();
+  });
+
+  it("stops listening for it once stopped", async () => {
+    const onMicrophone = vi.fn();
+    const { host, stream } = setup({ onMicrophone });
+    host.start();
+    await settle();
+    host.stop();
+    stream.tracks[0].fire("mute");
+    expect(onMicrophone).not.toHaveBeenCalled();
   });
 });

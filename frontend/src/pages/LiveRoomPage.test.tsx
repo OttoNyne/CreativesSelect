@@ -81,6 +81,13 @@ vi.mock("../lib/live/sfuListener", () => ({
     }
   },
 }));
+const wake = vi.hoisted(() => ({ kept: vi.fn(), released: vi.fn() }));
+vi.mock("../lib/wakeLock", () => ({
+  keepScreenOn: () => {
+    wake.kept();
+    return wake.released;
+  },
+}));
 vi.mock("../components/live/LiveChat", () => ({
   LiveChat: ({ open, isHost, pollMs }: { open: boolean; isHost: boolean; pollMs?: number }) => (
     <div data-poll={pollMs}>
@@ -126,6 +133,8 @@ const lastListener = () => mocks.listeners[mocks.listeners.length - 1];
 const setState = (s: ListenerState) => act(() => (lastListener().opts.onState as (s: ListenerState) => void)(s));
 
 beforeEach(() => {
+  wake.kept.mockClear();
+  wake.released.mockClear();
   mocks.hosts.length = 0;
   mocks.listeners.length = 0;
   mocks.sfuHosts.length = 0;
@@ -590,5 +599,62 @@ describe("LiveRoomPage: the stage in big lives", () => {
     await screen.findByText("chat open");
     expect(api.stage).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Ask to speak" })).not.toBeInTheDocument();
+  });
+});
+
+describe("LiveRoomPage: a host on a phone", () => {
+  const big = (over: Partial<LiveRoom> = {}) => room({ mode: "sfu", isHost: true, maxListeners: 50, heartbeatMs: 20_000, commentPollMs: 6_000, ...over });
+  const start = async () => {
+    api.get.mockResolvedValue({ live: big() });
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    await waitFor(() => expect(mocks.sfuHosts).toHaveLength(1));
+    await screen.findByText(/You're live/);
+    return mocks.sfuHosts[0].opts as { onConnection: (s: string) => void; onMicrophone: (s: string) => void; onFailed: (m: string) => void };
+  };
+
+  it("keeps the screen on while live, and lets it go when the live is left", async () => {
+    await start();
+    expect(wake.kept).toHaveBeenCalledTimes(1);
+    cleanup();
+    expect(wake.released).toHaveBeenCalled();
+  });
+
+  it("doesn't hold the screen when there is no microphone yet", async () => {
+    api.get.mockResolvedValue({ live: big() });
+    renderRoom();
+    await screen.findByText(/Allow microphone/);
+    expect(wake.kept).not.toHaveBeenCalled();
+  });
+
+  it("says the connection dropped and is being restored, then clears the message", async () => {
+    const opts = await start();
+    act(() => opts.onConnection("reconnecting"));
+    expect(await screen.findByText(/Your connection dropped — reconnecting/)).toBeInTheDocument();
+    act(() => opts.onConnection("live"));
+    await waitFor(() => expect(screen.queryByText(/Your connection dropped/)).not.toBeInTheDocument());
+  });
+
+  it("warns when the phone pauses the microphone, and clears it when it comes back", async () => {
+    const opts = await start();
+    act(() => opts.onMicrophone("paused"));
+    expect(await screen.findByRole("alert")).toHaveTextContent("paused the microphone");
+    expect(screen.getByRole("alert")).toHaveTextContent("screen on");
+    act(() => opts.onMicrophone("ok"));
+    await waitFor(() => expect(screen.queryByText(/paused the microphone/)).not.toBeInTheDocument());
+  });
+
+  it("says plainly when the phone has taken the microphone for good", async () => {
+    const opts = await start();
+    act(() => opts.onMicrophone("ended"));
+    expect(await screen.findByRole("alert")).toHaveTextContent("stopped the microphone");
+  });
+
+  it("shows only the final failure, not a reconnecting notice beside it, once it has given up", async () => {
+    const opts = await start();
+    act(() => opts.onConnection("reconnecting"));
+    act(() => opts.onFailed("The connection to the live audio service was lost."));
+    expect(await screen.findByRole("alert")).toHaveTextContent("The connection to the live audio service was lost.");
+    expect(screen.queryByText(/Your connection dropped/)).not.toBeInTheDocument();
   });
 });
