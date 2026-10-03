@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { Comment, ProfileTheme, User } from "../types";
+import type { Comment, ProfileTheme, User, WallpaperMotion } from "../types";
 
 export interface UpdateProfileInput {
   displayName?: string;
@@ -8,6 +8,7 @@ export interface UpdateProfileInput {
   wallpaperUrl?: string | null;
   wallpaperType?: "image" | "video";
   wallpaperPosition?: string;
+  wallpaperMotion?: WallpaperMotion;
   isPrivate?: boolean;
   theme?: ProfileTheme;
 }

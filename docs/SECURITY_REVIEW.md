@@ -766,6 +766,28 @@ already on, URL-encoded. The code is made in the browser (nothing is sent anywhe
 the page so a profile's colours can't hide it. Sharing a live link doesn't bypass anything: the room still checks blocks,
 private profiles and sign-in when the person arrives. Tests read the generated code back with a QR decoder.
 
+### 5.36 Live wallpapers made with AI
+
+A reference photo is the first user-supplied *file* that goes to the AI service rather than to storage, and the motion setting
+is a new field on every profile, so both are handled on the server:
+
+- **The photo is data, never a link.** It arrives in the request (multipart), is held in memory and sent on; the server never
+  fetches a URL the user supplied, so it can't be pointed at internal addresses (no request forgery). It is limited to 4 MB and
+  one file, and checked by its own first bytes as JPEG, PNG or WebP — a text file, an SVG with a script, a GIF or an executable
+  renamed to `.png` is refused (`400`), whatever its name or declared type.
+- **The browser shrinks it first** (≤1024 px JPEG), which keeps phone photos under the limit and drops hidden location and camera
+  details before anything leaves the device.
+- **The motion is a closed set.** `wallpaperMotion` must be one of five words (`400` otherwise), so nothing a user types can reach
+  the page's CSS; the animation itself is fixed CSS in the app. A private profile's wallpaper and motion stay hidden like the rest of it.
+- **Cost and abuse:** 6 wallpapers per person per hour on the real AI service (a refused request doesn't use up an allowance), the
+  description is capped at 500 characters, and every failure is reported in plain words without the AI provider's raw message.
+- **Nothing is applied until chosen, and nothing is left behind.** The result is a preview; a picture that is discarded or never
+  used is removed from storage by an endpoint that can only delete what this person generated and nothing else uses.
+- **Readability:** the moving picture has the same dark scrim as a still one, and people who ask their device for less motion get a still picture.
+- **Limit:** the AI model decides what it will draw from a description or photo; there is no content filter of our own beyond the
+  service's, so a profile owner could generate something unwelcome (reports and blocking apply as for any profile content).
+Covered by 28 backend tests (the real-provider path with the network and storage stubbed), 41 frontend tests and 24 browser runs.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

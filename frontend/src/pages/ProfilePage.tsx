@@ -10,6 +10,9 @@ import type { User, ProfileTheme } from "../types";
 import { profileThemeStyle, readableTheme } from "../theme/applyProfileTheme";
 import { PANEL_STYLE, WALLPAPER_SCRIM } from "../theme/contrast";
 import { ShareButton } from "../components/share/ShareButton";
+import { MovingWallpaper } from "../components/profile/MovingWallpaper";
+import { WallpaperStudio } from "../components/profile/WallpaperStudio";
+import { motionOf } from "../lib/wallpaperMotion";
 import { profileUrl } from "../lib/share";
 import { Avatar } from "../components/common/Avatar";
 import { ImagePositioner } from "../components/common/ImagePositioner";
@@ -19,7 +22,6 @@ import { ProfileComments } from "../components/profile/ProfileComments";
 import { PortfolioGrid } from "../components/profile/PortfolioGrid";
 import { MusicPlayer } from "../components/profile/MusicPlayer";
 import { GenerateTextButton } from "../components/ai/GenerateTextButton";
-import { GenerateImageButton } from "../components/ai/GenerateImageButton";
 import { ImageSearchPicker } from "../components/ai/ImageSearchPicker";
 import { DeleteAccount } from "../components/profile/DeleteAccount";
 import { ChangePassword } from "../components/profile/ChangePassword";
@@ -38,7 +40,6 @@ export function ProfilePage() {
   const [isFriend, setIsFriend] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [wallpaperPrompt, setWallpaperPrompt] = useState("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,14 +82,17 @@ export function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, viewer?.username]);
 
-  async function saveProfile(updates: Parameters<typeof profilesApi.updateMe>[0]) {
+  /** Saves the change; says so (and returns false) if it couldn't. */
+  async function saveProfile(updates: Parameters<typeof profilesApi.updateMe>[0]): Promise<boolean> {
     setSaving(true);
     try {
       const { user } = await profilesApi.updateMe(updates);
       setProfile(user);
       if (isOwner) setViewer(user);
+      return true;
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Couldn't save that change.");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -157,6 +161,9 @@ export function ProfilePage() {
 
   const wallpaperUrl = assetUrl(profile.wallpaperUrl);
   const isVideoWallpaper = profile.wallpaperType === "video" && Boolean(wallpaperUrl);
+  // A picture that moves is drawn as its own layer behind the page; a still one is the page's background.
+  const motion = motionOf(profile.wallpaperMotion);
+  const isMovingWallpaper = Boolean(wallpaperUrl) && !isVideoWallpaper && motion !== "none";
 
   // data-scheme="light" flips the page's white-on-dark styling for a bright background (see index.css), so text stays readable.
   const { scheme, panel } = readableTheme(profile.theme, Boolean(wallpaperUrl));
@@ -167,12 +174,13 @@ export function ProfilePage() {
       data-wallpaper={wallpaperUrl ? "true" : undefined}
       style={profileThemeStyle(
         profile.theme,
-        isVideoWallpaper ? undefined : wallpaperUrl,
+        isVideoWallpaper || isMovingWallpaper ? undefined : wallpaperUrl,
         profile.wallpaperPosition,
         Boolean(wallpaperUrl),
       )}
-      className="min-h-[calc(100vh-56px)]"
+      className="isolate min-h-[calc(100vh-56px)]"
     >
+      {isMovingWallpaper && <MovingWallpaper url={wallpaperUrl!} position={profile.wallpaperPosition} motion={motion} />}
       {isVideoWallpaper && (
         <>
           <video
@@ -327,22 +335,16 @@ export function ProfilePage() {
                 </button>
               )}
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <input
-                value={wallpaperPrompt}
-                onChange={(e) => setWallpaperPrompt(e.target.value)}
-                placeholder="Describe a wallpaper to generate…"
-                className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:outline-none"
-              />
-              <GenerateImageButton
-                kind="wallpaper"
-                getPrompt={() => wallpaperPrompt}
-                onGenerated={(url) =>
-                  saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
-                }
-                label="Generate wallpaper"
-              />
-            </div>
+            <WallpaperStudio
+              hasWallpaper={Boolean(profile.wallpaperUrl)}
+              isPicture={profile.wallpaperType !== "video"}
+              motion={motion}
+              onMotionChange={(next) => void saveProfile({ wallpaperMotion: next })}
+              onUse={async (url, next) => {
+                const saved = await saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%", wallpaperMotion: next });
+                if (!saved) throw new Error("not saved");
+              }}
+            />
             <ImageSearchPicker
               label="🔍 Search photos for wallpaper"
               onSelect={(url) =>

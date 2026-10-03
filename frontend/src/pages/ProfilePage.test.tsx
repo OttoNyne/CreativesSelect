@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { ProfilePage } from "./ProfilePage";
@@ -14,7 +14,7 @@ vi.mock("../api/profiles.api", () => ({ profilesApi: { get: vi.fn(), updateMe: v
 vi.mock("../api/friends.api", () => ({ friendsApi: { list: vi.fn(), request: vi.fn() } }));
 vi.mock("../api/moderation.api", () => ({ moderationApi: { block: vi.fn(), report: vi.fn() } }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
-vi.mock("../api/ai.api", () => ({ aiApi: { generateText: vi.fn(), generateImage: vi.fn() } }));
+vi.mock("../api/ai.api", () => ({ aiApi: { generateText: vi.fn(), generateImage: vi.fn(), generateWallpaper: vi.fn(), discard: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 // The profile's sections have their own data loading and are tested on their own.
 vi.mock("../components/profile/TopFriendsList", () => ({ TopFriendsList: () => <div>top friends</div> }));
@@ -247,5 +247,98 @@ describe("ProfilePage on different backgrounds", () => {
     const page = await pageOf();
     expect(page).toHaveAttribute("data-scheme", "dark");
     expect(page).toHaveAttribute("data-wallpaper", "true");
+  });
+});
+
+describe("ProfilePage: moving wallpapers", () => {
+  const withWallpaper = (extra: Partial<User>) => ({ ...zoe, wallpaperUrl: "https://x/w.jpg", ...extra }) as User;
+  const rootOf = async () => (await screen.findByRole("heading", { name: "Zoe" })).closest("[data-scheme]") as HTMLElement;
+
+  it("draws a picture wallpaper that has a motion as a moving layer behind the page, not as the page's background", async () => {
+    profiles.get.mockResolvedValue({ user: withWallpaper({ wallpaperMotion: "drift", wallpaperPosition: "20% 80%" }) });
+    renderAs(me, "zoe");
+    const root = await rootOf();
+    const layer = screen.getByTestId("moving-wallpaper");
+    expect(layer).toHaveAttribute("data-motion", "drift");
+    expect(layer.querySelector<HTMLElement>(".wallpaper-motion")!.style.backgroundPosition).toBe("20% 80%");
+    expect(root.style.backgroundImage).toBe("");
+    // the layer sits above the page's own colour but below its content
+    expect(root).toHaveClass("isolate");
+    expect(root).toHaveAttribute("data-wallpaper", "true");
+    expect(root).toHaveAttribute("data-scheme", "dark");
+  });
+
+  it("keeps a still picture wallpaper as the page's background", async () => {
+    profiles.get.mockResolvedValue({ user: withWallpaper({ wallpaperMotion: "none" }) });
+    renderAs(me, "zoe");
+    const root = await rootOf();
+    expect(screen.queryByTestId("moving-wallpaper")).not.toBeInTheDocument();
+    expect(root.style.backgroundImage).toContain("https://x/w.jpg");
+  });
+
+  it("treats a profile saved before wallpapers could move as still", async () => {
+    profiles.get.mockResolvedValue({ user: withWallpaper({}) });
+    renderAs(me, "zoe");
+    await rootOf();
+    expect(screen.queryByTestId("moving-wallpaper")).not.toBeInTheDocument();
+  });
+
+  it("doesn't try to move a video wallpaper, which plays by itself", async () => {
+    profiles.get.mockResolvedValue({ user: withWallpaper({ wallpaperType: "video", wallpaperUrl: "https://x/w.mp4", wallpaperMotion: "zoom" }) });
+    renderAs(me, "zoe");
+    await rootOf();
+    expect(screen.queryByTestId("moving-wallpaper")).not.toBeInTheDocument();
+    expect(document.querySelector("video")).not.toBeNull();
+  });
+
+  it("has nothing to move without a wallpaper", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, wallpaperMotion: "zoom" } as User });
+    renderAs(me, "zoe");
+    await rootOf();
+    expect(screen.queryByTestId("moving-wallpaper")).not.toBeInTheDocument();
+  });
+
+  it("offers the AI wallpaper studio only to the owner, while editing", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    await rootOf();
+    expect(screen.queryByRole("region", { name: "AI wallpaper" })).not.toBeInTheDocument();
+
+    profiles.get.mockResolvedValue({ user: me });
+    cleanup();
+    renderAs(me, "me");
+    expect(screen.queryByRole("region", { name: "AI wallpaper" })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    expect(screen.getByRole("region", { name: "AI wallpaper" })).toBeInTheDocument();
+  });
+
+  it("changes how the current wallpaper moves as soon as a motion is picked", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, wallpaperUrl: "https://x/w.jpg", wallpaperMotion: "none" } as User });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, wallpaperUrl: "https://x/w.jpg", wallpaperMotion: "pan" } as User });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Pan" }));
+    expect(profiles.updateMe).toHaveBeenCalledWith({ wallpaperMotion: "pan" });
+    expect(await screen.findByTestId("moving-wallpaper")).toHaveAttribute("data-motion", "pan");
+  });
+
+  it("makes a wallpaper from a description and saves it, with its motion, only when the owner chooses to use it", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    const api = vi.mocked((await import("../api/ai.api")).aiApi);
+    api.generateWallpaper.mockResolvedValue({ url: "https://cdn/generated.jpg", usedReference: false });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, wallpaperUrl: "https://cdn/generated.jpg", wallpaperMotion: "zoom" } as User });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+
+    await userEvent.type(screen.getByLabelText(/What should it look like/), "a harbor at dusk");
+    await userEvent.click(screen.getByRole("button", { name: /Generate live wallpaper/ }));
+    await screen.findByRole("img", { name: "Your new wallpaper" });
+    expect(profiles.updateMe).not.toHaveBeenCalled(); // a preview changes nothing
+
+    await userEvent.click(screen.getByRole("button", { name: "Use this wallpaper" }));
+    await waitFor(() =>
+      expect(profiles.updateMe).toHaveBeenCalledWith({ wallpaperUrl: "https://cdn/generated.jpg", wallpaperType: "image", wallpaperPosition: "50% 50%", wallpaperMotion: "zoom" })
+    );
+    expect(await screen.findByTestId("moving-wallpaper")).toHaveAttribute("data-motion", "zoom");
   });
 });

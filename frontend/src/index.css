@@ -90,3 +90,54 @@ a {
 [data-wallpaper="true"] :is(.bg-black\/20, .bg-black\/30) {
   background-color: rgba(0, 0, 0, 0.6);
 }
+
+/*
+ * Moving wallpapers (see MovingWallpaper). The picture is drawn larger than the screen so its edges never show, and is
+ * slowly moved by the browser's compositor (transform and opacity only, so it stays smooth). Someone who has asked their
+ * device for less motion gets the still picture.
+ */
+.wallpaper-motion {
+  position: absolute;
+  inset: -12%;
+  will-change: transform, filter;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+.wallpaper-motion-zoom {
+  animation-name: wallpaper-zoom;
+  animation-duration: 28s;
+}
+.wallpaper-motion-drift {
+  animation-name: wallpaper-drift;
+  animation-duration: 36s;
+}
+.wallpaper-motion-pan {
+  animation-name: wallpaper-pan;
+  animation-duration: 44s;
+}
+.wallpaper-motion-pulse {
+  animation-name: wallpaper-pulse;
+  animation-duration: 7s;
+}
+@keyframes wallpaper-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.2); }
+}
+@keyframes wallpaper-drift {
+  from { transform: translate3d(-5%, -4%, 0) scale(1.05); }
+  to { transform: translate3d(5%, 4%, 0) scale(1.15); }
+}
+@keyframes wallpaper-pan {
+  from { transform: translate3d(-8%, 0, 0) scale(1.08); }
+  to { transform: translate3d(8%, 0, 0) scale(1.08); }
+}
+@keyframes wallpaper-pulse {
+  from { filter: brightness(0.88) saturate(0.95); transform: scale(1.02); }
+  to { filter: brightness(1.14) saturate(1.25); transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wallpaper-motion {
+    animation: none !important;
+  }
+}

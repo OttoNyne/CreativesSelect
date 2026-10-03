@@ -1,3 +1,6 @@
+/** How a picture wallpaper moves behind a profile. */
+export type WallpaperMotion = "none" | "zoom" | "drift" | "pan" | "pulse";
+
 export interface ProfileTheme {
   bgColor?: string;
   textColor?: string;
@@ -19,6 +22,8 @@ export interface User {
   wallpaperUrl: string | null;
   wallpaperType: "image" | "video";
   wallpaperPosition: string;
+  /** How a picture wallpaper moves; absent on profiles saved before wallpapers could move (treated as "none"). */
+  wallpaperMotion?: WallpaperMotion;
   isPrivate: boolean;
   createdAt: string;
   theme: ProfileTheme;

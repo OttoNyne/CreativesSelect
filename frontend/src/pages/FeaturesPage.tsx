@@ -1,14 +1,14 @@
 import { InfoPage } from "../components/layout/InfoPage";
 
 const FEATURES = [
-  { icon: "🎨", title: "A profile that's yours", text: "Pick your colours, fonts and wallpaper, add a bio, show your top friends, and collect testimonials." },
+  { icon: "🎨", title: "A profile that's yours", text: "Pick your colours, fonts and wallpaper, add a bio, show your top friends, and collect testimonials. Describe a wallpaper (or start from one of your photos) and let AI make it, then choose how it moves." },
   { icon: "🖼️", title: "Portfolio", text: "Show pictures and short videos (up to 30 seconds). Visitors can like or dislike each piece." },
   { icon: "🎵", title: "Music", text: "Add up to five tracks — YouTube links or your own uploads — that keep playing as you browse." },
   { icon: "📝", title: "Feed", text: "Share what you're working on with a picture you can frame: choose its shape, zoom and placement before posting." },
   { icon: "💬", title: "Messages and group chat", text: "Chat privately with friends, or talk with everyone in a group you've joined." },
   { icon: "👥", title: "Friends and groups", text: "Find other creatives, send friend requests, and join or start groups around what you love." },
   { icon: "🤝", title: "Help wanted", text: "Post a request on the public board, or offer to help someone else with theirs." },
-  { icon: "🎙️", title: "Live audio", text: "Go live with your voice, chat with listeners as you talk, and let your friends know you're on." },
+  { icon: "🎙️", title: "Live audio", text: "Go live with your voice, chat with listeners as you talk, bring up to 9 listeners on stage to speak, and let your friends know you're on. Share a live, a profile or the whole site with a QR code." },
   { icon: "✨", title: "AI assistance", text: "Optionally generate a caption or an image to get started. Anything AI-made is clearly labelled." },
   { icon: "🔒", title: "Privacy and safety", text: "Private profiles, blocking, reporting, email confirmation, password reset, and full account deletion." },
   { icon: "📱", title: "Works on your phone", text: "Use it in any browser, or add it to your Home Screen to open it like an app." },
