@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   hosts: [] as { opts: Record<string, unknown>; start: () => void; stop: () => void; setMuted: (m: boolean) => void }[],
   listeners: [] as { opts: Record<string, unknown>; start: () => Promise<void>; leave: () => Promise<void>; retry: () => Promise<void> }[],
   listenerStart: undefined as undefined | (() => Promise<void>),
+  sfuHosts: [] as { opts: Record<string, unknown>; start: () => void; stop: () => void; setMuted: (m: boolean) => void }[],
+  sfuListeners: [] as { opts: Record<string, unknown>; start: () => Promise<void>; leave: () => Promise<void> }[],
 }));
 vi.mock("../lib/live/host", () => ({
   LiveHost: class {
@@ -43,8 +45,39 @@ vi.mock("../lib/live/listener", () => ({
     }
   },
 }));
+vi.mock("../lib/live/sfuHost", () => ({
+  SfuHost: class {
+    opts: Record<string, unknown>;
+    start = vi.fn();
+    stop = vi.fn();
+    setMuted = vi.fn();
+    constructor(opts: Record<string, unknown>) {
+      this.opts = opts;
+      mocks.sfuHosts.push(this);
+    }
+  },
+}));
+vi.mock("../lib/live/sfuListener", () => ({
+  SfuListener: class {
+    opts: Record<string, unknown>;
+    start = vi.fn(async () => {
+      (this.opts.onJoined as () => void)();
+    });
+    leave = vi.fn(async () => {});
+    retry = vi.fn(async () => {});
+    constructor(opts: Record<string, unknown>) {
+      this.opts = opts;
+      mocks.sfuListeners.push(this);
+    }
+  },
+}));
 vi.mock("../components/live/LiveChat", () => ({
-  LiveChat: ({ open, isHost }: { open: boolean; isHost: boolean }) => <div>chat {open ? "open" : "closed"}{isHost ? " (host)" : ""}</div>,
+  LiveChat: ({ open, isHost, pollMs }: { open: boolean; isHost: boolean; pollMs?: number }) => (
+    <div data-poll={pollMs}>
+      chat {open ? "open" : "closed"}
+      {isHost ? " (host)" : ""}
+    </div>
+  ),
 }));
 vi.mock("../api/live.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/live.api")>()),
@@ -85,6 +118,8 @@ const setState = (s: ListenerState) => act(() => (lastListener().opts.onState as
 beforeEach(() => {
   mocks.hosts.length = 0;
   mocks.listeners.length = 0;
+  mocks.sfuHosts.length = 0;
+  mocks.sfuListeners.length = 0;
   mocks.listenerStart = undefined;
   Object.values(api).forEach((fn) => fn.mockReset());
   api.end.mockResolvedValue(undefined);
@@ -350,5 +385,64 @@ describe("LiveRoomPage: as the host", () => {
     renderRoom();
     expect(await screen.findByText("Your live has ended.")).toBeInTheDocument();
     expect(mocks.hosts).toHaveLength(0);
+  });
+});
+
+describe("LiveRoomPage: big lives (through a media server)", () => {
+  const big = (over: Partial<LiveRoom> = {}) => room({ mode: "sfu", maxListeners: 50, heartbeatMs: 20_000, commentPollMs: 6_000, ...over });
+
+  it("listens through the media-server client, at the pace the room asks for, and not through browser-to-browser", async () => {
+    api.get.mockResolvedValue({ live: big() });
+    renderRoom();
+    await userEvent.click(await screen.findByRole("button", { name: "Listen" }));
+    expect(mocks.sfuListeners).toHaveLength(1);
+    expect(mocks.listeners).toHaveLength(0);
+    expect(mocks.sfuListeners[0].opts).toMatchObject({ liveId: "l1", hostId: "h1", heartbeatMs: 20_000 });
+    expect(await screen.findByText("chat open")).toBeInTheDocument();
+  });
+
+  it("passes the room's chat pace to the chat", async () => {
+    api.get.mockResolvedValue({ live: big() });
+    renderRoom();
+    expect((await screen.findByText(/chat closed/)).getAttribute("data-poll")).toBe("6000");
+  });
+
+  it("broadcasts through the media-server client as the host", async () => {
+    api.get.mockResolvedValue({ live: big({ isHost: true }) });
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    await screen.findByText(/You're live/);
+    await waitFor(() => expect(mocks.sfuHosts).toHaveLength(1));
+    expect(mocks.hosts).toHaveLength(0);
+    expect(mocks.sfuHosts[0].opts).toMatchObject({ liveId: "l1", heartbeatMs: 20_000 });
+    expect(mocks.sfuHosts[0].start).toHaveBeenCalled();
+    expect(screen.getByText("Up to 50 people can listen.", { exact: false })).toBeInTheDocument();
+  });
+
+  it("tells the host plainly if the connection to the audio service fails", async () => {
+    api.get.mockResolvedValue({ live: big({ isHost: true }) });
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    await waitFor(() => expect(mocks.sfuHosts).toHaveLength(1));
+    act(() => (mocks.sfuHosts[0].opts.onFailed as (m: string) => void)("Couldn't connect to the live audio service."));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't connect to the live audio service. Listeners can't hear you");
+    expect(screen.getByRole("button", { name: "End live" })).toBeInTheDocument();
+  });
+
+  it("shows the host's end when the media-server broadcast reports the live is over", async () => {
+    api.get.mockResolvedValue({ live: big({ isHost: true }) });
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    await waitFor(() => expect(mocks.sfuHosts).toHaveLength(1));
+    act(() => (mocks.sfuHosts[0].opts.onEnded as () => void)());
+    expect(await screen.findByText("Your live has ended.")).toBeInTheDocument();
+  });
+
+  it("a small live (no mode, or browser-to-browser) never touches the media-server client", async () => {
+    api.get.mockResolvedValue({ live: room() });
+    renderRoom();
+    await userEvent.click(await screen.findByRole("button", { name: "Listen" }));
+    expect(mocks.listeners).toHaveLength(1);
+    expect(mocks.sfuListeners).toHaveLength(0);
   });
 });

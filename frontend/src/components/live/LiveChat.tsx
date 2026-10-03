@@ -5,11 +5,11 @@ import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
 import type { LiveComment } from "../../types";
 
-const POLL_MS = 3_000;
+const DEFAULT_POLL_MS = 3_000;
 const KEEP = 200; // comments kept on screen
 
 // The live room's chat. Polls for anything newer than the last comment it has.
-export function LiveChat({ liveId, isHost, open }: { liveId: string; isHost: boolean; open: boolean }) {
+export function LiveChat({ liveId, isHost, open, pollMs = DEFAULT_POLL_MS }: { liveId: string; isHost: boolean; open: boolean; pollMs?: number }) {
   const [comments, setComments] = useState<LiveComment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -30,12 +30,12 @@ export function LiveChat({ liveId, isHost, open }: { liveId: string; isHost: boo
       }
     }
     poll();
-    const timer = setInterval(poll, POLL_MS);
+    const timer = setInterval(poll, pollMs);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [liveId]);
+  }, [liveId, pollMs]);
 
   useEffect(() => {
     const el = listRef.current;

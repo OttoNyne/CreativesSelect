@@ -184,6 +184,11 @@ export interface LiveRoom {
   isHost: boolean;
   listenerCount: number;
   maxListeners: number;
+  /** How the audio travels: straight between browsers (a few listeners) or through a media server (50-100). */
+  mode?: "mesh" | "sfu";
+  /** How often this room's clients should check in, and poll the chat. */
+  heartbeatMs?: number;
+  commentPollMs?: number;
 }
 
 export interface LiveComment {

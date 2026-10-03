@@ -65,6 +65,19 @@ describe("LivePage: who's live", () => {
     expect(await screen.findByRole("link", { name: /Beats and chill/ })).toHaveTextContent("You · 3 listening");
   });
 
+  it("tells people how many can listen, as the server says a live started now would allow", async () => {
+    api.list.mockResolvedValue({ lives: [], config: { mode: "sfu", maxListeners: 50 } });
+    renderPage();
+    expect(await screen.findByText(/Up to 50 people can listen at once/)).toBeInTheDocument();
+  });
+
+  it("doesn't guess a number before it knows", async () => {
+    api.list.mockResolvedValue({ lives: [] });
+    renderPage();
+    expect(await screen.findByText(/Listeners can join while there's room/)).toBeInTheDocument();
+    expect(screen.queryByText(/Up to \d+ people/)).not.toBeInTheDocument();
+  });
+
   it("says when no one is live", async () => {
     api.list.mockResolvedValue({ lives: [] });
     renderPage();

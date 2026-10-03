@@ -59,6 +59,25 @@ describe("LiveChat", () => {
     expect(screen.getAllByText(/Same!/)).toHaveLength(1);
   });
 
+  it("polls at the pace the room asks for (slower in a big room)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    render(
+      <MemoryRouter>
+        <LiveChat liveId="l1" isHost={false} open pollMs={6000} />
+      </MemoryRouter>
+    );
+    await screen.findByText(/Love this/);
+    api.comments.mockClear();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(api.comments).not.toHaveBeenCalled();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(api.comments).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps showing what it has when a poll fails", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     renderChat();

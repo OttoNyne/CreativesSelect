@@ -14,13 +14,15 @@ export interface LiveSignal {
 }
 
 export const liveApi = {
-  list: () => api.get<{ lives: LiveRoom[] }>("/live"),
+  list: () => api.get<{ lives: LiveRoom[]; config?: { mode: "mesh" | "sfu"; maxListeners: number } }>("/live"),
   get: (id: string) => api.get<{ live: LiveRoom }>(`/live/${id}`),
   start: (title: string) => api.post<{ live: LiveRoom }>("/live", { title }),
   end: (id: string) => api.post<void>(`/live/${id}/end`),
   join: (id: string) => api.post<{ live: LiveRoom }>(`/live/${id}/join`),
   leave: (id: string) => api.post<void>(`/live/${id}/leave`),
   heartbeat: (id: string) => api.post<{ status: "live" | "ended"; listenerCount: number }>(`/live/${id}/heartbeat`),
+  /** A pass to this live's media-server room (big lives only). */
+  token: (id: string) => api.post<{ url: string; token: string }>(`/live/${id}/token`),
   iceServers: () => api.get<{ iceServers: RTCIceServer[] }>("/live/ice"),
   signals: (id: string, after?: string) =>
     api.get<{ signals: LiveSignal[] }>(`/live/${id}/signals${after ? `?after=${encodeURIComponent(after)}` : ""}`),

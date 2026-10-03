@@ -7,6 +7,8 @@ import { Avatar } from "../components/common/Avatar";
 import { LiveChat } from "../components/live/LiveChat";
 import { LiveHost } from "../lib/live/host";
 import { LiveListener, type ListenerState } from "../lib/live/listener";
+import { SfuHost } from "../lib/live/sfuHost";
+import { SfuListener } from "../lib/live/sfuListener";
 import { liveAudioSupported, UNSUPPORTED_MESSAGE } from "../lib/live/rtc";
 import { clearStreamFor, getStreamFor, MIC_CONSTRAINTS, micErrorMessage } from "../lib/live/hostStream";
 import type { LiveRoom } from "../types";
@@ -51,7 +53,8 @@ function HostRoom({ room }: { room: LiveRoom }) {
   const [listeners, setListeners] = useState(room.listenerCount);
   const [muted, setMuted] = useState(false);
   const [ended, setEnded] = useState(false);
-  const hostRef = useRef<LiveHost | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const hostRef = useRef<{ start(): void; stop(): void; setMuted(muted: boolean): void } | null>(null);
   const teardown = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -61,17 +64,16 @@ function HostRoom({ room }: { room: LiveRoom }) {
       teardown.current = null;
     }
     if (!hostRef.current) {
-      const host = new LiveHost({
-        liveId: id,
-        stream,
-        api: liveApi,
-        onListenerCount: setListeners,
-        onEnded: () => {
-          hostRef.current = null;
-          clearStreamFor(id);
-          setEnded(true);
-        },
-      });
+      const onEnded = () => {
+        hostRef.current = null;
+        clearStreamFor(id);
+        setEnded(true);
+      };
+      // Big lives (50-100 listeners) go through a media server; small ones straight between browsers.
+      const host =
+        room.mode === "sfu"
+          ? new SfuHost({ liveId: id, stream, api: liveApi, onListenerCount: setListeners, onEnded, onFailed: setFailure, heartbeatMs: room.heartbeatMs })
+          : new LiveHost({ liveId: id, stream, api: liveApi, onListenerCount: setListeners, onEnded, heartbeatMs: room.heartbeatMs });
       hostRef.current = host;
       host.start();
     }
@@ -87,7 +89,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
         void liveApi.end(id).catch(() => {});
       }, 150);
     };
-  }, [stream, id]);
+  }, [stream, id, room.mode, room.heartbeatMs]);
 
   // Closing the tab or navigating away from the site also ends it right away.
   useEffect(() => {
@@ -140,6 +142,11 @@ function HostRoom({ room }: { room: LiveRoom }) {
               End live
             </button>
           </div>
+          {failure && (
+            <p role="alert" className="mt-3 text-sm text-red-400">
+              {failure} Listeners can't hear you — end this live and start a new one to try again.
+            </p>
+          )}
           <p className="mt-3 text-xs text-white/40">
             Up to {room.maxListeners} people can listen. Leaving this page, or closing the tab, ends your live and turns your microphone off.
           </p>
@@ -162,7 +169,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
           )}
         </div>
       )}
-      <LiveChat liveId={id} isHost open />
+      <LiveChat liveId={id} isHost open pollMs={room.commentPollMs} />
     </div>
   );
 }
@@ -183,7 +190,7 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
   const [muted, setMuted] = useState(false);
   // True once the server has let us in; the chat opens then, not the moment Listen is tapped.
   const [admitted, setAdmitted] = useState(false);
-  const listenerRef = useRef<LiveListener | null>(null);
+  const listenerRef = useRef<{ start(): Promise<void>; leave(): Promise<void>; retry(): Promise<void> } | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -202,20 +209,22 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
   async function handleListen() {
     setError(null);
     setState("connecting");
-    const listener = new LiveListener({
+    const options = {
       liveId: room.id,
       hostId: room.host.id,
       api: liveApi,
       onState: setState,
       onListenerCount: setCount,
       onJoined: () => setAdmitted(true),
-      onStream: (stream) => {
+      onStream: (stream: MediaStream) => {
         if (audioRef.current) {
           audioRef.current.srcObject = stream;
           playAudio();
         }
       },
-    });
+      heartbeatMs: room.heartbeatMs,
+    };
+    const listener = room.mode === "sfu" ? new SfuListener(options) : new LiveListener(options);
     listenerRef.current = listener;
     try {
       await listener.start();
@@ -308,7 +317,7 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
           )}
         </div>
       )}
-      {state !== "ended" && <LiveChat liveId={room.id} isHost={false} open={joined && admitted} />}
+      {state !== "ended" && <LiveChat liveId={room.id} isHost={false} open={joined && admitted} pollMs={room.commentPollMs} />}
     </div>
   );
 }

@@ -12,6 +12,8 @@ const POLL_MS = 10_000;
 export function LivePage() {
   const navigate = useNavigate();
   const [lives, setLives] = useState<LiveRoom[] | null>(null);
+  // what a live started now would allow (known once the list has loaded)
+  const [maxListeners, setMaxListeners] = useState<number | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [title, setTitle] = useState("");
   const [starting, setStarting] = useState(false);
@@ -21,9 +23,10 @@ export function LivePage() {
     let cancelled = false;
     async function load() {
       try {
-        const { lives } = await liveApi.list();
+        const { lives, config } = await liveApi.list();
         if (!cancelled) {
           setLives(lives);
+          if (config) setMaxListeners(config.maxListeners);
           setLoadError(false);
         }
       } catch {
@@ -95,7 +98,7 @@ export function LivePage() {
           </button>
         </div>
         <p className="mt-2 text-xs text-white/40">
-          Uses your microphone. Up to 8 people can listen at once, and your live ends when you leave the room.
+          Uses your microphone. {maxListeners ? `Up to ${maxListeners} people can listen at once` : "Listeners can join while there's room"}, and your live ends when you leave the room.
         </p>
         {startError && (
           <p role="alert" className="mt-2 text-sm text-red-400">
