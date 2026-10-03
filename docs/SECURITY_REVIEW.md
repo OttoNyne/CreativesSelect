@@ -28,7 +28,7 @@ fix was re-verified after the change.
 | Hardcoded secrets in source | None. `JWT_SECRET`, `MONGODB_URI` live only in `.env`, which is gitignored from the first commit in both repos (verified via `git log --all --diff-filter=A --name-only \| grep .env` — no hits). |
 | Password storage | `bcryptjs`, 12 salt rounds, hashed in a `pre("validate")` hook on the `User` model — plaintext is never persisted, and the plaintext password field isn't even a real schema path (it's a transient virtual). |
 | JWT | Signed with `jsonwebtoken`, `expiresIn: "7d"`, stored in an **httpOnly** cookie (`token`) — not exposed to client-side JS, not stored in `localStorage`. |
-| CORS | Locked to a single configured origin (`CLIENT_URL` env var) with `credentials: true`, not `*`. |
+| CORS | Locked to the configured origin(s) (`CLIENT_URL` env var — one address, or several separated by commas) with `credentials: true`, not `*`. |
 | Sensitive logging | No request bodies, passwords, or tokens are logged anywhere (`middleware/logger.js` logs only method + path). |
 | `npm audit` | `0 vulnerabilities` in both `first-server` and `frontend`. |
 | Input validation | `zod` schemas on `/api/auth/register` and `/api/auth/login`. Most other write routes use ad-hoc required-field checks rather than schema validation — noted as a remaining risk below. |
@@ -406,6 +406,13 @@ independent, `429` after 10 registrations, evil/`null` origins `403`, real origi
 and no-origin allowed, limiter shared between instances) and live: the 11th failed
 login returned `429` with `Retry-After: 900`, an untrusted origin got `403`, and
 authenticated writes from the real frontend origin still worked.
+
+**Later: more than one site address.** `CLIENT_URL` can now list several addresses (for example the
+site's own domain and its original `*.vercel.app` one) so both keep working. Matching stays exact —
+scheme, host and port all have to match, so `https://example.com` does not match
+`https://www.example.com`, `http://…` or `https://www.example.com.evil.net` — and applies to both
+the CSRF check and CORS (which now answers each request against the whole list; an unlisted origin
+gets no CORS headers). The first address is the one used for links in emails. Covered by new tests.
 
 ### 5.15 Sessions weren't revalidated: a deleted account's token kept working
 

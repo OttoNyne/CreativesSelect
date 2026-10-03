@@ -74,7 +74,7 @@ flowchart LR
    `fetch("http://localhost:5000/api/posts/feed", { credentials: "include" })`
    — the browser automatically attaches the `token` cookie.
 3. Express's middleware chain runs in order: `helmet` (security headers) →
-   `cors` (checks the request's Origin against `CLIENT_URL`) → `morgan` +
+   `cors` (checks the request's Origin against the address(es) in `CLIENT_URL`) → `morgan` +
    `requestTimer` (logging) → `express.json()` (body parsing) →
    `cookieParser()` (splits the cookie header).
 4. `postsRouter` is mounted with `postsRouter.use(requireAuth)` — this reads
@@ -281,7 +281,7 @@ The audio never touches the server: the host's browser sends it straight to each
 
 | Layer | Platform | Notes |
 |---|---|---|
-| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL`/`CLOUDINARY_*`/`CLOUDFLARE_*`/`RESEND_API_KEY`/`MAIL_FROM`/`LIVE_ICE_SERVERS` set as dashboard-only secrets (`sync: false`), never committed |
+| Backend (`first-server`) | [Render](https://render.com), free web service tier, via `render.yaml` blueprint | `npm install` / `npm start`; `NODE_ENV=production` committed, `MONGODB_URI`/`JWT_SECRET`/`CLIENT_URL` (one site address, or several separated by commas — the first is used in email links)/`CLOUDINARY_*`/`CLOUDFLARE_*`/`RESEND_API_KEY`/`MAIL_FROM`/`LIVE_ICE_SERVERS` set as dashboard-only secrets (`sync: false`), never committed |
 | Frontend | [Vercel](https://vercel.com) | Auto-detected Vite build; `vercel.json` adds a catch-all rewrite to `index.html` so client-side routes (e.g. `/register`, `/u/:username`) don't 404 on direct navigation. Project settings: **Root Directory = `frontend`**, **Install Command = `npm ci`**; production deploys come **only from CI**: `vercel.json` sets `git.deploymentEnabled: false`, and the `deploy` job in `.github/workflows/ci.yml` builds and ships with the Vercel CLI (secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) only after lint, build, tests and audit pass on `master`. Side effect: no per-PR preview deployments. `vercel.json` also **proxies `/api/*` to the Render API** so cookies are first-party (see the same-origin proxy note below), and the site is an **installable web app** (`manifest.webmanifest`, icons, Apple meta tags) |
 | AI image generation | Cloudflare Workers AI (FLUX.1 schnell), free daily allowance | Needs `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; without them the backend uses the mock provider. Results are re-hosted on Cloudinary |
 | Password-reset email | [Resend](https://resend.com) HTTP API | Needs `RESEND_API_KEY` and `MAIL_FROM` (a sender on a domain verified with Resend) as Render settings. Until they're set the site says plainly that reset by email isn't available. Resend without a verified domain only delivers to its owner's own address |
@@ -460,7 +460,7 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 188 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 198 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
