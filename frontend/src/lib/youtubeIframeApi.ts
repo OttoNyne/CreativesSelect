@@ -8,7 +8,7 @@ declare global {
   interface Window {
     YT?: {
       Player: new (elementId: string, options: { events?: Record<string, (event: unknown) => void> }) => YTPlayer;
-      PlayerState: { ENDED: number };
+      PlayerState: { ENDED: number; PLAYING: number };
     };
     onYouTubeIframeAPIReady?: () => void;
   }
@@ -18,6 +18,14 @@ export interface YTPlayer {
   playVideo(): void;
   pauseVideo(): void;
   destroy(): void;
+}
+
+// YouTube's own error codes for an embedded player.
+//   2/5/100: the video id is wrong, can't be played in an embed, or was removed or made private
+//   101/150: the video's owner doesn't allow it to be played outside YouTube
+export function youtubeErrorMessage(code: number): string {
+  if (code === 101 || code === 150) return "The owner of this video doesn't allow it to be played here.";
+  return "This video isn't available.";
 }
 
 let apiReadyPromise: Promise<void> | null = null;
