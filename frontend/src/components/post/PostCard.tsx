@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { Post } from "../../types";
 import { Avatar } from "../common/Avatar";
 import { assetUrl } from "../../api/client";
+import { FramedImage } from "../common/FramedImage";
 import { PostCommentList } from "./PostCommentList";
 import { useAuth } from "../../context/AuthContext";
 
@@ -40,9 +41,20 @@ export function PostCard({ post, onDeleted }: { post: Post; onDeleted?: (id: str
 
       <p className="mt-3 whitespace-pre-wrap text-sm text-white/90">{post.content}</p>
 
-      {post.imageUrl && (
-        <img src={assetUrl(post.imageUrl)} alt="" className="mt-3 max-h-96 w-full rounded-lg object-cover" />
-      )}
+      {post.imageUrl &&
+        (post.imageAspect ? (
+          // framed by its author
+          <FramedImage
+            src={assetUrl(post.imageUrl)}
+            aspect={post.imageAspect}
+            zoom={post.imageZoom ?? 1}
+            position={post.imagePosition ?? "50% 50%"}
+            className="mt-3 rounded-lg"
+          />
+        ) : (
+          // posted before framing existed: shown as it always was
+          <img src={assetUrl(post.imageUrl)} alt="" className="mt-3 max-h-96 w-full rounded-lg object-cover" />
+        ))}
 
       {(post.isAiText || post.isAiImage) && (
         <div className="mt-2 flex gap-1.5">

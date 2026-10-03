@@ -72,3 +72,25 @@ describe("NotificationBell: help offers", () => {
     alertSpy.mockRestore();
   });
 });
+
+describe("NotificationBell: friends going live", () => {
+  it("says who is live and what about, with a link straight to the room", async () => {
+    await openWith([note({ type: "live_started", payload: { liveId: "live123", title: "Mixing a track" } })]);
+    expect(screen.getByText(/is live now: "Mixing a track"/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Zoe" })).toHaveAttribute("href", "/u/zoe");
+    expect(screen.getByRole("link", { name: "Listen live" })).toHaveAttribute("href", "/live/live123");
+  });
+
+  it("marks it read and closes the list when you go to listen", async () => {
+    await openWith([note({ type: "live_started", payload: { liveId: "live123", title: "Open mic" } })]);
+    await userEvent.click(screen.getByRole("link", { name: "Listen live" }));
+    expect(api.markRead).toHaveBeenCalledWith("n1");
+    expect(screen.queryByText("Notifications")).not.toBeInTheDocument();
+  });
+
+  it("still reads sensibly without a title, and offers no link without a room", async () => {
+    await openWith([note({ type: "live_started", payload: {} })]);
+    expect(screen.getByText(/is live now/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Listen live" })).not.toBeInTheDocument();
+  });
+});

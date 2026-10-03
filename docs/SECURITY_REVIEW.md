@@ -647,6 +647,25 @@ Covered by 24 backend tests, 94 frontend tests (including the handshake and reco
 a fake peer connection) and 5 browser tests, one of which runs a real host and a real listener in two
 Chrome windows and measures sound arriving.
 
+### 5.29 Telling friends when someone goes live, and framing a post's picture
+
+Two small additions that each touch user data:
+
+- **"X is live" notifications** go only to the host's *accepted* friends, so they can't be used to
+  ping strangers; someone who has unfriended or blocked the host gets nothing (those friendships are
+  already gone). The volume is bounded by the existing limit of 5 lives started per hour. The
+  notification holds only the host, the title (≤80 chars) and the room id; it is removed when the live
+  ends, however it ends (host ends it, starts another, goes silent, or deletes their account), so nobody
+  is sent to a dead room. If sending fails the live still starts (the error is logged, not shown).
+  There is no per-person "mute these" setting yet (see §8).
+- **Picture framing** (shape, zoom, position) is new data on a post, so the server validates it rather
+  than trusting the browser: shape from a fixed list, zoom a number from 1 to 3, position exactly
+  `"x% y%"` with each 0–100. These values go into CSS, so the strict format is what stops anything else
+  (for example `50% 50%; background:url(…)`) from reaching a style. Posts from before the feature carry
+  no framing and are shown exactly as they were.
+Covered by 7 + 5 backend tests, the picture controls and bell by 30 frontend tests, and 5 browser tests (Chrome,
+Safari's engine, iPhone-sized).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -752,6 +771,7 @@ its own.
   Cloudinary account. When it refused uploads (§5.24) the app degraded cleanly to a clear
   "temporarily unavailable" message, but nothing worked until the account owner resolved it
   with Cloudinary. There is no second storage provider or upload queue.
+- **Live notifications can't be switched off.** Every accepted friend is told each time you go live (at most 5 times an hour), and there is no setting to mute a friend's lives short of unfriending them.
 - **Live audio can't be moderated, and is capped small.** Audio goes browser-to-browser, so the
   server cannot hear, record or filter it; moderation is limited to blocking, deleting comments, and
   the host ending the live (there is no "report this live" yet). Because the host uploads one copy

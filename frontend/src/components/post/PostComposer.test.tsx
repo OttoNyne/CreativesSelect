@@ -70,6 +70,9 @@ describe("PostComposer", () => {
     expect(create).toHaveBeenCalledWith({
       content: "An AI caption",
       imageUrl: "https://cdn.example.com/ai.jpg",
+      imageAspect: "original",
+      imageZoom: 1,
+      imagePosition: "50% 50%",
       isAiText: true,
       isAiImage: true,
     });
@@ -111,5 +114,71 @@ describe("PostComposer", () => {
     expect(onPosted).not.toHaveBeenCalled();
     expect(box()).toHaveValue("Important draft");
     expect(screen.getByRole("button", { name: "Post" })).toBeEnabled();
+  });
+
+  describe("adjusting the picture before posting", () => {
+    async function withPicture() {
+      create.mockResolvedValue({ post });
+      renderComposer();
+      await userEvent.type(box(), "look at this");
+      await userEvent.click(screen.getByText("fake-ai-image"));
+    }
+    const setRange = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
+
+    it("offers shape, zoom and position controls once a picture is attached, and none before", async () => {
+      renderComposer();
+      expect(screen.queryByLabelText("Zoom")).not.toBeInTheDocument();
+      await userEvent.click(screen.getByText("fake-ai-image"));
+      expect(screen.getByRole("group", { name: "Picture shape" })).toBeInTheDocument();
+      expect(screen.getByLabelText("Zoom")).toBeInTheDocument();
+      expect(screen.getByLabelText("Move left or right")).toBeInTheDocument();
+      expect(screen.getByLabelText("Move up or down")).toBeInTheDocument();
+    });
+
+    it("posts the shape, zoom and placement that were chosen", async () => {
+      await withPicture();
+      await userEvent.click(screen.getByRole("button", { name: "Wide" }));
+      setRange("Zoom", "1.8");
+      setRange("Move left or right", "20");
+      setRange("Move up or down", "75");
+      await userEvent.click(screen.getByRole("button", { name: "Post" }));
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ imageAspect: "16:9", imageZoom: 1.8, imagePosition: "20% 75%" }));
+    });
+
+    it("shows the chosen framing in the preview as it is changed", async () => {
+      await withPicture();
+      await userEvent.click(screen.getByRole("button", { name: "Square" }));
+      setRange("Zoom", "2");
+      const img = screen.getByTestId("adjust-preview").querySelector("img")!;
+      expect(img.style.transform).toBe("scale(2)");
+      expect((img.parentElement as HTMLElement).style.aspectRatio).toBe("1 / 1");
+    });
+
+    it("starts every new picture with the default framing, not the last one's", async () => {
+      await withPicture();
+      setRange("Zoom", "2.5");
+      await userEvent.click(screen.getByRole("button", { name: "Remove picture" }));
+      await userEvent.click(screen.getByText("fake-ai-image"));
+      expect(screen.getByLabelText("Zoom")).toHaveValue("1");
+      await userEvent.click(screen.getByRole("button", { name: "Post" }));
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ imageZoom: 1, imageAspect: "original", imagePosition: "50% 50%" }));
+    });
+
+    it("sends no framing with a post that has no picture", async () => {
+      create.mockResolvedValue({ post });
+      renderComposer();
+      await userEvent.type(box(), "just words");
+      await userEvent.click(screen.getByRole("button", { name: "Post" }));
+      expect(create).toHaveBeenCalledWith({ content: "just words", imageUrl: null, isAiText: false, isAiImage: false });
+    });
+
+    it("goes back to the default framing after posting", async () => {
+      await withPicture();
+      setRange("Zoom", "2");
+      await userEvent.click(screen.getByRole("button", { name: "Post" }));
+      await waitFor(() => expect(screen.queryByLabelText("Zoom")).not.toBeInTheDocument());
+      await userEvent.click(screen.getByText("fake-ai-image"));
+      expect(screen.getByLabelText("Zoom")).toHaveValue("1");
+    });
   });
 });

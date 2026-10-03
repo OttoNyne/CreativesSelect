@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { apiUser, fakeIpHeaders, newUser, secondBrowserUser, signUpViaUi } from "./helpers";
+import { apiUser, befriend, fakeIpHeaders, newUser, secondBrowserUser, signUpViaUi } from "./helpers";
 
 test.use({ extraHTTPHeaders: fakeIpHeaders() });
 
@@ -193,5 +193,41 @@ test.describe("voice live: the room, with the host simulated through the API", (
     await expect(page.getByRole("heading", { name: "Live now" })).toBeVisible();
     await expect(page.getByRole("link", { name: new RegExp(partyTitle) })).toHaveCount(0);
     await host.context.close();
+  });
+});
+
+test.describe("telling friends when someone goes live", () => {
+  test("a friend gets a notification with a link to the room; a stranger doesn't; it goes when the live ends", async ({ page, browser, baseURL }) => {
+    const me = newUser("watcher");
+    await signUpViaUi(page, me);
+    const dj = await apiUser(browser, baseURL!, "dj");
+    const stranger = await apiUser(browser, baseURL!, "stranger");
+    await befriend(page.request, dj.request, me.username);
+
+    const title = uniq("Friends only jam");
+    const res = await dj.request.post("/api/live", { data: { title } });
+    expect(res.status()).toBe(201);
+    const id = (await res.json()).live.id as string;
+    // a real host keeps sending heartbeats; slow browsers need that here too
+    const beat = setInterval(() => void dj.request.post(`/api/live/${id}/heartbeat`).catch(() => clearInterval(beat)), 5000);
+
+    await page.reload(); // (the bell also refreshes on its own every 30 seconds)
+    await page.getByRole("button", { name: "Notifications" }).click();
+    await expect(page.getByText(`is live now: "${title}"`)).toBeVisible();
+    await page.getByRole("link", { name: "Listen live" }).click();
+    await expect(page).toHaveURL(new RegExp(`/live/${id}$`));
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+
+    // someone who isn't a friend hears nothing
+    const strangerNotes = (await (await stranger.request.get("/api/notifications")).json()).notifications as { type: string }[];
+    expect(strangerNotes.filter((n) => n.type === "live_started")).toHaveLength(0);
+
+    // when the live ends, so does the notification
+    expect((await dj.request.post(`/api/live/${id}/end`)).status()).toBe(204);
+    await expect
+      .poll(async () => ((await (await page.request.get("/api/notifications")).json()).notifications as { type: string }[]).filter((n) => n.type === "live_started").length)
+      .toBe(0);
+    await dj.context.close();
+    await stranger.context.close();
   });
 });

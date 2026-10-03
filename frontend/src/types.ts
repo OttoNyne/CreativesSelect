@@ -28,6 +28,10 @@ export interface Post {
   author: User;
   content: string;
   imageUrl: string | null;
+  /** How the picture is framed; null on posts made before framing existed. */
+  imageAspect?: "original" | "1:1" | "4:3" | "16:9" | null;
+  imageZoom?: number | null;
+  imagePosition?: string | null;
   isAiText: boolean;
   isAiImage: boolean;
   createdAt: string;
@@ -133,7 +137,7 @@ export interface BoardTask {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

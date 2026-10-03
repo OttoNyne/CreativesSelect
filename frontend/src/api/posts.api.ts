@@ -4,6 +4,9 @@ import type { Comment, Post } from "../types";
 export interface CreatePostInput {
   content: string;
   imageUrl?: string | null;
+  imageAspect?: "original" | "1:1" | "4:3" | "16:9";
+  imageZoom?: number;
+  imagePosition?: string;
   isAiText?: boolean;
   isAiImage?: boolean;
 }

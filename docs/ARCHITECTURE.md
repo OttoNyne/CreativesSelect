@@ -99,7 +99,7 @@ MongoDB via Mongoose. 25 collections. `ObjectId` refs are named `ref` below;
 |---|---|---|
 | **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, `passwordChangedAt` (sessions issued before it are rejected), timestamps | Referenced by nearly every other model as author/owner/participant |
 | **Task** | `owner` → User, `title`, `description`, `isPublic` (default false), `done` (= resolved), `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; shown in the UI as a "Help wanted" request — private by default, listed on the public board when `isPublic` |
-| **Post** | `author` → User, `content`, `imageUrl`, `isAiText`, `isAiImage`, timestamps | Has many Comments |
+| **Post** | `author` → User, `content`, `imageUrl`, `imageAspect` (original/1:1/4:3/16:9), `imageZoom` (1–3), `imagePosition` ("x% y%"), `isAiText`, `isAiImage`, timestamps | Has many Comments. The three framing fields are how the author shaped, zoomed and placed the picture; they are absent on posts made before framing existed, which are shown as they always were |
 | **Comment** | `post` → Post, `author` → User, `content`, timestamps | Belongs to one Post |
 | **ProfileComment** | `profileOwner` → User, `author` → User, `content`, timestamps | The profile "guestbook"; distinct from post Comments |
 | **Friendship** | `requester` → User, `addressee` → User, `status` (pending/accepted/declined), timestamps | Unique on (requester, addressee); a "friend" = an accepted row in either direction |
@@ -111,7 +111,7 @@ MongoDB via Mongoose. 25 collections. `ObjectId` refs are named `ref` below;
 | **UsernameHistory** | `username`, `user` → User, `expireAt` (TTL) | A username someone gave up, reserved for them for 30 days so it can't be instantly taken over |
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
 | **StoredAsset** | `owner` → User, `url`, `publicId`, `resourceType` (image/video/raw), `kind` (ai/upload), timestamps | Ledger of every file the server itself stored on Cloudinary (AI images and uploads) and whose it is — the only thing that lets the app delete an asset safely |
-| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
+| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted/live_started), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
 | **Message** | `sender` → User, `recipient` → User, `pair` ("smaller id:larger id" — one key per two people, indexed with `createdAt`), `body` (≤2000 chars), `readAt`, timestamps | A direct message between two friends; one document is both people's copy, so a delete or account deletion removes it for both |
 | **GroupMessage** | `group` → Group, `sender` → User, `body` (≤1000 chars), timestamps | A message in a group's chat; only members can read or write; removed with its sender's account or its group |
 | **PasswordReset** | `user` → User, `tokenHash` (SHA-256, unique), `expireAt` (TTL, 1 hour) | At most one outstanding "reset my password" link per user; only a hash of the token is stored, so the database never holds a usable link |
@@ -169,7 +169,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 |---|---|---|
 | GET | `/feed` | Self + accepted friends' posts, newest first, limit 50 |
 | GET | `/user/:username` | Gated by the same visibility check as profiles |
-| POST | `/` | `{content, imageUrl?, isAiText?, isAiImage?}` → `201` |
+| POST | `/` | `{content, imageUrl?, imageAspect?, imageZoom?, imagePosition?, isAiText?, isAiImage?}` → `201`. The framing fields are checked (`400` for an unknown shape, a zoom outside 1–3, or a position that isn't `"x% y%"` with each 0–100) and ignored on a post with no picture |
 | DELETE | `/:id` | Author only; also deletes the post's AI-generated image from Cloudinary if that user generated it and nothing else still uses it |
 
 ### Comments on posts — mounted at `/api`
@@ -226,7 +226,7 @@ The audio never touches the server: the host's browser sends it straight to each
 |---|---|---|
 | GET | `/ice` | `{iceServers}` for WebRTC: public STUN by default, or the JSON in `LIVE_ICE_SERVERS` (add a TURN relay there for networks that need one) |
 | GET | `/` | Who is live right now (a host with no heartbeat for 45 s is treated as ended). Hosts you've blocked or who blocked you are omitted; a private-profile host is shown only to their friends and themselves |
-| POST | `/` | `{title}` (1–80 chars) → `201 {live}`; one live per person (starting another ends the first); 5 per hour (`429`) |
+| POST | `/` | `{title}` (1–80 chars) → `201 {live}`; one live per person (starting another ends the first); 5 per hour (`429`). Tells the host's accepted friends with a `live_started` notification (host, title, link to the room); those notifications are removed when the live ends, and a failure to send them never stops the live starting |
 | GET | `/:id` | The room: title, host, `listenerCount`, `maxListeners` (8), `isHost`. `404` — the same answer — for a missing room or one you may not see |
 | POST | `/:id/join` | Become a listener. `409` if it has ended or is full (8 listeners); `400` for the host; 120 per hour |
 | POST | `/:id/heartbeat` | Called every ~10 s by the host (keeps the live alive) and each listener (keeps them counted) → `{status, listenerCount}` |
@@ -287,7 +287,7 @@ The audio never touches the server: the host's browser sends it straight to each
 | Password-reset email | [Resend](https://resend.com) HTTP API | Needs `RESEND_API_KEY` and `MAIL_FROM` (a sender on a domain verified with Resend) as Render settings. Until they're set the site says plainly that reset by email isn't available. Resend without a verified domain only delivers to its owner's own address |
 | Live audio | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (48 tests × 3 browsers, 147 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (53 tests × 3 browsers, 162 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -353,7 +353,7 @@ App
 │       │   ├── /reset-password  → ResetPasswordPage    (token read from the URL #fragment, then removed from the address bar)
 │       │   ├── /register    → RegisterPage
 │       │   ├── ProtectedRoute (redirects to /login if !user)
-│       │   │   ├── /          → FeedPage        (PostComposer, PostCard[] → PostCommentList)
+│       │   │   ├── /          → FeedPage        (PostComposer → ImageAdjuster, PostCard[] → FramedImage + PostCommentList)
 │       │   │   ├── /friends   → FriendsPage
 │       │   │   ├── /messages  → MessagesPage (conversation list + open thread; /messages/:username)
 │       │   │   ├── /groups    → GroupsPage
@@ -460,14 +460,14 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 198 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 210 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 360 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 390 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
-login, register, forgot/reset password, feed, friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC host and listener logic (against a fake peer connection), profile, search, Help wanted,
+login, register, forgot/reset password, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC host and listener logic (against a fake peer connection), profile, search, Help wanted,
 nav bar, messages link, notification bell, post composer/card/comments, portfolio, music player, top
 friends, profile names, testimonials, delete-account, change-password, the AI buttons,
 avatar, the auth context and the video helpers. Test files are type-checked by `tsc -b`

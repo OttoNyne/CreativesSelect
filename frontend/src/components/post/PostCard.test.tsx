@@ -61,6 +61,22 @@ describe("PostCard", () => {
     expect(document.querySelector('img[src="https://cdn.example.com/p.jpg"]')).not.toBeNull();
   });
 
+  it("shows a framed picture the way its author framed it", () => {
+    renderCard(makePost({ imageUrl: "https://cdn.example.com/p.jpg", imageAspect: "16:9", imageZoom: 2, imagePosition: "30% 70%" }), "u2");
+    const img = document.querySelector('img[src="https://cdn.example.com/p.jpg"]') as HTMLImageElement;
+    expect(img.style.transform).toBe("scale(2)");
+    expect(img.style.objectPosition).toBe("30% 70%");
+    expect((img.parentElement as HTMLElement).style.aspectRatio).toBe("16 / 9");
+  });
+
+  it("keeps showing pictures from before framing existed exactly as they were", () => {
+    renderCard(makePost({ imageUrl: "https://cdn.example.com/old.jpg", imageAspect: null, imageZoom: null, imagePosition: null }), "u2");
+    const img = document.querySelector('img[src="https://cdn.example.com/old.jpg"]') as HTMLImageElement;
+    expect(img.style.transform).toBe("");
+    expect(img.className).toMatch(/max-h-96/);
+    expect((img.parentElement as HTMLElement).style.aspectRatio).toBe("");
+  });
+
   it("shows AI badges only when the post used AI", () => {
     renderCard(makePost({ isAiText: true, isAiImage: true }), "u2");
     expect(screen.getByText(/AI-assisted text/)).toBeInTheDocument();

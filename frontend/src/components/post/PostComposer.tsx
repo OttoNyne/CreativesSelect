@@ -4,11 +4,14 @@ import { uploadFile } from "../../api/media.api";
 import { assetUrl, ApiError } from "../../api/client";
 import { GenerateTextButton } from "../ai/GenerateTextButton";
 import { GenerateImageButton } from "../ai/GenerateImageButton";
+import { ImageAdjuster } from "./ImageAdjuster";
+import { DEFAULT_FRAMING, type ImageFraming } from "../../lib/framing";
 import type { Post } from "../../types";
 
 export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [framing, setFraming] = useState<ImageFraming>(DEFAULT_FRAMING);
   const [isAiText, setIsAiText] = useState(false);
   const [isAiImage, setIsAiImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -21,10 +24,18 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
     setSubmitting(true);
     setError(null);
     try {
-      const { post } = await postsApi.create({ content: content.trim(), imageUrl, isAiText, isAiImage });
+      const { post } = await postsApi.create({
+        content: content.trim(),
+        imageUrl,
+        // how the picture was framed, sent only when there is a picture
+        ...(imageUrl ? { imageAspect: framing.aspect, imageZoom: framing.zoom, imagePosition: framing.position } : {}),
+        isAiText,
+        isAiImage,
+      });
       onPosted(post);
       setContent("");
       setImageUrl(null);
+      setFraming(DEFAULT_FRAMING);
       setIsAiText(false);
       setIsAiImage(false);
     } catch (err) {
@@ -41,6 +52,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
     try {
       const { url } = await uploadFile(file, "portfolio");
       setImageUrl(url);
+      setFraming(DEFAULT_FRAMING);
       setIsAiImage(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't upload that file.");
@@ -58,12 +70,14 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
       />
 
       {imageUrl && (
-        <div className="relative mt-2 inline-block">
-          <img src={assetUrl(imageUrl)} alt="" className="max-h-64 rounded-lg" />
+        <div className="relative">
+          <ImageAdjuster src={assetUrl(imageUrl)} value={framing} onChange={setFraming} />
           <button
             type="button"
+            aria-label="Remove picture"
             onClick={() => {
               setImageUrl(null);
+              setFraming(DEFAULT_FRAMING);
               setIsAiImage(false);
             }}
             className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-xs text-white"
@@ -87,6 +101,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
           getPrompt={() => content}
           onGenerated={(url) => {
             setImageUrl(url);
+            setFraming(DEFAULT_FRAMING);
             setIsAiImage(true);
           }}
         />

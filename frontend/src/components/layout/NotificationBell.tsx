@@ -34,6 +34,8 @@ function describe(n: Notification): string {
       return typeof n.payload.title === "string"
         ? `accepted your offer to help with "${n.payload.title}"`
         : "accepted your offer to help";
+    case "live_started":
+      return typeof n.payload.title === "string" ? `is live now: "${n.payload.title}"` : "is live now";
     case "help_offer":
       return typeof n.payload.title === "string"
         ? `offered to help with "${n.payload.title}"`
@@ -183,6 +185,19 @@ export function NotificationBell() {
                     )}{" "}
                     {describe(n)}
                   </p>
+                  {n.type === "live_started" && typeof n.payload.liveId === "string" && (
+                    <Link
+                      to={`/live/${n.payload.liveId}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!n.isRead) handleMarkRead(n.id);
+                        setOpen(false);
+                      }}
+                      className="mt-1 inline-block rounded bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-red-500"
+                    >
+                      Listen live
+                    </Link>
+                  )}
                   {n.type === "help_offer" && typeof n.payload.message === "string" && (
                     <p className="mt-1 whitespace-pre-wrap rounded bg-white/5 px-2 py-1 text-xs italic text-white/70">
                       “{n.payload.message}”
