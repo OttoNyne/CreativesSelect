@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { notificationsApi } from "../../api/notifications.api";
 import { friendsApi } from "../../api/friends.api";
 import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
+import { useAuth } from "../../context/AuthContext";
+import { notificationTarget } from "../../lib/notificationTarget";
 import type { Notification } from "../../types";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -34,6 +36,10 @@ function describe(n: Notification): string {
       return typeof n.payload.title === "string"
         ? `accepted your offer to help with "${n.payload.title}"`
         : "accepted your offer to help";
+    case "message": {
+      const count = typeof n.payload.count === "number" ? n.payload.count : 1;
+      return count > 1 ? `sent you ${count} messages` : "sent you a message";
+    }
     case "live_started":
       return typeof n.payload.title === "string" ? `is live now: "${n.payload.title}"` : "is live now";
     case "help_offer":
@@ -46,6 +52,8 @@ function describe(n: Notification): string {
 }
 
 export function NotificationBell() {
+  const navigate = useNavigate();
+  const { user: viewer } = useAuth();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +90,15 @@ export function NotificationBell() {
   async function handleMarkRead(id: string) {
     setNotifications((ns) => ns.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     await notificationsApi.markRead(id).catch(() => load());
+  }
+
+  // Clicking a notification takes you to what it was about (and marks it read).
+  function openNotification(n: Notification) {
+    if (!n.isRead) void handleMarkRead(n.id);
+    const target = notificationTarget(n, viewer?.username);
+    if (!target) return;
+    setOpen(false);
+    navigate(target.to);
   }
 
   async function handleMarkAllRead() {
@@ -158,10 +175,10 @@ export function NotificationBell() {
             {notifications.map((n) => (
               <div
                 key={n.id}
-                onClick={() => !n.isRead && handleMarkRead(n.id)}
+                onClick={() => openNotification(n)}
                 className={`flex gap-2 border-b border-white/5 px-3 py-2 last:border-0 ${
-                  n.isRead ? "" : "cursor-pointer bg-violet-500/10"
-                }`}
+                  notificationTarget(n, viewer?.username) || !n.isRead ? "cursor-pointer" : ""
+                } ${n.isRead ? "hover:bg-white/5" : "bg-violet-500/10"}`}
               >
                 {n.actor ? (
                   <Link to={`/u/${n.actor.username}`} onClick={(e) => e.stopPropagation()} className="shrink-0">
@@ -185,19 +202,27 @@ export function NotificationBell() {
                     )}{" "}
                     {describe(n)}
                   </p>
-                  {n.type === "live_started" && typeof n.payload.liveId === "string" && (
-                    <Link
-                      to={`/live/${n.payload.liveId}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!n.isRead) handleMarkRead(n.id);
-                        setOpen(false);
-                      }}
-                      className="mt-1 inline-block rounded bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-red-500"
-                    >
-                      Listen live
-                    </Link>
-                  )}
+                  {(() => {
+                    const target = notificationTarget(n, viewer?.username);
+                    if (!target) return null;
+                    return (
+                      <Link
+                        to={target.to}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!n.isRead) handleMarkRead(n.id);
+                          setOpen(false);
+                        }}
+                        className={
+                          n.type === "live_started"
+                            ? "mt-1 inline-block rounded bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-red-500"
+                            : "mt-1 inline-block text-[11px] font-medium text-violet-300 hover:underline"
+                        }
+                      >
+                        {target.label}
+                      </Link>
+                    );
+                  })()}
                   {n.type === "help_offer" && typeof n.payload.message === "string" && (
                     <p className="mt-1 whitespace-pre-wrap rounded bg-white/5 px-2 py-1 text-xs italic text-white/70">
                       “{n.payload.message}”

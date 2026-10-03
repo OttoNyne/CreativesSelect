@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { profilesApi } from "../../api/profiles.api";
 import { ApiError } from "../../api/client";
 import type { Comment } from "../../types";
@@ -12,6 +12,7 @@ export function ProfileComments({ username }: { username: string }) {
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { hash } = useLocation();
 
   useEffect(() => {
     profilesApi
@@ -21,6 +22,11 @@ export function ProfileComments({ username }: { username: string }) {
       .catch(() => setComments([]))
       .finally(() => setLoading(false));
   }, [username]);
+
+  // Arriving from a notification about a testimonial (…#testimonials): bring the section into view once it has loaded.
+  useEffect(() => {
+    if (hash === "#testimonials" && !loading) document.getElementById("testimonials")?.scrollIntoView?.({ block: "start" });
+  }, [hash, loading]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +52,7 @@ export function ProfileComments({ username }: { username: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+    <div id="testimonials" className="scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Testimonials</h2>
 
       {user && (

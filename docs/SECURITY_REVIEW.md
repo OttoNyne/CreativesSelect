@@ -717,6 +717,15 @@ A completed password reset also confirms the address, since that link was emaile
   default, so a visitor who signs up with an address they can't read isn't locked out of the rest of the site.
 - Covered by 20 backend tests, 26 frontend tests and 5 browser tests that follow the real emailed link.
 
+### 5.32 Clicking a notification opens what it was about
+
+Notifications now link to the post, message thread, profile or live room they concern. Two server-side points matter:
+
+- **A new `GET /api/posts/:id` goes through the same gate as the feed.** A post that doesn't exist, was deleted, belongs to a private profile the viewer isn't friends with, or is by someone who blocked them (or whom they blocked) all return the identical `404 Post not found`, so the endpoint can't be used to learn that a hidden post exists. The page shows "This post isn't available" instead of the content.
+- **Message notifications are coalesced and carry no text.** A `message` notification holds only the sender's id and a count; the message body never leaves the thread. There is at most one unread per sender (a new message replaces it and raises the count), opening the conversation marks it read, and a failure to create it never blocks sending the message. They are removed with the sender's account like the other notification types.
+
+The link target is chosen on the client from ids already in the notification, and every target is an in-app route (no URL taken from the payload), so a notification can't be used to send someone to another site. Covered by 13 backend tests, 31 frontend tests and 6 browser tests.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

@@ -17,9 +17,21 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function PostCard({ post, onDeleted }: { post: Post; onDeleted?: (id: string) => void }) {
+export function PostCard({
+  post,
+  onDeleted,
+  autoOpenComments = false,
+  highlightCommentId = null,
+}: {
+  post: Post;
+  onDeleted?: (id: string) => void;
+  /** Start with the comments showing (used when arriving from a notification). */
+  autoOpenComments?: boolean;
+  /** A comment to scroll to and highlight. */
+  highlightCommentId?: string | null;
+}) {
   const { user } = useAuth();
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(autoOpenComments);
   const [commentCount, setCommentCount] = useState(post.commentCount);
   const isOwner = user?.id === post.authorId;
 
@@ -82,7 +94,7 @@ export function PostCard({ post, onDeleted }: { post: Post; onDeleted?: (id: str
         )}
       </div>
 
-      {showComments && <PostCommentList postId={post.id} onCountChange={setCommentCount} />}
+      {showComments && <PostCommentList postId={post.id} onCountChange={setCommentCount} highlightId={highlightCommentId} />}
     </article>
   );
 }

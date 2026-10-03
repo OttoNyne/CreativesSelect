@@ -54,6 +54,21 @@ describe("PostCard", () => {
     expect(screen.getByText("Sketching all day")).toBeInTheDocument();
   });
 
+  it("can start with its comments open (when you arrive from a notification)", () => {
+    vi.mocked(useAuth).mockReturnValue({ user: null, isLoading: false, setUser: () => {}, refresh: async () => {} });
+    render(
+      <MemoryRouter>
+        <PostCard post={makePost()} autoOpenComments />
+      </MemoryRouter>
+    );
+    expect(screen.getByText(/comments for p1/)).toBeInTheDocument();
+  });
+
+  it("keeps its comments closed by default", () => {
+    renderCard(makePost(), "u2");
+    expect(screen.queryByText(/comments for p1/)).not.toBeInTheDocument();
+  });
+
   it("shows the attached image", () => {
     const { container } = render(<div />);
     container.remove();

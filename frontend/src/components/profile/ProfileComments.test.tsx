@@ -106,3 +106,34 @@ describe("ProfileComments (testimonials)", () => {
     expect(screen.getByText("Wonderful work")).toBeInTheDocument();
   });
 });
+
+describe("ProfileComments: arriving from a notification", () => {
+  it("has a stable anchor and scrolls to it when the address ends #testimonials", async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    api.getComments.mockResolvedValue({ comments: [] });
+    vi.mocked(useAuth).mockReturnValue({ user: { id: "me", username: "me" } as User, isLoading: false, setUser: () => {}, refresh: async () => {} });
+    render(
+      <MemoryRouter initialEntries={["/u/me#testimonials"]}>
+        <ProfileComments username="me" />
+      </MemoryRouter>
+    );
+    await vi.waitFor(() => expect(scroll).toHaveBeenCalled());
+    expect(document.getElementById("testimonials")).not.toBeNull();
+  });
+
+  it("doesn't scroll for an ordinary visit", async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    api.getComments.mockResolvedValue({ comments: [] });
+    vi.mocked(useAuth).mockReturnValue({ user: { id: "me", username: "me" } as User, isLoading: false, setUser: () => {}, refresh: async () => {} });
+    render(
+      <MemoryRouter initialEntries={["/u/me"]}>
+        <ProfileComments username="me" />
+      </MemoryRouter>
+    );
+    await screen.findByText("Testimonials");
+    await new Promise((r) => setTimeout(r, 30));
+    expect(scroll).not.toHaveBeenCalled();
+  });
+});

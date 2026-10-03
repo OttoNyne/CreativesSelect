@@ -8,9 +8,12 @@ import { useAuth } from "../../context/AuthContext";
 export function PostCommentList({
   postId,
   onCountChange,
+  highlightId = null,
 }: {
   postId: string;
   onCountChange: (count: number) => void;
+  /** A comment to scroll to and highlight once the list has loaded. */
+  highlightId?: string | null;
 }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -25,6 +28,12 @@ export function PostCommentList({
       .catch((err) => setError(err instanceof ApiError ? err.message : "Couldn't load the comments."))
       .finally(() => setLoading(false));
   }, [postId]);
+
+  // Bring the comment a notification was about into view.
+  useEffect(() => {
+    if (!highlightId || loading) return;
+    document.getElementById(`comment-${highlightId}`)?.scrollIntoView?.({ block: "center" });
+  }, [highlightId, loading, comments]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +54,12 @@ export function PostCommentList({
     <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
       {loading && <div className="text-xs text-white/40">Loading comments…</div>}
       {comments.map((c) => (
-        <div key={c.id} className="flex gap-2 text-sm">
+        <div
+          key={c.id}
+          id={`comment-${c.id}`}
+          aria-current={c.id === highlightId ? "true" : undefined}
+          className={`flex gap-2 rounded-md text-sm ${c.id === highlightId ? "bg-violet-500/15 p-1.5 ring-1 ring-violet-400/50" : ""}`}
+        >
           <Avatar username={c.author.username} displayName={c.author.displayName} avatarUrl={c.author.avatarUrl} size={24} />
           <div>
             <span className="font-medium text-white/90">{c.author.displayName}</span>{" "}

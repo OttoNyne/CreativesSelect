@@ -13,6 +13,7 @@ export interface CreatePostInput {
 
 export const postsApi = {
   feed: () => api.get<{ posts: Post[] }>("/posts/feed"),
+  get: (id: string) => api.get<{ post: Post }>(`/posts/${encodeURIComponent(id)}`),
   byUser: (username: string) => api.get<{ posts: Post[] }>(`/posts/user/${username}`),
   create: (input: CreatePostInput) => api.post<{ post: Post }>("/posts", input),
   remove: (id: string) => api.delete<void>(`/posts/${id}`),

@@ -17,6 +17,7 @@ const TITLES: [RegExp, string][] = [
   [/^\/groups$/, "Groups"],
   [/^\/groups\/[^/]+$/, "Group"],
   [/^\/search$/, "Search"],
+  [/^\/posts\/[^/]+$/, "Post"],
   [/^\/help-wanted$/, "Help wanted"],
   [/^\/u\/([^/]+)$/, ""],
 ];
