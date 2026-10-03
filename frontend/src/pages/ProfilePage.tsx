@@ -9,6 +9,8 @@ import { assetUrl, ApiError } from "../api/client";
 import type { User, ProfileTheme } from "../types";
 import { profileThemeStyle, readableTheme } from "../theme/applyProfileTheme";
 import { PANEL_STYLE, WALLPAPER_SCRIM } from "../theme/contrast";
+import { ShareButton } from "../components/share/ShareButton";
+import { profileUrl } from "../lib/share";
 import { Avatar } from "../components/common/Avatar";
 import { ImagePositioner } from "../components/common/ImagePositioner";
 import { ThemeEditor } from "../components/profile/ThemeEditor";
@@ -216,6 +218,14 @@ export function ProfilePage() {
           </div>
 
           <div className="ml-auto flex flex-wrap gap-2 pb-2">
+            <ShareButton
+              url={() => profileUrl(profile.username)}
+              title={isOwner ? "Share your profile" : `Share ${profile.displayName}'s profile`}
+              description="Scan the code, or send the link, to open this profile."
+              className="rounded-md border border-white/20 px-3 py-1.5 text-sm"
+            >
+              Share
+            </ShareButton>
             {isOwner ? (
               <button
                 onClick={() => setEditing((e) => !e)}

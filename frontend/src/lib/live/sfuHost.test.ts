@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SfuHost } from "./sfuHost";
 import { ApiError } from "../../api/client";
 import { FakeStream } from "../../test/fakeRtc";
-import { FakeRoom, RoomEvent, fakeLiveKit, lastRoom } from "../../test/fakeLiveKit";
+import { FakeMediaStream, FakeRoom, RoomEvent, fakeLiveKit, lastRoom } from "../../test/fakeLiveKit";
 
 function setup(overrides: Partial<ConstructorParameters<typeof SfuHost>[0]> = {}) {
   const stream = new FakeStream();
@@ -135,5 +135,26 @@ describe("SfuHost", () => {
     const beats = api.heartbeat.mock.calls.length;
     await vi.advanceTimersByTimeAsync(60_000);
     expect(api.heartbeat.mock.calls.length).toBe(beats);
+  });
+});
+
+describe("SfuHost: hearing guests on stage", () => {
+  it("hands the guests' voices over as one stream, adding and removing them as they come and go", async () => {
+    vi.stubGlobal("MediaStream", FakeMediaStream);
+    const onGuestStream = vi.fn();
+    const { host } = setup({ onGuestStream });
+    host.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const one = { kind: "audio", mediaStreamTrack: { id: "one" } };
+    const two = { kind: "audio", mediaStreamTrack: { id: "two" } };
+    lastRoom().emit(RoomEvent.TrackSubscribed, one);
+    lastRoom().emit(RoomEvent.TrackSubscribed, two);
+    lastRoom().emit(RoomEvent.TrackSubscribed, { kind: "video", mediaStreamTrack: { id: "ignored" } });
+    expect(onGuestStream).toHaveBeenCalledTimes(1);
+    expect((onGuestStream.mock.calls[0][0] as FakeMediaStream).tracks).toEqual([one.mediaStreamTrack, two.mediaStreamTrack]);
+    lastRoom().emit(RoomEvent.TrackUnsubscribed, one);
+    expect((onGuestStream.mock.calls[0][0] as FakeMediaStream).tracks).toEqual([two.mediaStreamTrack]);
+    host.stop();
+    vi.unstubAllGlobals();
   });
 });

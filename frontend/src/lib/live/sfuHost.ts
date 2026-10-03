@@ -8,6 +8,8 @@ export interface SfuHostOptions {
   stream: MediaStream;
   api: Pick<LiveApi, "token" | "heartbeat">;
   onListenerCount?: (count: number) => void;
+  /** The voices of guests on stage, as one stream for the page to play (the host already hears themselves). */
+  onGuestStream?: (stream: MediaStream) => void;
   onEnded?: () => void;
   /** The connection to the media server couldn't be made, or was lost for good. */
   onFailed?: (message: string) => void;
@@ -25,6 +27,7 @@ const loadLiveKit = () => import("livekit-client");
 export class SfuHost {
   private readonly opts: SfuHostOptions;
   private room: LiveKit.Room | null = null;
+  private guestStream: MediaStream | null = null;
   private stopped = false;
   private readonly heartbeatPoller: Poller;
 
@@ -63,6 +66,19 @@ export class SfuHost {
       const room = new lk.Room();
       this.room = room;
       room.on(lk.RoomEvent.Disconnected, () => this.fail("The connection to the live audio service was lost."));
+      // guests the host has brought on stage: everyone's voice goes into one stream
+      room.on(lk.RoomEvent.TrackSubscribed, (track) => {
+        if (this.room !== room || track.kind !== "audio") return;
+        if (this.guestStream) {
+          this.guestStream.addTrack(track.mediaStreamTrack);
+        } else {
+          this.guestStream = new MediaStream([track.mediaStreamTrack]);
+          this.opts.onGuestStream?.(this.guestStream);
+        }
+      });
+      room.on(lk.RoomEvent.TrackUnsubscribed, (track) => {
+        if (this.room === room && track.kind === "audio") this.guestStream?.removeTrack(track.mediaStreamTrack);
+      });
       await room.connect(url, token);
       if (this.stopped) return void room.disconnect();
       const track = stream.getAudioTracks()[0];

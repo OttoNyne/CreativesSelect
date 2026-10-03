@@ -16,7 +16,14 @@ const mocks = vi.hoisted(() => ({
   listeners: [] as { opts: Record<string, unknown>; start: () => Promise<void>; leave: () => Promise<void>; retry: () => Promise<void> }[],
   listenerStart: undefined as undefined | (() => Promise<void>),
   sfuHosts: [] as { opts: Record<string, unknown>; start: () => void; stop: () => void; setMuted: (m: boolean) => void }[],
-  sfuListeners: [] as { opts: Record<string, unknown>; start: () => Promise<void>; leave: () => Promise<void> }[],
+  sfuListeners: [] as {
+    opts: Record<string, unknown>;
+    start: () => Promise<void>;
+    leave: () => Promise<void>;
+    startSpeaking: ReturnType<typeof vi.fn>;
+    setSpeakingMuted: ReturnType<typeof vi.fn>;
+    stopSpeaking: ReturnType<typeof vi.fn>;
+  }[],
 }));
 vi.mock("../lib/live/host", () => ({
   LiveHost: class {
@@ -65,6 +72,9 @@ vi.mock("../lib/live/sfuListener", () => ({
     });
     leave = vi.fn(async () => {});
     retry = vi.fn(async () => {});
+    startSpeaking = vi.fn(async () => {});
+    setSpeakingMuted = vi.fn(async () => {});
+    stopSpeaking = vi.fn(async () => {});
     constructor(opts: Record<string, unknown>) {
       this.opts = opts;
       mocks.sfuListeners.push(this);
@@ -81,7 +91,7 @@ vi.mock("../components/live/LiveChat", () => ({
 }));
 vi.mock("../api/live.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/live.api")>()),
-  liveApi: { get: vi.fn(), end: vi.fn() },
+  liveApi: { get: vi.fn(), end: vi.fn(), stage: vi.fn(), requestToSpeak: vi.fn(), leaveStage: vi.fn(), acceptInvite: vi.fn(), inviteGuest: vi.fn(), removeGuest: vi.fn() },
 }));
 const api = vi.mocked(liveApi);
 
@@ -444,5 +454,141 @@ describe("LiveRoomPage: big lives (through a media server)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Listen" }));
     expect(mocks.listeners).toHaveLength(1);
     expect(mocks.sfuListeners).toHaveLength(0);
+  });
+});
+
+describe("LiveRoomPage: the stage in big lives", () => {
+  const big = (over: Partial<LiveRoom> = {}) => room({ mode: "sfu", maxListeners: 50, maxGuests: 9, heartbeatMs: 20_000, commentPollMs: 6_000, ...over });
+  const lena = { id: "u1", username: "lena", displayName: "Lena", avatarUrl: null } as User;
+  const stageOf = (over: Record<string, unknown> = {}) => ({ enabled: true, maxGuests: 9, me: "listener", guests: [], ...over }) as never;
+
+  async function listenAndJoin() {
+    api.get.mockResolvedValue({ live: big() });
+    renderRoom();
+    await userEvent.click(await screen.findByRole("button", { name: "Listen" }));
+    await waitFor(() => expect(mocks.sfuListeners).toHaveLength(1));
+  }
+
+  it("shows the host their stage: who is listening and who is asking", async () => {
+    api.get.mockResolvedValue({ live: big({ isHost: true }) });
+    api.stage.mockResolvedValue(stageOf({ me: null, requests: [{ user: lena }], invited: [], listeners: [], guests: [] }));
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    expect(await screen.findByRole("region", { name: "Guests on stage" })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "Invite Lena to speak" }));
+    expect(api.inviteGuest).toHaveBeenCalledWith("l1", "u1");
+  });
+
+  it("plays the guests' voices for the host, and offers a tap if the browser blocks it", async () => {
+    api.get.mockResolvedValue({ live: big({ isHost: true }) });
+    api.stage.mockResolvedValue(stageOf({ me: null, requests: [], invited: [], listeners: [], guests: [] }));
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    await waitFor(() => expect(mocks.sfuHosts).toHaveLength(1));
+    play.mockRejectedValueOnce(new Error("blocked"));
+    const guests = { id: "guest-stream" } as unknown as MediaStream;
+    act(() => (mocks.sfuHosts[0].opts.onGuestStream as (s: MediaStream) => void)(guests));
+    const tap = await screen.findByRole("button", { name: "Tap to hear your guests" });
+    expect(document.querySelector("audio")?.srcObject).toBe(guests);
+    await userEvent.click(tap);
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Tap to hear your guests" })).not.toBeInTheDocument());
+  });
+
+  it("shows no stage for a small live", async () => {
+    api.get.mockResolvedValue({ live: room({ isHost: true }) });
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    await hostStarted();
+    expect(api.stage).not.toHaveBeenCalled();
+    expect(screen.queryByRole("region", { name: "Guests on stage" })).not.toBeInTheDocument();
+  });
+
+  it("lets a listener ask to speak, only once they are in the room", async () => {
+    api.get.mockResolvedValue({ live: big() });
+    api.stage.mockResolvedValue(stageOf());
+    api.requestToSpeak.mockResolvedValue({ stage: "requested" });
+    renderRoom();
+    await screen.findByRole("button", { name: "Listen" });
+    expect(api.stage).not.toHaveBeenCalled(); // not asked before joining
+    await userEvent.click(screen.getByRole("button", { name: "Listen" }));
+    api.stage.mockResolvedValue(stageOf({ me: "listener" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Ask to speak" }));
+    expect(api.requestToSpeak).toHaveBeenCalledWith("l1");
+  });
+
+  it("puts an invited listener on stage and starts their microphone when they accept", async () => {
+    api.stage.mockResolvedValue(stageOf({ me: "invited" }));
+    api.acceptInvite.mockResolvedValue({ stage: "speaking" });
+    await listenAndJoin();
+    api.stage.mockResolvedValue(stageOf({ me: "speaking", guests: [{ user: lena }] }));
+    await userEvent.click(await screen.findByRole("button", { name: "Join the stage" }));
+    expect(api.acceptInvite).toHaveBeenCalledWith("l1");
+    await waitFor(() => expect(mocks.sfuListeners[0].startSpeaking).toHaveBeenCalled());
+    expect(await screen.findByText(/everyone can hear you/)).toBeInTheDocument();
+    // and they can mute themselves
+    await userEvent.click(screen.getByRole("button", { name: "Mute my microphone" }));
+    expect(mocks.sfuListeners[0].setSpeakingMuted).toHaveBeenCalledWith(true);
+  });
+
+  it("tells them what went wrong if the microphone can't start, and lets them try again", async () => {
+    api.stage.mockResolvedValue(stageOf({ me: "invited" }));
+    api.acceptInvite.mockResolvedValue({ stage: "speaking" });
+    await listenAndJoin();
+    mocks.sfuListeners[0].startSpeaking.mockRejectedValueOnce(new Error("Microphone access was blocked."));
+    api.stage.mockResolvedValue(stageOf({ me: "speaking" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Join the stage" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Microphone access was blocked.");
+    await userEvent.click(await screen.findByRole("button", { name: "Turn on microphone" }));
+    await waitFor(() => expect(mocks.sfuListeners[0].startSpeaking).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText(/everyone can hear you/)).toBeInTheDocument();
+  });
+
+  it("stops the microphone when the guest steps down", async () => {
+    api.stage.mockResolvedValue(stageOf({ me: "invited" }));
+    api.acceptInvite.mockResolvedValue({ stage: "speaking" });
+    api.leaveStage.mockResolvedValue({ stage: "listener" });
+    await listenAndJoin();
+    api.stage.mockResolvedValue(stageOf({ me: "speaking" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Join the stage" }));
+    await screen.findByText(/everyone can hear you/);
+    api.stage.mockResolvedValue(stageOf({ me: "listener" }));
+    await userEvent.click(screen.getByRole("button", { name: "Leave the stage" }));
+    expect(api.leaveStage).toHaveBeenCalledWith("l1");
+    await waitFor(() => expect(mocks.sfuListeners[0].stopSpeaking).toHaveBeenCalled());
+    expect(await screen.findByRole("button", { name: "Ask to speak" })).toBeInTheDocument();
+  });
+
+  it("stops the microphone, and says why, when the host sends the guest back to listening", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    api.stage.mockResolvedValue(stageOf({ me: "invited" }));
+    api.acceptInvite.mockResolvedValue({ stage: "speaking" });
+    await listenAndJoin();
+    api.stage.mockResolvedValue(stageOf({ me: "speaking" }));
+    await user.click(await screen.findByRole("button", { name: "Join the stage" }));
+    await screen.findByText(/everyone can hear you/);
+
+    api.stage.mockResolvedValue(stageOf({ me: "listener" })); // the host removed them
+    await act(() => vi.advanceTimersByTimeAsync(4_500));
+    await waitFor(() => expect(mocks.sfuListeners[0].stopSpeaking).toHaveBeenCalled());
+    expect(await screen.findByRole("alert")).toHaveTextContent("The host moved you back to listening.");
+    expect(screen.getByRole("button", { name: "Ask to speak" })).toBeInTheDocument();
+  });
+
+  it("shows the server's reason if the request is refused", async () => {
+    api.stage.mockResolvedValue(stageOf());
+    api.requestToSpeak.mockRejectedValue(new ApiError(409, "Lots of people are asking to speak right now — try again in a moment."));
+    await listenAndJoin();
+    await userEvent.click(await screen.findByRole("button", { name: "Ask to speak" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Lots of people are asking");
+  });
+
+  it("shows a small live's listener nothing about speaking", async () => {
+    api.get.mockResolvedValue({ live: room() });
+    renderRoom();
+    await userEvent.click(await screen.findByRole("button", { name: "Listen" }));
+    await screen.findByText("chat open");
+    expect(api.stage).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Ask to speak" })).not.toBeInTheDocument();
   });
 });

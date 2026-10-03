@@ -119,6 +119,21 @@ test.describe("text can be read on light and dark backgrounds", () => {
     await owner.context.close();
   });
 
+  test("the share window, on a dark page and on a light profile", async ({ page }) => {
+    await page.goto("/about");
+    await page.getByRole("button", { name: "Share this site" }).click();
+    await expect(page.getByTestId("share-qr")).toBeVisible();
+    await expectReadable(page, "the share window");
+
+    const me = newUser("sharer");
+    await signUpViaUi(page, me);
+    expect((await page.request.patch("/api/profiles/me", { data: { theme: { bgColor: "#ffffff", textColor: "#111111" } } })).status()).toBe(200);
+    await page.goto(`/u/${me.username}`);
+    await page.getByRole("button", { name: "Share", exact: true }).click();
+    await expect(page.getByTestId("share-qr")).toBeVisible();
+    await expectReadable(page, "the share window over a light profile");
+  });
+
   test("the editing tools warn when a text colour can't be read", async ({ page }) => {
     await signUpViaUi(page, newUser("editor"));
     await page.goto("/");

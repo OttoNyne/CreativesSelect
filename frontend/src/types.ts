@@ -191,6 +191,25 @@ export interface LiveRoom {
   /** How often this room's clients should check in, and poll the chat. */
   heartbeatMs?: number;
   commentPollMs?: number;
+  /** How many listeners the host can bring on stage to speak; 0 when this live has no stage. */
+  maxGuests?: number;
+}
+
+/** A listener's place on the stage: listening, asking to speak, invited by the host, or speaking. */
+export type StageState = "listener" | "requested" | "invited" | "speaking";
+
+/** The stage of a live. `requests`, `invited` and `listeners` are only sent to the host. */
+export interface LiveStage {
+  enabled: boolean;
+  maxGuests: number;
+  /** The viewer's own place (null for the host). */
+  me: StageState | null;
+  /** Everyone speaking now. */
+  guests: { user: User }[];
+  requests?: { user: User }[];
+  invited?: { user: User }[];
+  /** Everyone else listening, for the host to pick from. */
+  listeners?: { user: User }[];
 }
 
 export interface LiveComment {

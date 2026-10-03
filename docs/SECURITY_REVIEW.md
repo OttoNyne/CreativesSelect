@@ -736,6 +736,36 @@ Profile owners choose their own colours and wallpaper, but every page is styled 
 - **A phone layout bug surfaced by it:** on a visitor's view of a profile the Add Friend / Report / Block buttons ran off the edge of the screen; the row now wraps.
 - **Not covered:** axe cannot measure text over a photograph, so wallpapers rely on the worst-case calculation (unit-tested) plus a visual check rather than a measured one. Browsers older than about 2022 that lack `color-mix` keep the un-flipped faded colours on light profiles.
 
+### 5.34 Guests on stage: letting a listener's microphone into a live
+
+Until now only the host could speak. The host can now bring up to 9 listeners on stage (big lives only), which means an
+ordinary listener's browser may publish audio to everyone — so the server keeps the decision, not the browser:
+
+- **The host decides, the guest consents.** A listener can only ask (`requested`, at most 20 asks pending at once). Only the
+  host can invite (`invited`), and a person is let through only after they accept their own invitation. Nothing a guest's
+  browser sends can grant itself permission: the media server's permission is changed by this API, with the project secret.
+- **The permission is as narrow as before.** A guest may publish a microphone — not video or screen — and still cannot
+  send data through the room. The server replaces the permission as a whole each time, so a revoke really removes it.
+  Stepping down, being removed, blocking, leaving, being disconnected for too long, or the live ending all end it; someone
+  who reconnects gets a pass that lets them speak only if the server still has them on stage.
+- **Capped and counted by the server.** 9 places at once, counting invitations not yet answered, so a host can't be
+  surprised by a tenth voice; people who have gone quiet don't hold a place. Stage routes answer `403` to the wrong role.
+- **Everyone can see who is speaking** (so no one is unknowingly heard), but only the host sees who is asking or listening.
+- **No audio touches the server;** the stage state is one field on the listener record and is read from a 2-second cache.
+- **Limit:** the host can remove a guest but cannot remotely mute their microphone; a guest controls their own mute.
+  Guests need the media server — browser-to-browser lives have no stage.
+Covered by 19 backend tests (with the media server's permission calls recorded), 34 frontend tests and, against the live site, a real host and
+guests speaking with a fake microphone.
+
+### 5.35 Sharing the site with a QR code
+
+A QR code is only a picture of a link, so the risk is where it points. The address is chosen in one place (`lib/share.ts`),
+never taken from user input: the real domain on the live site (not the old Vercel address, which no longer takes
+sign-ins) or the page's own address in development. Profile and live links carry only an id from the page the person is
+already on, URL-encoded. The code is made in the browser (nothing is sent anywhere), and the window is drawn outside
+the page so a profile's colours can't hide it. Sharing a live link doesn't bypass anything: the room still checks blocks,
+private profiles and sign-in when the person arrives. Tests read the generated code back with a QR decoder.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

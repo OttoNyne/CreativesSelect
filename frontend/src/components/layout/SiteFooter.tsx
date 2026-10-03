@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { ShareButton } from "../share/ShareButton";
+import { siteUrl } from "../../lib/share";
 
 const LINKS = [
   { to: "/about", label: "About" },
@@ -20,6 +22,14 @@ export function SiteFooter() {
               {l.label}
             </Link>
           ))}
+          <ShareButton
+            url={siteUrl}
+            title="Share CreativesSelect"
+            description="Anyone who scans this code, or opens the link, lands on the site."
+            className="py-1 text-white/60 hover:text-white hover:underline"
+          >
+            Share this site
+          </ShareButton>
         </nav>
       </div>
     </footer>

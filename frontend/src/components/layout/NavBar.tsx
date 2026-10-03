@@ -5,6 +5,8 @@ import { authApi } from "../../api/auth.api";
 import { Avatar } from "../common/Avatar";
 import { NotificationBell } from "./NotificationBell";
 import { MessagesLink } from "./MessagesLink";
+import { ShareButton } from "../share/ShareButton";
+import { siteUrl } from "../../lib/share";
 
 const NAV_LINKS = [
   { to: "/", label: "Feed" },
@@ -116,6 +118,14 @@ export function NavBar() {
             onClick={() => setMenuOpen(false)}
             className="block rounded-md px-2 py-2 text-white/70 hover:bg-white/10 hover:text-white"
           />
+          <ShareButton
+            url={siteUrl}
+            title="Share CreativesSelect"
+            description="Anyone who scans this code, or opens the link, lands on the site."
+            className="block w-full rounded-md px-2 py-2 text-left text-white/70 hover:bg-white/10 hover:text-white"
+          >
+            Share this site
+          </ShareButton>
           <button
             onClick={() => {
               setMenuOpen(false);

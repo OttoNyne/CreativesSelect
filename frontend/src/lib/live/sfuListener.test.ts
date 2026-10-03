@@ -241,3 +241,96 @@ describe("SfuListener: the live ending, and leaving", () => {
     expect(FakeRoom.all).toHaveLength(1);
   });
 });
+
+describe("SfuListener: guests on stage", () => {
+  const voice = (id: string) => ({ kind: "audio", mediaStreamTrack: { id } });
+
+  it("plays the host and every guest through one stream, handed over once", async () => {
+    const { listener, onStream } = setup();
+    await listener.start();
+    const host = voice("host");
+    const guest = voice("guest");
+    lastRoom().emit(RoomEvent.TrackSubscribed, host);
+    lastRoom().emit(RoomEvent.TrackSubscribed, guest);
+    expect(onStream).toHaveBeenCalledTimes(1);
+    expect((onStream.mock.calls[0][0] as FakeMediaStream).tracks).toEqual([host.mediaStreamTrack, guest.mediaStreamTrack]);
+    await listener.leave();
+  });
+
+  it("takes a voice out of the stream when it leaves", async () => {
+    const { listener, onStream } = setup();
+    await listener.start();
+    const host = voice("host");
+    const guest = voice("guest");
+    lastRoom().emit(RoomEvent.TrackSubscribed, host);
+    lastRoom().emit(RoomEvent.TrackSubscribed, guest);
+    lastRoom().emit(RoomEvent.TrackUnsubscribed, guest);
+    expect((onStream.mock.calls[0][0] as FakeMediaStream).tracks).toEqual([host.mediaStreamTrack]);
+    await listener.leave();
+  });
+
+  it("hands over a fresh stream after reconnecting to a new room", async () => {
+    const { listener, onStream } = setup();
+    await listener.start();
+    lastRoom().emit(RoomEvent.TrackSubscribed, voice("host"));
+    lastRoom().emit(RoomEvent.Disconnected);
+    await settle();
+    lastRoom().emit(RoomEvent.TrackSubscribed, voice("host-again"));
+    expect(onStream).toHaveBeenCalledTimes(2);
+    expect(onStream.mock.calls[1][0]).not.toBe(onStream.mock.calls[0][0]);
+    await listener.leave();
+  });
+
+  it("turns the microphone on once the server has let it through", async () => {
+    const { listener } = setup();
+    await listener.start();
+    const participant = lastRoom().localParticipant;
+    const started = listener.startSpeaking();
+    await vi.advanceTimersByTimeAsync(300); // still waiting: the server hasn't answered yet
+    expect(participant.setMicrophoneEnabled).not.toHaveBeenCalled();
+    participant.permissions = { canPublish: true };
+    await vi.advanceTimersByTimeAsync(200);
+    await started;
+    expect(participant.setMicrophoneEnabled).toHaveBeenCalledWith(true);
+    expect(participant.microphoneEnabled).toBe(true);
+    await listener.leave();
+  });
+
+  it("says so if the microphone is never let through", async () => {
+    const { listener } = setup();
+    await listener.start();
+    const started = listener.startSpeaking();
+    const outcome = expect(started).rejects.toThrow("hasn't let your microphone through");
+    await vi.advanceTimersByTimeAsync(7_000);
+    await outcome;
+    expect(lastRoom().localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
+    await listener.leave();
+  });
+
+  it("explains a blocked microphone in words a person can act on", async () => {
+    const { listener } = setup();
+    await listener.start();
+    lastRoom().localParticipant.permissions = { canPublish: true };
+    FakeRoom.failMicrophone = new DOMException("denied", "NotAllowedError");
+    await expect(listener.startSpeaking()).rejects.toThrow("Microphone access was blocked");
+    await listener.leave();
+  });
+
+  it("can't speak before it is connected", async () => {
+    const { listener } = setup();
+    await expect(listener.startSpeaking()).rejects.toThrow("not connected");
+  });
+
+  it("mutes, unmutes and stops the microphone", async () => {
+    const { listener } = setup();
+    await listener.start();
+    const participant = lastRoom().localParticipant;
+    await listener.setSpeakingMuted(true);
+    expect(participant.setMicrophoneEnabled).toHaveBeenLastCalledWith(false);
+    await listener.setSpeakingMuted(false);
+    expect(participant.setMicrophoneEnabled).toHaveBeenLastCalledWith(true);
+    await listener.stopSpeaking();
+    expect(participant.setMicrophoneEnabled).toHaveBeenLastCalledWith(false);
+    await listener.leave();
+  });
+});

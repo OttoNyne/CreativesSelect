@@ -4,6 +4,7 @@ import { vi } from "vitest";
 // A stand-in for the media-server client library, so the big-live code can be tested without a server.
 export const RoomEvent = {
   TrackSubscribed: "trackSubscribed",
+  TrackUnsubscribed: "trackUnsubscribed",
   Reconnecting: "reconnecting",
   Reconnected: "reconnected",
   Disconnected: "disconnected",
@@ -13,9 +14,11 @@ export const RoomEvent = {
 export class FakeRoom {
   static all: FakeRoom[] = [];
   static failConnect: Error | null = null;
+  static failMicrophone: Error | null = null;
   static reset() {
     FakeRoom.all = [];
     FakeRoom.failConnect = null;
+    FakeRoom.failMicrophone = null;
   }
 
   handlers = new Map<string, (...args: unknown[]) => void>();
@@ -25,6 +28,13 @@ export class FakeRoom {
   localParticipant = {
     publishTrack: vi.fn(async (track: unknown, options: unknown) => {
       this.published.push({ track, options });
+    }),
+    /** What the media server lets this person do; a guest's becomes true when they are brought on stage. */
+    permissions: { canPublish: false } as { canPublish: boolean } | undefined,
+    microphoneEnabled: false,
+    setMicrophoneEnabled: vi.fn(async (enabled: boolean) => {
+      if (FakeRoom.failMicrophone) throw FakeRoom.failMicrophone;
+      this.localParticipant.microphoneEnabled = enabled;
     }),
   };
 
@@ -56,5 +66,11 @@ export class FakeMediaStream {
   tracks: unknown[];
   constructor(tracks: unknown[] = []) {
     this.tracks = tracks;
+  }
+  addTrack(track: unknown) {
+    this.tracks.push(track);
+  }
+  removeTrack(track: unknown) {
+    this.tracks = this.tracks.filter((t) => t !== track);
   }
 }

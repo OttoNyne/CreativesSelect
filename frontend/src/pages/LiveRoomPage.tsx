@@ -5,6 +5,10 @@ import { API_BASE } from "../api/base";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
 import { LiveChat } from "../components/live/LiveChat";
+import { HostStage, ListenerStage } from "../components/live/StagePanel";
+import { useStage } from "../lib/live/useStage";
+import { ShareButton } from "../components/share/ShareButton";
+import { liveUrl } from "../lib/share";
 import { LiveHost } from "../lib/live/host";
 import { LiveListener, type ListenerState } from "../lib/live/listener";
 import { SfuHost } from "../lib/live/sfuHost";
@@ -26,6 +30,14 @@ function Header({ room, listening }: { room: LiveRoom; listening: number }) {
           · <span aria-live="polite">{listening} listening</span>
         </p>
       </div>
+      <ShareButton
+        url={() => liveUrl(room.id)}
+        title="Share this live"
+        description="Scan the code, or send the link. People need to be signed in to listen."
+        className="rounded-md border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10"
+      >
+        Share
+      </ShareButton>
       <span className="rounded bg-red-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">Live</span>
     </div>
   );
@@ -54,6 +66,10 @@ function HostRoom({ room }: { room: LiveRoom }) {
   const [muted, setMuted] = useState(false);
   const [ended, setEnded] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  // Big lives have a stage: guests the host brings on to speak. The host hears them through this element.
+  const { stage, refresh: refreshStage } = useStage(id, room.mode === "sfu");
+  const guestAudioRef = useRef<HTMLAudioElement>(null);
+  const [guestsNeedTap, setGuestsNeedTap] = useState(false);
   const hostRef = useRef<{ start(): void; stop(): void; setMuted(muted: boolean): void } | null>(null);
   const teardown = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,7 +88,21 @@ function HostRoom({ room }: { room: LiveRoom }) {
       // Big lives (50-100 listeners) go through a media server; small ones straight between browsers.
       const host =
         room.mode === "sfu"
-          ? new SfuHost({ liveId: id, stream, api: liveApi, onListenerCount: setListeners, onEnded, onFailed: setFailure, heartbeatMs: room.heartbeatMs })
+          ? new SfuHost({
+              liveId: id,
+              stream,
+              api: liveApi,
+              onListenerCount: setListeners,
+              onEnded,
+              onFailed: setFailure,
+              heartbeatMs: room.heartbeatMs,
+              onGuestStream: (guests) => {
+                const el = guestAudioRef.current;
+                if (!el) return;
+                el.srcObject = guests;
+                el.play().then(() => setGuestsNeedTap(false)).catch(() => setGuestsNeedTap(true));
+              },
+            })
           : new LiveHost({ liveId: id, stream, api: liveApi, onListenerCount: setListeners, onEnded, heartbeatMs: room.heartbeatMs });
       hostRef.current = host;
       host.start();
@@ -129,6 +159,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
   return (
     <div className="space-y-4">
       <Header room={room} listening={listeners} />
+      <audio ref={guestAudioRef} autoPlay playsInline />
       {stream ? (
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
           <p role="status" className="text-sm text-white/80">
@@ -169,6 +200,12 @@ function HostRoom({ room }: { room: LiveRoom }) {
           )}
         </div>
       )}
+      {stream && guestsNeedTap && (
+        <button onClick={() => void guestAudioRef.current?.play().then(() => setGuestsNeedTap(false))} className="block rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
+          Tap to hear your guests
+        </button>
+      )}
+      {stream && stage && <HostStage liveId={id} stage={stage} onChange={refreshStage} />}
       <LiveChat liveId={id} isHost open pollMs={room.commentPollMs} />
     </div>
   );
@@ -190,14 +227,88 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
   const [muted, setMuted] = useState(false);
   // True once the server has let us in; the chat opens then, not the moment Listen is tapped.
   const [admitted, setAdmitted] = useState(false);
-  const listenerRef = useRef<{ start(): Promise<void>; leave(): Promise<void>; retry(): Promise<void> } | null>(null);
+  const listenerRef = useRef<{
+    start(): Promise<void>;
+    leave(): Promise<void>;
+    retry(): Promise<void>;
+    // only in big lives, where the host can bring listeners on stage
+    startSpeaking?(): Promise<void>;
+    setSpeakingMuted?(muted: boolean): Promise<void>;
+    stopSpeaking?(): Promise<void>;
+  } | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { stage, refresh: refreshStage } = useStage(room.id, room.mode === "sfu" && admitted);
+  const [stageBusy, setStageBusy] = useState(false);
+  const [stageError, setStageError] = useState<string | null>(null);
+  const [micStarted, setMicStarted] = useState(false);
+  const [micOn, setMicOn] = useState(false);
 
   useEffect(() => {
     return () => {
       void listenerRef.current?.leave();
     };
   }, []);
+
+  async function startMic() {
+    setStageError(null);
+    try {
+      await listenerRef.current?.startSpeaking?.();
+      setMicStarted(true);
+      setMicOn(true);
+    } catch (err) {
+      setStageError(err instanceof Error ? err.message : "Couldn't start your microphone.");
+    }
+  }
+
+  async function stopMic() {
+    await listenerRef.current?.stopSpeaking?.();
+    setMicStarted(false);
+    setMicOn(false);
+  }
+
+  async function stageAction(run: () => Promise<unknown>) {
+    setStageBusy(true);
+    setStageError(null);
+    try {
+      await run();
+      await refreshStage();
+    } catch (err) {
+      setStageError(err instanceof ApiError ? err.message : "That didn't work — please try again.");
+    } finally {
+      setStageBusy(false);
+    }
+  }
+
+  const handleRequestToSpeak = () => stageAction(() => liveApi.requestToSpeak(room.id));
+  // withdraws a request, turns down an invitation, or steps down from the stage
+  const handleLeaveStage = () =>
+    stageAction(async () => {
+      await liveApi.leaveStage(room.id);
+      await stopMic();
+    });
+  const handleAcceptInvite = () =>
+    stageAction(async () => {
+      await liveApi.acceptInvite(room.id);
+      await refreshStage(); // so the page already knows they are speaking when the microphone starts
+      await startMic();
+    });
+
+  function toggleSpeakingMute() {
+    const next = !micOn;
+    void listenerRef.current?.setSpeakingMuted?.(!next);
+    setMicOn(next);
+  }
+
+  // The host can send a guest back to listening at any time: stop the microphone when that happens.
+  const placeOnStage = stage?.me ?? null;
+  useEffect(() => {
+    if (micStarted && placeOnStage !== null && placeOnStage !== "speaking") {
+      void listenerRef.current?.stopSpeaking?.();
+      setMicStarted(false);
+      setMicOn(false);
+      setStageError("The host moved you back to listening.");
+    }
+  }, [micStarted, placeOnStage]);
 
   function playAudio() {
     audioRef.current
@@ -316,6 +427,20 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
             </div>
           )}
         </div>
+      )}
+      {state !== "ended" && joined && admitted && stage && (
+        <ListenerStage
+          stage={stage}
+          busy={stageBusy}
+          error={stageError}
+          micOn={micOn}
+          micStarted={micStarted}
+          onRequest={handleRequestToSpeak}
+          onLeave={handleLeaveStage}
+          onAccept={handleAcceptInvite}
+          onToggleMute={toggleSpeakingMute}
+          onStartMic={startMic}
+        />
       )}
       {state !== "ended" && <LiveChat liveId={room.id} isHost={false} open={joined && admitted} pollMs={room.commentPollMs} />}
     </div>

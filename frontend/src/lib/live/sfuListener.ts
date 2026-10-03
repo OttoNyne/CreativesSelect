@@ -3,6 +3,7 @@ import { ApiError } from "../../api/client";
 import type { LiveApi } from "../../api/live.api";
 import type { ListenerState } from "./listener";
 import { Poller } from "./rtc";
+import { micErrorMessage } from "./hostStream";
 
 export interface SfuListenerOptions {
   liveId: string;
@@ -19,14 +20,20 @@ export interface SfuListenerOptions {
 
 const loadLiveKit = () => import("livekit-client");
 
+/** How long to wait for the media server to let a newly invited guest's microphone through. */
+const PERMISSION_WAIT_MS = 6_000;
+
 /**
  * A listener's side for big lives: join the room, connect to the media server with a listen-only pass, and play the
- * host's audio as it arrives. Same shape as LiveListener, so the page treats them alike. The media client already
+ * host's audio as it arrives (and the voices of any guests the host brings on stage, mixed into the same stream).
+ * A guest who accepts the host's invitation can turn their microphone on over the same connection. Same shape as LiveListener, so the page treats them alike. The media client already
  * rides out short network drops by itself; this only starts over (a few times) if it gives up completely.
  */
 export class SfuListener {
   private readonly opts: SfuListenerOptions;
   private room: LiveKit.Room | null = null;
+  /** Everything being said in the room, as one stream, so a single audio element plays the host and every guest. */
+  private stream: MediaStream | null = null;
   private attempts = 0;
   private stopped = false;
   private readonly heartbeatPoller: Poller;
@@ -50,6 +57,35 @@ export class SfuListener {
     await this.opts.api.leave(this.opts.liveId).catch(() => {});
   }
 
+  /**
+   * Turns the guest's microphone on, once the server has let it through (it does that when they accept the invitation).
+   * Throws a message fit to show them if the microphone can't be used.
+   */
+  async startSpeaking() {
+    const participant = this.room?.localParticipant;
+    if (!participant) throw new Error("You're not connected to the live audio yet.");
+    const until = Date.now() + PERMISSION_WAIT_MS;
+    while (!participant.permissions?.canPublish) {
+      if (Date.now() > until) throw new Error("The live audio service hasn't let your microphone through yet. Please try again.");
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    try {
+      await participant.setMicrophoneEnabled(true);
+    } catch (err) {
+      throw new Error(micErrorMessage(err));
+    }
+  }
+
+  /** Mutes or unmutes a guest's microphone (it stays theirs to control; the host can only send them back to listening). */
+  async setSpeakingMuted(muted: boolean) {
+    await this.room?.localParticipant.setMicrophoneEnabled(!muted).catch(() => {});
+  }
+
+  /** Stops the guest's microphone (they've stepped down or the host has sent them back). */
+  async stopSpeaking() {
+    await this.room?.localParticipant.setMicrophoneEnabled(false).catch(() => {});
+  }
+
   async retry() {
     if (this.stopped) return;
     this.attempts = 0;
@@ -61,6 +97,7 @@ export class SfuListener {
     this.heartbeatPoller.stop();
     this.room?.disconnect();
     this.room = null;
+    this.stream = null;
   }
 
   private ended() {
@@ -84,6 +121,7 @@ export class SfuListener {
     // Forget the old room first: its own "disconnected" event must not look like a fresh failure.
     const old = this.room;
     this.room = null;
+    this.stream = null; // a new room hands over its audio afresh
     old?.disconnect();
     this.attempts++;
     this.opts.onState(this.attempts > 1 ? "reconnecting" : "connecting");
@@ -95,8 +133,17 @@ export class SfuListener {
       room.on(lk.RoomEvent.TrackSubscribed, (track) => {
         if (this.room !== room || track.kind !== "audio") return;
         this.attempts = 0;
-        this.opts.onStream(new MediaStream([track.mediaStreamTrack]));
+        if (this.stream) {
+          // a guest's voice joining the host's: the page is already playing this stream, which now carries both
+          this.stream.addTrack(track.mediaStreamTrack);
+        } else {
+          this.stream = new MediaStream([track.mediaStreamTrack]);
+          this.opts.onStream(this.stream);
+        }
         this.opts.onState("live");
+      });
+      room.on(lk.RoomEvent.TrackUnsubscribed, (track) => {
+        if (this.room === room && track.kind === "audio") this.stream?.removeTrack(track.mediaStreamTrack);
       });
       room.on(lk.RoomEvent.Reconnecting, () => this.room === room && this.opts.onState("reconnecting"));
       room.on(lk.RoomEvent.Reconnected, () => this.room === room && this.opts.onState("live"));
