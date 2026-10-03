@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { PlaybackProvider } from "./context/PlaybackContext";
 import { NavBar } from "./components/layout/NavBar";
+import { InstallBanner } from "./components/layout/InstallBanner";
 import { NowPlayingBar } from "./components/layout/NowPlayingBar";
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
@@ -26,6 +27,7 @@ export default function App() {
     <AuthProvider>
       <PlaybackProvider>
         <NavBar />
+        <InstallBanner />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />

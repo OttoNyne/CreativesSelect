@@ -289,7 +289,7 @@ The audio never touches this API. A live travels one of two ways, fixed when it 
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (53 tests × 3 browsers, 162 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (55 tests × 3 browsers, 168 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -318,6 +318,8 @@ rate limits read Vercel's `x-vercel-forwarded-for` (the real client IP) via
 `utils/clientIp.js`. Verified live through the proxy: host-only Secure/HttpOnly
 cookie, real client IP reaching the limiter, a 10 MB upload and AI image
 generation passing, and a full browser sign-up → post → reload → logout flow.
+Because Apple gives no iPhone browser an install button, the site shows its own dismissible
+"tap Share, then Add to Home Screen" banner to iPhone and iPad visitors who haven't installed it.
 Confirmed working on physical iPhones by the project owner (a manual check, not automated),
 on top of Safari's documented cookie policy, the first-party test in a desktop browser and
 the WebKit/iPhone-sized runs in CI.
@@ -356,6 +358,7 @@ App
 ├── AuthProvider            (fetches /api/auth/me once; exposes {user, isLoading, setUser})
 │   └── PlaybackProvider     (global "now playing" state — survives navigation)
 │       ├── NavBar           (links + MessagesLink unread badge + NotificationBell)
+│       ├── InstallBanner    (iPhone/iPad only: how to Add to Home Screen; dismissible, remembered 30 days)
 │       ├── Routes
 │       │   ├── /login       → LoginPage            ("Forgot password?" link)
 │       │   ├── /forgot-password → ForgotPasswordPage
@@ -473,7 +476,7 @@ rather than adding input validation to each route individually.
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 458 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 474 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,

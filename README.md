@@ -83,7 +83,7 @@ all of them.
 CreativesSelect is a web app — open the site in your phone's browser; there's nothing to download.
 You can install it to your home screen so it opens full-screen like an app:
 
-- **iPhone/iPad (Safari):** tap Share → **Add to Home Screen**.
+- **iPhone/iPad (Safari):** tap Share → **Add to Home Screen** (the site also shows these steps in a dismissible banner to iPhone and iPad visitors, since Apple gives browsers no install button).
 - **Android (Chrome):** menu → **Install app** / **Add to Home screen**.
 
 The API is reached through the site's own domain (`/api/...`, proxied by Vercel in

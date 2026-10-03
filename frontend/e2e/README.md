@@ -18,7 +18,7 @@ Three Playwright projects, so every test runs on each engine:
 Specs: `auth` (sign up/in/out, session survives a reload, titles, install
 manifest), `feed`, `profile` (rename, bio, privacy, top friends, password,
 delete account), `portfolio` (pictures, likes/dislikes, video links, remove),
-`social` (search, friends, block, groups, private profiles), `messages` (direct messages and group chat), `password-reset` (the emailed link, end to end), `live` (voice rooms, incl. real audio between two Chrome windows, and friends being told when someone goes live), `post-picture` (shape, zoom and placement of a post's picture), `help-wanted`
+`social` (search, friends, block, groups, private profiles), `messages` (direct messages and group chat), `password-reset` (the emailed link, end to end), `live` (voice rooms, incl. real audio between two Chrome windows, and friends being told when someone goes live), `post-picture` (shape, zoom and placement of a post's picture), `install-banner` (the iPhone-only Add to Home Screen prompt), `help-wanted`
 (post, offer, accept) and `mobile` (menu, no sideways scrolling, tap targets).
 
 The frontend is served by `vite preview` on `:4173` with `/api` proxied to the
