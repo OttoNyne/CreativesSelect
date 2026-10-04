@@ -1,6 +1,6 @@
 import { assetUrl } from "../../api/client";
 import { clipWindow, directVideoSrc, playableVideoUrl, videoPosterUrl, youtubeEmbedUrl } from "../../lib/video";
-import type { MediaItem } from "../../types";
+import type { Album, MediaItem } from "../../types";
 
 type Reaction = 1 | -1 | 0;
 
@@ -13,12 +13,17 @@ export function PortfolioTile({
   canReact,
   onRemove,
   onReact,
+  albums = [],
+  onMove,
 }: {
   item: MediaItem;
   isOwner: boolean;
   canReact: boolean;
   onRemove: (id: string) => void;
   onReact: (id: string, value: Reaction) => void;
+  /** Their albums, and how to move this piece into one (owner only). */
+  albums?: Album[];
+  onMove?: (id: string, albumId: string | null) => void;
 }) {
   const isVideoish = item.type === "video" || item.type === "embed";
   const embed = item.type === "embed" ? youtubeEmbedUrl(item.url, item.startSeconds ?? 0) : null;
@@ -113,6 +118,23 @@ export function PortfolioTile({
         </button>
         {item.caption && <span className="ml-auto truncate text-[11px] text-white/60">{item.caption}</span>}
       </div>
+      {isOwner && onMove && albums.length > 0 && (
+        <div className="bg-black/20 px-2 pb-1.5">
+          <select
+            value={item.albumId ?? ""}
+            onChange={(e) => onMove(item.id, e.target.value || null)}
+            aria-label={`Album for ${item.caption || "this piece"}`}
+            className="w-full rounded-md border border-white/10 bg-black/40 px-1.5 py-1 text-[11px] text-white focus:border-[var(--profile-accent)] focus:outline-none"
+          >
+            <option value="">No album</option>
+            {albums.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }

@@ -101,6 +101,13 @@ export interface GroupMember {
   user: User;
 }
 
+/** A named group of portfolio pieces. */
+export interface Album {
+  id: string;
+  title: string;
+  count: number;
+}
+
 export interface MediaItem {
   id: string;
   ownerId: string;
@@ -112,6 +119,8 @@ export interface MediaItem {
   startSeconds?: number;
   /** Uploaded videos: measured length in seconds. */
   durationSeconds?: number | null;
+  /** The album this piece is in, if any. */
+  albumId?: string | null;
   likes: number;
   dislikes: number;
   /** The signed-in viewer's own reaction: 1 like, -1 dislike, 0 none. */

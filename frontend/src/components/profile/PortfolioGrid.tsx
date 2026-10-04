@@ -6,13 +6,17 @@ import { checkVideoFile, MAX_VIDEO_SECONDS } from "../../lib/video";
 import { GenerateImageButton } from "../ai/GenerateImageButton";
 import { ImageSearchPicker } from "../ai/ImageSearchPicker";
 import { PortfolioTile } from "./PortfolioTile";
-import type { MediaItem } from "../../types";
+import { AlbumBar, ALL } from "./AlbumBar";
+import { albumsApi } from "../../api/albums.api";
+import type { Album, MediaItem } from "../../types";
 
 const MAX_CAPTION_LENGTH = 200;
 
 export function PortfolioGrid({ username, isOwner }: { username: string; isOwner: boolean }) {
   const { user: viewer } = useAuth();
   const [items, setItems] = useState<MediaItem[]>([]);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [selected, setSelected] = useState<string>(ALL);
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -29,6 +33,59 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
       // e.g. a private profile: show the empty state instead of an unhandled rejection
       .catch(() => setItems([]));
   }, [username]);
+
+  useEffect(() => {
+    albumsApi
+      .byUser(username)
+      .then(({ albums }) => setAlbums(albums))
+      .catch(() => setAlbums([])); // e.g. a private profile
+    setSelected(ALL);
+  }, [username]);
+
+  const counts: Record<string, number> = {};
+  for (const item of items) if (item.albumId) counts[item.albumId] = (counts[item.albumId] ?? 0) + 1;
+  const shown = selected === ALL ? items : items.filter((item) => item.albumId === selected);
+
+  const problemOf = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
+  async function createAlbum(title: string): Promise<string | null> {
+    try {
+      const { album } = await albumsApi.create(title);
+      setAlbums((a) => [...a, album]);
+      setSelected(album.id);
+      return null;
+    } catch (err) {
+      return problemOf(err, "Couldn't make that album.");
+    }
+  }
+  async function renameAlbum(id: string, title: string): Promise<string | null> {
+    try {
+      const { album } = await albumsApi.rename(id, title);
+      setAlbums((a) => a.map((x) => (x.id === id ? album : x)));
+      return null;
+    } catch (err) {
+      return problemOf(err, "Couldn't rename that album.");
+    }
+  }
+  async function deleteAlbum(id: string) {
+    setError(null);
+    try {
+      await albumsApi.remove(id);
+      setAlbums((a) => a.filter((x) => x.id !== id));
+      setItems((list) => list.map((item) => (item.albumId === id ? { ...item, albumId: null } : item)));
+      setSelected(ALL);
+    } catch (err) {
+      setError(problemOf(err, "Couldn't delete that album."));
+    }
+  }
+  async function moveItem(id: string, albumId: string | null) {
+    setError(null);
+    try {
+      await mediaApi.setAlbum(id, albumId);
+      setItems((list) => list.map((item) => (item.id === id ? { ...item, albumId } : item)));
+    } catch (err) {
+      setError(problemOf(err, "Couldn't move that piece."));
+    }
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -198,9 +255,12 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
       )}
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
+      <AlbumBar albums={albums} counts={counts} total={items.length} selected={selected} onSelect={setSelected} isOwner={isOwner} onCreate={createAlbum} onRename={renameAlbum} onDelete={deleteAlbum} />
+
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {items.length === 0 && <p className="col-span-3 text-xs text-white/60">No portfolio pieces yet.</p>}
-        {items.map((item) => (
+        {items.length > 0 && shown.length === 0 && <p className="col-span-3 text-xs text-white/60">Nothing in this album yet.</p>}
+        {shown.map((item) => (
           <PortfolioTile
             key={item.id}
             item={item}
@@ -208,6 +268,8 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
             canReact={Boolean(viewer)}
             onRemove={handleRemove}
             onReact={handleReact}
+            albums={albums}
+            onMove={moveItem}
           />
         ))}
       </div>

@@ -3,14 +3,19 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PortfolioGrid } from "./PortfolioGrid";
 import { mediaApi, uploadFile } from "../../api/media.api";
+import { albumsApi } from "../../api/albums.api";
 import { ApiError } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { checkVideoFile } from "../../lib/video";
 import type { MediaItem } from "../../types";
 
 vi.mock("../../api/media.api", () => ({
-  mediaApi: { byUser: vi.fn(), create: vi.fn(), remove: vi.fn(), react: vi.fn() },
+  mediaApi: { byUser: vi.fn(), create: vi.fn(), remove: vi.fn(), react: vi.fn(), setAlbum: vi.fn() },
   uploadFile: vi.fn(),
+}));
+vi.mock("../../api/albums.api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../api/albums.api")>()),
+  albumsApi: { byUser: vi.fn(), create: vi.fn(), rename: vi.fn(), remove: vi.fn() },
 }));
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("../../lib/video", async (importOriginal) => ({
@@ -59,6 +64,145 @@ beforeEach(() => {
   upload.mockReset();
   vi.restoreAllMocks();
   api.byUser.mockResolvedValue({ media: [item({ id: "m1" }), item({ id: "m2", url: "https://images.example.com/b.jpg" })] });
+  Object.values(vi.mocked(albumsApi)).forEach((fn) => fn.mockReset());
+  vi.mocked(albumsApi.byUser).mockResolvedValue({ albums: [] });
+});
+
+describe("PortfolioGrid: albums", () => {
+  const sketch = { id: "a1", title: "Sketchbook", count: 1 };
+  const murals = { id: "a2", title: "Murals", count: 0 };
+  const inAlbum = () => api.byUser.mockResolvedValue({ media: [item({ id: "m1", albumId: "a1", caption: "In sketchbook" }), item({ id: "m2", caption: "Loose one" })] });
+
+  it("shows nothing about albums to a visitor when there are none, and lets the owner start one", async () => {
+    const { unmount } = renderGrid(false);
+    await waitFor(() => expect(document.querySelectorAll("img")).toHaveLength(2));
+    expect(screen.queryByRole("list", { name: "Albums" })).not.toBeInTheDocument();
+    unmount();
+    renderGrid(true);
+    expect(await screen.findByRole("button", { name: "+ New album" })).toBeInTheDocument();
+  });
+
+  it("shows a visitor the albums with how many pieces each holds, and filters to one", async () => {
+    inAlbum();
+    vi.mocked(albumsApi.byUser).mockResolvedValue({ albums: [sketch, murals] });
+    renderGrid(false);
+    expect(await screen.findByRole("button", { name: "All pieces (2)" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Sketchbook (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Murals (0)" })).toBeInTheDocument();
+    expect(screen.getAllByRole("img")).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole("button", { name: "Sketchbook (1)" }));
+    expect(screen.getAllByRole("img")).toHaveLength(1);
+    expect(screen.getByRole("img")).toHaveAttribute("alt", "In sketchbook");
+
+    await userEvent.click(screen.getByRole("button", { name: "Murals (0)" }));
+    expect(screen.getByText("Nothing in this album yet.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "All pieces (2)" }));
+    expect(screen.getAllByRole("img")).toHaveLength(2);
+    // a visitor can't change anything
+    expect(screen.queryByRole("button", { name: "+ New album" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  });
+
+  it("lets the owner make an album, which opens it", async () => {
+    vi.mocked(albumsApi.create).mockResolvedValue({ album: { id: "a9", title: "Fresh", count: 0 } });
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "+ New album" }));
+    await userEvent.type(screen.getByLabelText("Album name"), "Fresh");
+    await userEvent.click(screen.getByRole("button", { name: "Create album" }));
+    expect(albumsApi.create).toHaveBeenCalledWith("Fresh");
+    expect(await screen.findByRole("button", { name: "Fresh (0)" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Nothing in this album yet.")).toBeInTheDocument();
+  });
+
+  it("moves a piece into an album from its menu, and the counts follow", async () => {
+    vi.mocked(albumsApi.byUser).mockResolvedValue({ albums: [sketch, murals] });
+    api.setAlbum.mockResolvedValue({ item: item({ id: "m1", albumId: "a2" }) });
+    renderGrid(true);
+    const menus = await screen.findAllByRole("combobox");
+    expect(menus).toHaveLength(2);
+    await userEvent.selectOptions(menus[0], "a2");
+    expect(api.setAlbum).toHaveBeenCalledWith("m1", "a2");
+    expect(await screen.findByRole("button", { name: "Murals (1)" })).toBeInTheDocument();
+  });
+
+  it("takes a piece out of its album", async () => {
+    inAlbum();
+    vi.mocked(albumsApi.byUser).mockResolvedValue({ albums: [sketch] });
+    api.setAlbum.mockResolvedValue({ item: item({ id: "m1", albumId: null }) });
+    renderGrid(true);
+    await screen.findByRole("button", { name: "Sketchbook (1)" });
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Album for In sketchbook" }), "");
+    expect(api.setAlbum).toHaveBeenCalledWith("m1", null);
+    expect(await screen.findByRole("button", { name: "Sketchbook (0)" })).toBeInTheDocument();
+  });
+
+  it("says so, and leaves the piece where it was, when it can't be moved", async () => {
+    vi.mocked(albumsApi.byUser).mockResolvedValue({ albums: [sketch] });
+    api.setAlbum.mockRejectedValue(new ApiError(500, "boom"));
+    renderGrid(true);
+    await userEvent.selectOptions((await screen.findAllByRole("combobox"))[0], "a1");
+    expect(await screen.findByText("boom")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sketchbook (0)" })).toBeInTheDocument();
+  });
+
+  it("renames and deletes an album, and the pieces stay", async () => {
+    inAlbum();
+    vi.mocked(albumsApi.byUser).mockResolvedValue({ albums: [sketch] });
+    vi.mocked(albumsApi.rename).mockResolvedValue({ album: { ...sketch, title: "Renamed" } });
+    vi.mocked(albumsApi.remove).mockResolvedValue(undefined);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Sketchbook (1)" }));
+    await userEvent.click(screen.getByRole("button", { name: "Rename this album" }));
+    const box = screen.getByLabelText("New name for this album");
+    expect(box).toHaveValue("Sketchbook");
+    await userEvent.clear(box);
+    await userEvent.type(box, "Renamed");
+    await userEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(albumsApi.rename).toHaveBeenCalledWith("a1", "Renamed");
+    await userEvent.click(await screen.findByRole("button", { name: "Delete this album" }));
+    expect(albumsApi.remove).toHaveBeenCalledWith("a1");
+    expect(await screen.findByRole("button", { name: "All pieces (2)" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: /Renamed/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("img")).toHaveLength(2);
+  });
+
+  it("doesn't delete an album the owner changed their mind about", async () => {
+    inAlbum();
+    vi.mocked(albumsApi.byUser).mockResolvedValue({ albums: [sketch] });
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Sketchbook (1)" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete this album" }));
+    expect(albumsApi.remove).not.toHaveBeenCalled();
+  });
+
+  it("shows the server's reason when an album can't be made, and keeps the name typed", async () => {
+    vi.mocked(albumsApi.create).mockRejectedValue(new ApiError(409, "You already have an album with that name"));
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "+ New album" }));
+    await userEvent.type(screen.getByLabelText("Album name"), "Dup");
+    await userEvent.click(screen.getByRole("button", { name: "Create album" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("already have an album");
+    expect(screen.getByLabelText("Album name")).toHaveValue("Dup");
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText("Album name")).not.toBeInTheDocument();
+  });
+
+  it("stops offering new albums at the limit, and copes with albums that can't be loaded", async () => {
+    vi.mocked(albumsApi.byUser).mockResolvedValue({ albums: Array.from({ length: 12 }, (_, i) => ({ id: `x${i}`, title: `Album ${i}`, count: 0 })) });
+    renderGrid(true);
+    await screen.findByRole("button", { name: "Album 11 (0)" });
+    expect(screen.queryByRole("button", { name: "+ New album" })).not.toBeInTheDocument();
+  });
+
+  it("still shows the portfolio when albums can't be loaded", async () => {
+    vi.mocked(albumsApi.byUser).mockRejectedValue(new ApiError(500, "boom"));
+    renderGrid(false);
+    await waitFor(() => expect(document.querySelectorAll("img")).toHaveLength(2));
+    expect(screen.queryByRole("list", { name: "Albums" })).not.toBeInTheDocument();
+  });
 });
 
 describe("PortfolioGrid: removing pictures", () => {

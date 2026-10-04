@@ -925,6 +925,19 @@ Telling people who has looked at their profile is the most privacy-sensitive fea
 
 Covered by 20 backend tests, frontend tests for the card, the day wording and the recording rules on the profile page, and 3 browser flows.
 
+### 5.46 Portfolio albums: grouping pieces without opening a way into someone else's
+
+Albums group a person's portfolio pieces under names. The risks were putting a piece in the wrong person's album (or moving someone else's piece), seeing a private profile's albums, and unbounded growth.
+
+- **Ownership on both sides.** Moving a piece finds it by id *and* owner, and the target album must also exist *and* belong to the same owner; otherwise it is the same `404` as a missing one (tested with another person's piece, another person's album, malformed ids, objects and arrays). The route changes only the album field: a request that also sends a `url`, `owner` or `caption` is ignored for those (tested). Renaming and deleting find the album by id and owner.
+- **Same visibility as the portfolio.** Albums are listed through the profile gate: a private profile's albums are `403` to strangers and signed-out visitors, visible to friends, and refused between blocked people; albums themselves are public on a public profile, as the pictures are.
+- **Deleting is safe.** Deleting an album only clears the pointer on that owner's pieces; no picture, stored file or reaction is touched. Deleting a piece needs no album clean-up because the count is computed from the pieces; deleting an account removes its albums.
+- **Bounded and clean:** names are cleaned of hidden characters, at most 60 characters, unique per person ignoring case (the comparison escapes regular-expression characters, so a name like `mur.als` is a name, not a pattern), 12 albums per person.
+- **Route order matters:** albums are mounted before the sign-in-for-everything moderation router so that a visitor who isn't signed in can browse them, the same as the portfolio (a test caught the first draft getting this wrong).
+- **Not covered:** albums have no separate privacy setting; they are as visible as the profile.
+
+Covered by 14 backend tests, frontend tests for the album bar, the filtering and the per-piece menu, and 3 browser flows.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
