@@ -1001,6 +1001,21 @@ Reports had been collected for a while with no way to read or act on them. Givin
 
 Covered by 28 backend tests, frontend tests for the screen, the link and the notifications, and 3 browser flows (including a moderator reviewing, deciding and the author being suspended, signed out and let back in).
 
+### 5.51 Paging and editing: lists that can't be used to hammer the server, and changes that can't be used to rewrite history
+
+Two ordinary conveniences open real risks: long lists (a request that returns everything can be made to cost a lot) and editing (a way to change what other people already saw, or to sneak in what the first check would have refused).
+
+- **Every long list is paged, and the page size is the server's choice.** The feed, a profile's posts, comments, testimonials, notifications, groups and group members each return a fixed page (20, 20, 20, 20, 30, 20 and 50) plus whether there is more; the client cannot ask for a bigger page. Cursor lists ask for "older than this id", so a request costs the same on the hundredth page as on the first and nothing is skipped or repeated when new items arrive; anything that isn't a valid id is ignored rather than passed to the database (tested with a cursor that isn't an id). Group lists use page numbers, capped. A portfolio is limited to 200 pieces on both ways of adding one.
+- **Only the author can change something, and a stranger can't tell it exists.** Every edit route answers `404` for anyone else, the same as for something that isn't there. A group's admin may delete a topic or reply but not reword it, and the author of a post cannot reword other people's comments on it (tested for each kind).
+- **Edits go through the same checks as the first writing.** Hidden characters removed, empty and over-long refused, nothing silently cut. Posts, comments and testimonials gained limits they did not have before (5000, 1000 and 1000 characters) and rate limits on writing them (20, 40 and 20 per 10 minutes), which also close a gap where a very long or very frequent post was accepted. Editing itself is limited to 60 changes an hour per person, so editing can't be used to flood.
+- **Only the words change.** The author, date, picture, group, reply count and expiry come from the stored record, never from the edit request (tested for a post's picture and a bulletin's expiry). Editing a bulletin does not extend its ten days.
+- **Changes are visible, not silent.** A changed post, comment, testimonial, bulletin, topic, reply or message carries an "(edited)" mark (the day in its tooltip), so a reader can tell that what they are reading was changed after it was first posted. A moderator reviewing a report is told when the reported text was changed after it was written, so a report about the old words can't be answered by quietly swapping them.
+- **Direct messages can be changed for only 15 minutes.** A message is a conversation: after a quarter of an hour the other person has read it and may have answered, so the server refuses (`403`, `edit_window_over`) and the screen stops offering Edit (tested at the boundary; the server is the real check).
+- **Notifications keep older pages across a refresh.** The bell refreshes every 30 seconds; it merges the newest page with older pages already loaded rather than throwing them away, using the ids' time order.
+- **Not covered:** there is no history of earlier versions (a moderator sees the current text and the "edited" flag only), the "(edited)" mark does not say what changed, and an edit does not notify anyone.
+
+Covered by 29 backend tests (including the moderator's view), 27 frontend tests across the editing box, every list and every kind of edit, and 4 browser flows (a post, a comment and a message changed and still marked after a reload and for the other person, and the feed paging past twenty posts) on all three browsers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

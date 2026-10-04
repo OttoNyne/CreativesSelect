@@ -4,6 +4,11 @@ import { announceMessagesChanged, MAX_MESSAGE_LENGTH, MESSAGES_CHANGED_EVENT, me
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
 import { ActivityBadge } from "../components/common/ActivityBadge";
+import { EditBox } from "../components/common/EditBox";
+import { EditedMark } from "../components/common/EditedMark";
+
+// How long after sending a message its sender can still change it (the server enforces this too).
+const EDIT_WINDOW_MS = 15 * 60 * 1000;
 import type { Conversation, DirectMessage, User } from "../types";
 
 const THREAD_POLL_MS = 5_000;
@@ -73,6 +78,7 @@ function Thread({ username }: { username: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
   const lastSeenId = useRef<string | null>(null);
@@ -151,6 +157,17 @@ function Thread({ username }: { username: string }) {
     }
   }
 
+  async function saveEdit(id: string, body: string): Promise<string | null> {
+    try {
+      const { message } = await messagesApi.edit(id, body);
+      setMessages((prev) => prev.map((m) => (m.id === id ? message : m)));
+      setEditing(null);
+      return null;
+    } catch (err) {
+      return err instanceof ApiError ? err.message : "Couldn't save that change.";
+    }
+  }
+
   async function handleDelete(id: string) {
     if (!window.confirm("Delete this message for both of you?")) return;
     setActionError(null);
@@ -204,10 +221,20 @@ function Thread({ username }: { username: string }) {
                 m.mine ? "bg-violet-600 text-white" : "bg-white/10 text-white"
               }`}
             >
-              {m.body}
+              {editing === m.id ? (
+                <EditBox text={m.body} maxText={MAX_MESSAGE_LENGTH} label="Edit message" rows={2} onSave={({ text }) => saveEdit(m.id, text)} onCancel={() => setEditing(null)} />
+              ) : (
+                m.body
+              )}
               <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-white/60">
                 <span>{timeLabel(m.createdAt)}</span>
+                <EditedMark editedAt={m.editedAt} className="text-[10px] text-white/60" />
                 {m.mine && m.readAt && <span>Seen</span>}
+                {m.mine && editing !== m.id && Date.now() - new Date(m.createdAt).getTime() < EDIT_WINDOW_MS && (
+                  <button onClick={() => setEditing(m.id)} aria-label="Edit message" className="hover:text-white">
+                    Edit
+                  </button>
+                )}
                 {m.mine && (
                   <button onClick={() => handleDelete(m.id)} aria-label="Delete message" className="hover:text-white">
                     Delete

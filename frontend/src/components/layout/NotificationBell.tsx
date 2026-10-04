@@ -72,14 +72,23 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const olderLoaded = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   async function load() {
     try {
-      const { notifications } = await notificationsApi.list();
-      setNotifications(notifications);
+      const { notifications: first, hasMore: more } = await notificationsApi.list();
+      // The newest page replaces what we had, but older pages already loaded stay (ids sort by time).
+      setNotifications((old) => {
+        const oldestFirst = first[first.length - 1]?.id;
+        const older = oldestFirst ? old.filter((n) => n.id < oldestFirst) : [];
+        return [...first, ...older];
+      });
+      if (!olderLoaded.current) setHasMore(Boolean(more));
     } catch {
       // A failed poll (offline, server waking up) just keeps the last list; the
       // next poll retries.
@@ -114,6 +123,22 @@ export function NotificationBell() {
     if (!target) return;
     setOpen(false);
     navigate(target.to);
+  }
+
+  async function showOlder() {
+    const oldest = notifications[notifications.length - 1];
+    if (!oldest) return;
+    setLoadingMore(true);
+    try {
+      const next = await notificationsApi.list(oldest.id);
+      olderLoaded.current = true;
+      setNotifications((old) => [...old, ...next.notifications.filter((n) => !old.some((o) => o.id === n.id))]);
+      setHasMore(Boolean(next.hasMore));
+    } catch {
+      // try again when they click it again
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   async function handleMarkAllRead() {
@@ -279,6 +304,11 @@ export function NotificationBell() {
                 </div>
               </div>
             ))}
+            {hasMore && (
+              <button type="button" onClick={showOlder} disabled={loadingMore} className="block w-full border-t border-white/5 px-3 py-2 text-xs text-violet-300 hover:bg-white/5 disabled:opacity-50">
+                {loadingMore ? "Loading…" : "Show older notifications"}
+              </button>
+            )}
           </div>
         </div>
       )}

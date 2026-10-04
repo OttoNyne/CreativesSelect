@@ -12,12 +12,17 @@ export interface CreatePostInput {
 }
 
 export const postsApi = {
-  feed: () => api.get<{ posts: Post[] }>("/posts/feed"),
+  /** Twenty at a time, newest first; `before` is the id of the oldest post you have, to get the ones older than it. */
+  feed: (before?: string) => api.get<{ posts: Post[]; hasMore?: boolean }>(`/posts/feed${before ? `?before=${encodeURIComponent(before)}` : ""}`),
   get: (id: string) => api.get<{ post: Post }>(`/posts/${encodeURIComponent(id)}`),
   byUser: (username: string) => api.get<{ posts: Post[] }>(`/posts/user/${username}`),
   create: (input: CreatePostInput) => api.post<{ post: Post }>("/posts", input),
   remove: (id: string) => api.delete<void>(`/posts/${id}`),
-  comments: (postId: string) => api.get<{ comments: Comment[] }>(`/posts/${postId}/comments`),
+  /** Change the words of your own post. */
+  update: (id: string, content: string) => api.patch<{ post: Post }>(`/posts/${encodeURIComponent(id)}`, { content }),
+  /** Twenty at a time, oldest first; `after` is the id of the last one you have. */
+  comments: (postId: string, after?: string) => api.get<{ comments: Comment[]; hasMore?: boolean }>(`/posts/${postId}/comments${after ? `?after=${encodeURIComponent(after)}` : ""}`),
+  updateComment: (commentId: string, content: string) => api.patch<{ comment: Comment }>(`/comments/${encodeURIComponent(commentId)}`, { content }),
   addComment: (postId: string, content: string) =>
     api.post<{ comment: Comment }>(`/posts/${postId}/comments`, { content }),
   removeComment: (commentId: string) => api.delete<void>(`/comments/${commentId}`),

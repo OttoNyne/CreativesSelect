@@ -13,12 +13,17 @@ export function GroupsPage() {
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   async function load(search?: string) {
     setStatus("loading");
     try {
-      const { groups } = await groupsApi.list(search);
+      const { groups, hasMore } = await groupsApi.list(search);
       setGroups(groups);
+      setPage(1);
+      setHasMore(Boolean(hasMore));
       setStatus("ready");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load groups.");
@@ -29,6 +34,21 @@ export function GroupsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  async function showMore() {
+    setLoadingMore(true);
+    setActionError(null);
+    try {
+      const next = await groupsApi.list(search.trim() || undefined, page + 1);
+      setGroups((old) => [...old, ...next.groups.filter((g) => !old.some((o) => o.id === g.id))]);
+      setPage(page + 1);
+      setHasMore(Boolean(next.hasMore));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't load more groups.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -145,6 +165,11 @@ export function GroupsPage() {
             )}
           </div>
         ))}
+        {hasMore && (
+          <button type="button" onClick={showMore} disabled={loadingMore} className="w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
+            {loadingMore ? "Loading…" : "Show more groups"}
+          </button>
+        )}
       </div>
     </div>
   );

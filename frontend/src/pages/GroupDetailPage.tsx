@@ -4,15 +4,16 @@ import { groupsApi } from "../api/groups.api";
 import { ApiError } from "../api/client";
 import type { Group, GroupMember } from "../types";
 import { Avatar } from "../components/common/Avatar";
-import { useAuth } from "../context/AuthContext";
 import { GroupChat } from "../components/group/GroupChat";
 import { GroupBoard } from "../components/group/GroupBoard";
 
 export function GroupDetailPage() {
   const { id = "" } = useParams();
-  const { user } = useAuth();
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
+  const [membersPage, setMembersPage] = useState(1);
+  const [moreMembers, setMoreMembers] = useState(false);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -20,9 +21,11 @@ export function GroupDetailPage() {
   async function load() {
     setStatus("loading");
     try {
-      const [{ group }, { members }] = await Promise.all([groupsApi.get(id), groupsApi.members(id)]);
+      const [{ group }, members] = await Promise.all([groupsApi.get(id), groupsApi.members(id)]);
       setGroup(group);
-      setMembers(members);
+      setMembers(members.members);
+      setMembersPage(1);
+      setMoreMembers(Boolean(members.hasMore));
       setStatus("ready");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load this group.");
@@ -35,7 +38,23 @@ export function GroupDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const isMember = members.some((m) => m.user.username === user?.username);
+  // Whether you have joined, and your role, come from the group itself: the member list is paged, so you may not be on the page shown.
+  const isMember = Boolean(group?.isMember);
+  const isAdmin = group?.myRole === "admin";
+
+  async function showMoreMembers() {
+    setLoadingMembers(true);
+    try {
+      const next = await groupsApi.members(id, membersPage + 1);
+      setMembers((old) => [...old, ...next.members.filter((m) => !old.some((o) => o.user.id === m.user.id))]);
+      setMembersPage(membersPage + 1);
+      setMoreMembers(Boolean(next.hasMore));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't load more members.");
+    } finally {
+      setLoadingMembers(false);
+    }
+  }
 
   async function handleJoin() {
     setActionError(null);
@@ -77,9 +96,9 @@ export function GroupDetailPage() {
         </button>
       </div>
 
-      {isMember && <GroupBoard groupId={id} canModerate={members.some((m) => m.user.username === user?.username && m.role === "admin")} />}
+      {isMember && <GroupBoard groupId={id} canModerate={isAdmin} />}
 
-      {isMember && <GroupChat groupId={id} canModerate={members.some((m) => m.user.username === user?.username && m.role === "admin")} />}
+      {isMember && <GroupChat groupId={id} canModerate={isAdmin} />}
 
       <div>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Members</h2>
@@ -94,6 +113,11 @@ export function GroupDetailPage() {
             </div>
           ))}
         </div>
+        {moreMembers && (
+          <button type="button" onClick={showMoreMembers} disabled={loadingMembers} className="mt-2 w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
+            {loadingMembers ? "Loading…" : "Show more members"}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -13,12 +13,18 @@ export interface CreateGroupInput {
 }
 
 export const groupsApi = {
-  list: (search?: string) => api.get<{ groups: Group[] }>(`/groups${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+  list: (search?: string, page = 1) => {
+    const query = new URLSearchParams();
+    if (search) query.set("search", search);
+    if (page > 1) query.set("page", String(page));
+    const qs = query.toString();
+    return api.get<{ groups: Group[]; hasMore?: boolean }>(`/groups${qs ? `?${qs}` : ""}`);
+  },
   get: (id: string) => api.get<{ group: Group }>(`/groups/${id}`),
   create: (input: CreateGroupInput) => api.post<{ group: Group }>("/groups", input),
   join: (id: string) => api.post<void>(`/groups/${id}/join`),
   leave: (id: string) => api.post<void>(`/groups/${id}/leave`),
-  members: (id: string) => api.get<{ members: GroupMember[] }>(`/groups/${id}/members`),
+  members: (id: string, page = 1) => api.get<{ members: GroupMember[]; hasMore?: boolean }>(`/groups/${id}/members${page > 1 ? `?page=${page}` : ""}`),
   messages: (id: string, before?: string) =>
     api.get<{ messages: GroupChatMessage[]; hasMore: boolean }>(
       `/groups/${id}/messages${before ? `?before=${encodeURIComponent(before)}` : ""}`
@@ -33,5 +39,7 @@ export const groupsApi = {
   deleteTopic: (id: string, topicId: string) => api.delete<void>(`/groups/${id}/topics/${topicId}`),
   reply: (id: string, topicId: string, body: string) => api.post<{ reply: GroupReply }>(`/groups/${id}/topics/${topicId}/replies`, { body }),
   deleteReply: (id: string, topicId: string, replyId: string) => api.delete<void>(`/groups/${id}/topics/${topicId}/replies/${replyId}`),
+  updateTopic: (id: string, topicId: string, input: { title?: string; body?: string }) => api.patch<{ topic: GroupTopic }>(`/groups/${id}/topics/${topicId}`, input),
+  updateReply: (id: string, topicId: string, replyId: string, body: string) => api.patch<{ reply: GroupReply }>(`/groups/${id}/topics/${topicId}/replies/${replyId}`, { body }),
   pinTopic: (id: string, topicId: string, pinned: boolean) => api.put<{ topic: GroupTopic }>(`/groups/${id}/topics/${topicId}/pin`, { pinned }),
 };

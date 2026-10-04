@@ -4,6 +4,8 @@ import { bulletinsApi, BULLETINS_CHANGED_EVENT, MAX_BULLETIN_BODY, MAX_BULLETIN_
 import { moderationApi } from "../api/moderation.api";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
+import { EditBox } from "../components/common/EditBox";
+import { EditedMark } from "../components/common/EditedMark";
 import { daysLeft, formatDay } from "../lib/when";
 import type { Bulletin } from "../types";
 
@@ -17,6 +19,7 @@ export function BulletinsPage() {
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +57,17 @@ export function BulletinsPage() {
       setError(err instanceof ApiError ? err.message : "Couldn't post your bulletin.");
     } finally {
       setPosting(false);
+    }
+  }
+
+  async function saveEdit(bulletin: Bulletin, value: { text: string; title?: string }): Promise<string | null> {
+    try {
+      const { bulletin: updated } = await bulletinsApi.update(bulletin.id, { title: value.title, body: value.text });
+      setBulletins((old) => old.map((b) => (b.id === bulletin.id ? updated : b)));
+      setEditing(null);
+      return null;
+    } catch (err) {
+      return err instanceof ApiError ? err.message : "Couldn't save that change.";
     }
   }
 
@@ -128,9 +142,22 @@ export function BulletinsPage() {
                 <time dateTime={b.createdAt}>{formatDay(b.createdAt)}</time>
                 <span className="ml-auto text-xs text-white/60">{daysLeft(b.expiresAt)}</span>
               </div>
-              <h2 className="mt-2 font-semibold text-white">{b.title}</h2>
-              <p className="mt-1 whitespace-pre-line break-words text-sm text-white/85">{b.body}</p>
-              <div className="mt-3">
+              {editing === b.id ? (
+                <EditBox title={b.title} maxTitle={MAX_BULLETIN_TITLE} text={b.body} maxText={MAX_BULLETIN_BODY} label="Edit bulletin" onSave={(value) => saveEdit(b, value)} onCancel={() => setEditing(null)} />
+              ) : (
+                <>
+                  <h2 className="mt-2 font-semibold text-white">
+                    {b.title} <EditedMark editedAt={b.editedAt} />
+                  </h2>
+                  <p className="mt-1 whitespace-pre-line break-words text-sm text-white/85">{b.body}</p>
+                </>
+              )}
+              <div className="mt-3 flex gap-2">
+                {b.isMine && editing !== b.id && (
+                  <button type="button" onClick={() => setEditing(b.id)} aria-label={`Edit ${b.title}`} className="rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10">
+                    Edit
+                  </button>
+                )}
                 {b.isMine ? (
                   <button type="button" onClick={() => handleDelete(b)} aria-label={`Take down ${b.title}`} className="rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/10">
                     Take down

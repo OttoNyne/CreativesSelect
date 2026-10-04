@@ -12,6 +12,8 @@ export const messagesApi = {
     ),
   send: (username: string, body: string) =>
     api.post<{ message: DirectMessage }>(`/messages/with/${encodeURIComponent(username)}`, { body }),
+  /** Fix a typo in a message you sent, for fifteen minutes after sending it. */
+  edit: (id: string, body: string) => api.patch<{ message: DirectMessage }>(`/messages/${encodeURIComponent(id)}`, { body }),
   remove: (id: string) => api.delete<void>(`/messages/${id}`),
 };
 

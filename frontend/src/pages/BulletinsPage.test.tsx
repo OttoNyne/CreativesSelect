@@ -10,7 +10,7 @@ import type { Bulletin, User } from "../types";
 
 vi.mock("../api/bulletins.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/bulletins.api")>()),
-  bulletinsApi: { list: vi.fn(), markSeen: vi.fn(), create: vi.fn(), remove: vi.fn(), unreadCount: vi.fn() },
+  bulletinsApi: { list: vi.fn(), markSeen: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(), unreadCount: vi.fn() },
 }));
 vi.mock("../api/moderation.api", () => ({ moderationApi: { report: vi.fn() } }));
 const api = vi.mocked(bulletinsApi);
@@ -91,7 +91,7 @@ describe("BulletinsPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Post bulletin" }));
     expect(api.create).toHaveBeenCalledWith({ title: "My news", body: "Hello" });
     const items = await screen.findAllByRole("heading", { level: 2 });
-    expect(items.map((h) => h.textContent)).toEqual(["My news", "Show on Friday"]);
+    expect(items.map((h) => h.textContent?.trim())).toEqual(["My news", "Show on Friday"]);
     expect(screen.getByLabelText("Bulletin title")).toHaveValue("");
     expect(screen.getByRole("link", { name: "You" })).toBeInTheDocument();
   });
@@ -153,5 +153,26 @@ describe("BulletinsPage", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Take down Show on Friday" }));
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("boom"));
     expect(screen.getByText("Show on Friday")).toBeInTheDocument();
+  });
+
+  it("lets the author change a bulletin's title and text, marking it (edited), and nobody else", async () => {
+    api.list.mockResolvedValue({ bulletins: [bulletin({ id: "b1", isMine: true, author: me }), bulletin({ id: "b2", title: "Their news", author: ada })] });
+    api.update.mockResolvedValue({ bulletin: bulletin({ id: "b1", isMine: true, author: me, title: "Show moved", body: "Now at 8", editedAt: "2026-10-05T00:00:00.000Z" }) });
+    renderIt();
+    await screen.findByRole("heading", { level: 2, name: "Their news" });
+    expect(screen.getAllByRole("button", { name: /^Edit / })).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit Show on Friday" }));
+    const title = screen.getByLabelText("Edit bulletin: title");
+    await userEvent.clear(title);
+    await userEvent.type(title, "Show moved");
+    const body = screen.getByLabelText("Edit bulletin");
+    await userEvent.clear(body);
+    await userEvent.type(body, "Now at 8");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.update).toHaveBeenCalledWith("b1", { title: "Show moved", body: "Now at 8" });
+    expect(await screen.findByRole("heading", { level: 2, name: /Show moved/ })).toBeInTheDocument();
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
   });
 });

@@ -9,7 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import type { Post } from "../types";
 
 vi.mock("../api/posts.api", () => ({
-  postsApi: { feed: vi.fn(), create: vi.fn(), remove: vi.fn(), comments: vi.fn(), addComment: vi.fn(), removeComment: vi.fn() },
+  postsApi: { feed: vi.fn(), update: vi.fn(), create: vi.fn(), remove: vi.fn(), comments: vi.fn(), addComment: vi.fn(), removeComment: vi.fn() },
 }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
 vi.mock("../components/bulletins/BulletinsStrip", () => ({ BulletinsStrip: () => <div>bulletins strip</div> }));
@@ -129,5 +129,25 @@ describe("FeedPage", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
     expect(await screen.findByText("Not allowed")).toBeInTheDocument();
     expect(screen.getByText("First post")).toBeInTheDocument();
+  });
+
+  it("shows older posts after the oldest one on the page, until there are none", async () => {
+    api.feed.mockResolvedValueOnce({ posts: [post({ id: "p2", content: "Newer one" })], hasMore: true });
+    api.feed.mockResolvedValueOnce({ posts: [post({ id: "p1", content: "Older one" })], hasMore: false });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Show older posts" }));
+    expect(api.feed).toHaveBeenLastCalledWith("p2");
+    expect(await screen.findByText("Older one")).toBeInTheDocument();
+    expect(screen.getByText("Newer one")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show older posts" })).not.toBeInTheDocument();
+  });
+
+  it("shows the message, keeping the posts, if older posts can't be loaded", async () => {
+    api.feed.mockResolvedValueOnce({ posts: [post({ id: "p2", content: "Newer one" })], hasMore: true });
+    api.feed.mockRejectedValueOnce(new ApiError(500, "Internal server error"));
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Show older posts" }));
+    expect(await screen.findByText("Internal server error")).toBeInTheDocument();
+    expect(screen.getByText("Newer one")).toBeInTheDocument();
   });
 });

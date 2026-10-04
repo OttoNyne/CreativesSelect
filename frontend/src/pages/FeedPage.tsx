@@ -12,12 +12,15 @@ export function FeedPage() {
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     postsApi
       .feed()
-      .then(({ posts }) => {
+      .then(({ posts, hasMore }) => {
         setPosts(posts);
+        setHasMore(Boolean(hasMore));
         setStatus("ready");
       })
       .catch((err) => {
@@ -25,6 +28,23 @@ export function FeedPage() {
         setStatus("error");
       });
   }, []);
+
+  // Older posts, twenty more at a time.
+  async function showOlder() {
+    const oldest = posts[posts.length - 1];
+    if (!oldest) return;
+    setLoadingMore(true);
+    setActionError(null);
+    try {
+      const next = await postsApi.feed(oldest.id);
+      setPosts((p) => [...p, ...next.posts.filter((n) => !p.some((o) => o.id === n.id))]);
+      setHasMore(Boolean(next.hasMore));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't load older posts.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   async function handleDelete(id: string) {
     setActionError(null);
@@ -56,6 +76,11 @@ export function FeedPage() {
       {posts.map((post) => (
         <PostCard key={post.id} post={post} onDeleted={handleDelete} />
       ))}
+      {hasMore && (
+        <button type="button" onClick={showOlder} disabled={loadingMore} className="w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
+          {loadingMore ? "Loading…" : "Show older posts"}
+        </button>
+      )}
     </div>
   );
 }

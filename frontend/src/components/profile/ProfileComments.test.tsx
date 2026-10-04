@@ -8,7 +8,7 @@ import { ApiError } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import type { Comment, User } from "../../types";
 
-vi.mock("../../api/profiles.api", () => ({ profilesApi: { getComments: vi.fn(), addComment: vi.fn(), deleteComment: vi.fn() } }));
+vi.mock("../../api/profiles.api", () => ({ profilesApi: { getComments: vi.fn(), addComment: vi.fn(), deleteComment: vi.fn(), updateComment: vi.fn() } }));
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
 const api = vi.mocked(profilesApi);
 
@@ -135,5 +135,33 @@ describe("ProfileComments: arriving from a notification", () => {
     await screen.findByText("Testimonials");
     await new Promise((r) => setTimeout(r, 30));
     expect(scroll).not.toHaveBeenCalled();
+  });
+
+  it("pages: shows more testimonials after the oldest loaded", async () => {
+    api.getComments.mockResolvedValueOnce({ comments: [comment("c2", "u-zoe", "Zoe", "Wonderful work")], hasMore: true });
+    api.getComments.mockResolvedValueOnce({ comments: [comment("c1", "u-kai", "Kai", "Great eye")], hasMore: false });
+    renderComments(null);
+    await userEvent.click(await screen.findByRole("button", { name: "Show more testimonials" }));
+    expect(api.getComments).toHaveBeenLastCalledWith("owner", "c2");
+    expect(await screen.findByText("Great eye")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show more testimonials" })).not.toBeInTheDocument();
+  });
+
+  it("lets the author, and only the author, change a testimonial", async () => {
+    api.getComments.mockResolvedValue({ comments: [comment("c1", "me", "Me", "Nice"), comment("c2", "u-zoe", "Zoe", "Wonderful work")] });
+    api.updateComment.mockResolvedValue({ comment: { ...comment("c1", "me", "Me", "Really nice"), editedAt: "2026-05-01T00:00:00.000Z" } });
+    renderComments({ id: "me", username: "me" });
+    await screen.findByText("Wonderful work");
+    expect(screen.getAllByRole("button", { name: "Edit your testimonial" })).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit your testimonial" }));
+    const box = screen.getByLabelText("Edit testimonial");
+    await userEvent.clear(box);
+    await userEvent.type(box, "Really nice");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.updateComment).toHaveBeenCalledWith("c1", "Really nice");
+    expect(await screen.findByText(/Really nice/)).toBeInTheDocument();
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
   });
 });

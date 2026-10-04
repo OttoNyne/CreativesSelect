@@ -11,6 +11,7 @@ export const bulletinsApi = {
   /** Marks everything on the board as seen. */
   markSeen: () => api.post<void>("/bulletins/seen"),
   create: (input: { title: string; body: string }) => api.post<{ bulletin: Bulletin }>("/bulletins", input),
+  update: (id: string, input: { title?: string; body?: string }) => api.patch<{ bulletin: Bulletin }>(`/bulletins/${encodeURIComponent(id)}`, input),
   remove: (id: string) => api.delete<void>(`/bulletins/${encodeURIComponent(id)}`),
 };
 

@@ -7,7 +7,7 @@ import { ApiError } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import type { Comment, User } from "../../types";
 
-vi.mock("../../api/posts.api", () => ({ postsApi: { comments: vi.fn(), addComment: vi.fn() } }));
+vi.mock("../../api/posts.api", () => ({ postsApi: { comments: vi.fn(), addComment: vi.fn(), updateComment: vi.fn() } }));
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
 const api = vi.mocked(postsApi);
 
@@ -49,7 +49,9 @@ describe("PostCommentList", () => {
 
     expect(api.addComment).toHaveBeenCalledWith("p1", "Great work");
     expect(await screen.findByText("Great work")).toBeInTheDocument();
-    expect(onCountChange).toHaveBeenCalledWith(3);
+    // told as a change to the post's count, since the list may hold only some of the comments
+    expect(onCountChange).toHaveBeenCalledTimes(1);
+    expect(onCountChange.mock.calls[0][0](2)).toBe(3);
     expect(screen.getByPlaceholderText("Write a comment…")).toHaveValue("");
   });
 
@@ -82,5 +84,33 @@ describe("PostCommentList", () => {
     renderList();
     expect(await screen.findByText("Profile not available")).toBeInTheDocument();
     expect(screen.queryByText("Loading comments…")).not.toBeInTheDocument();
+  });
+
+  it("pages: shows more comments after the last one loaded, until there are no more", async () => {
+    api.comments.mockResolvedValueOnce({ comments: [comment("c1", "Zoe", "Love it")], hasMore: true });
+    api.comments.mockResolvedValueOnce({ comments: [comment("c2", "Kai", "Nice colors")], hasMore: false });
+    renderList();
+    await userEvent.click(await screen.findByRole("button", { name: "Show more comments" }));
+    expect(api.comments).toHaveBeenLastCalledWith("p1", "c1");
+    expect(await screen.findByText("Nice colors")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show more comments" })).not.toBeInTheDocument();
+  });
+
+  it("offers Edit only on your own comments, and saves the change with an (edited) mark", async () => {
+    api.comments.mockResolvedValue({ comments: [comment("c1", "Zoe", "Love it"), { ...comment("me", "Me", "Mine"), author: { id: "me", username: "me", displayName: "Me" } as User }] });
+    api.updateComment.mockResolvedValue({ comment: { ...comment("me", "Me", "Mine, changed"), author: { id: "me", username: "me", displayName: "Me" } as User, editedAt: "2026-05-01T00:00:00.000Z" } });
+    renderList();
+    await screen.findByText("Love it");
+    expect(screen.getAllByRole("button", { name: /^Edit your comment/ })).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole("button", { name: /^Edit your comment/ }));
+    const box = screen.getByLabelText("Edit comment");
+    await userEvent.clear(box);
+    await userEvent.type(box, "Mine, changed");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.updateComment).toHaveBeenCalledWith("me", "Mine, changed");
+    expect(await screen.findByText("Mine, changed")).toBeInTheDocument();
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
   });
 });

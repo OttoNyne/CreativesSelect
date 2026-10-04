@@ -4,6 +4,8 @@ import { moderationApi } from "../../api/moderation.api";
 import { groupsApi, MAX_REPLY_BODY, MAX_TOPIC_BODY, MAX_TOPIC_TITLE } from "../../api/groups.api";
 import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
+import { EditBox } from "../common/EditBox";
+import { EditedMark } from "../common/EditedMark";
 import { formatDay } from "../../lib/when";
 import type { GroupReply, GroupTopic } from "../../types";
 
@@ -173,6 +175,8 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingTopic, setEditingTopic] = useState(false);
+  const [editingReply, setEditingReply] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,6 +258,28 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
     }
   }
 
+  async function saveTopic(value: { text: string; title?: string }): Promise<string | null> {
+    try {
+      const { topic: updated } = await groupsApi.updateTopic(groupId, topicId, { title: value.title, body: value.text });
+      setTopic((t) => (t ? { ...t, title: updated.title, body: updated.body, editedAt: updated.editedAt } : t));
+      setEditingTopic(false);
+      return null;
+    } catch (err) {
+      return problemOf(err, "Couldn't save that change.");
+    }
+  }
+
+  async function saveReply(reply: GroupReply, text: string): Promise<string | null> {
+    try {
+      const { reply: updated } = await groupsApi.updateReply(groupId, topicId, reply.id, text);
+      setReplies((old) => old.map((r) => (r.id === reply.id ? { ...r, body: updated.body, editedAt: updated.editedAt } : r)));
+      setEditingReply(null);
+      return null;
+    } catch (err) {
+      return problemOf(err, "Couldn't save that change.");
+    }
+  }
+
   async function togglePin() {
     if (!topic) return;
     try {
@@ -284,7 +310,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
         <>
           <h2 className="mt-3 text-lg font-semibold text-white">
             {topic.pinned && <span className="mr-2 rounded-full bg-violet-500/25 px-2 py-0.5 align-middle text-[11px] font-normal text-violet-200">Pinned</span>}
-            {topic.title}
+            {topic.title} <EditedMark editedAt={topic.editedAt} />
           </h2>
           <div className="mt-1 flex items-center gap-2 text-xs text-white/60">
             {topic.author && <Avatar username={topic.author.username} displayName={topic.author.displayName} avatarUrl={topic.author.avatarUrl} size={20} />}
@@ -298,8 +324,17 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
             <span aria-hidden="true">·</span>
             <time dateTime={topic.createdAt}>{formatDay(topic.createdAt)}</time>
           </div>
-          <p className="mt-3 whitespace-pre-line break-words text-sm text-white/90">{topic.body}</p>
+          {editingTopic ? (
+            <EditBox title={topic.title} maxTitle={MAX_TOPIC_TITLE} text={topic.body} maxText={MAX_TOPIC_BODY} label="Edit topic" onSave={saveTopic} onCancel={() => setEditingTopic(false)} />
+          ) : (
+            <p className="mt-3 whitespace-pre-line break-words text-sm text-white/90">{topic.body}</p>
+          )}
           <div className="mt-3 flex gap-2">
+            {topic.mine && !editingTopic && (
+              <button type="button" onClick={() => setEditingTopic(true)} className={small}>
+                Edit topic
+              </button>
+            )}
             {canModerate && (
               <button type="button" onClick={togglePin} className={small}>
                 {topic.pinned ? "Unpin topic" : "Pin topic"}
@@ -329,6 +364,11 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
                   <span aria-hidden="true">·</span>
                   <time dateTime={r.createdAt}>{formatDay(r.createdAt)}</time>
                   <span className="ml-auto flex gap-3">
+                    {r.mine && editingReply !== r.id && (
+                      <button type="button" onClick={() => setEditingReply(r.id)} aria-label="Edit your reply" className="text-white/60 hover:text-white">
+                        Edit
+                      </button>
+                    )}
                     {!r.mine && (
                       <button type="button" onClick={() => report("groupReply", r.id, "reply")} aria-label={`Report reply by ${r.author?.displayName ?? "someone"}`} className="text-white/60 hover:text-white">
                         Report
@@ -341,7 +381,13 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
                     )}
                   </span>
                 </div>
-                <p className="mt-1 whitespace-pre-line break-words text-sm text-white/90">{r.body}</p>
+                {editingReply === r.id ? (
+                  <EditBox text={r.body} maxText={MAX_REPLY_BODY} label="Edit reply" rows={3} onSave={({ text }) => saveReply(r, text)} onCancel={() => setEditingReply(null)} />
+                ) : (
+                  <p className="mt-1 whitespace-pre-line break-words text-sm text-white/90">
+                    {r.body} <EditedMark editedAt={r.editedAt} />
+                  </p>
+                )}
               </li>
             ))}
           </ul>

@@ -62,6 +62,8 @@ export interface Post {
   isAiText: boolean;
   isAiImage: boolean;
   createdAt: string;
+  /** When its author last changed the words; null if never. */
+  editedAt?: string | null;
   commentCount: number;
 }
 
@@ -69,6 +71,7 @@ export interface Comment {
   id: string;
   content: string;
   createdAt: string;
+  editedAt?: string | null;
   author: User;
 }
 
@@ -95,6 +98,8 @@ export interface Group {
   createdAt: string;
   memberCount: number;
   isMember: boolean;
+  /** Your place in it: admin, member, or null if you haven't joined. */
+  myRole?: "admin" | "member" | null;
 }
 
 export interface GroupMember {
@@ -250,6 +255,7 @@ export interface Bulletin {
   title: string;
   body: string;
   createdAt: string;
+  editedAt?: string | null;
   expiresAt: string;
   isMine: boolean;
   author: User;
@@ -296,6 +302,7 @@ export interface DirectMessage {
   body: string;
   readAt: string | null;
   createdAt: string;
+  editedAt?: string | null;
 }
 
 export interface Conversation {
@@ -316,6 +323,7 @@ export interface GroupTopic {
   lastActivityAt: string;
   /** True when the signed-in person started it. */
   mine: boolean;
+  editedAt?: string | null;
   author: User | null;
 }
 
@@ -325,6 +333,7 @@ export interface GroupReply {
   topicId: string;
   body: string;
   createdAt: string;
+  editedAt?: string | null;
   mine: boolean;
   author: User | null;
 }

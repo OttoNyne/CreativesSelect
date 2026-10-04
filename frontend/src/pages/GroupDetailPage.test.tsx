@@ -23,7 +23,13 @@ const group = { id: "g1", name: "Painters", description: "We paint", memberCount
 const admin: GroupMember = { role: "admin", joinedAt: "", user: { id: "u1", username: "ada", displayName: "Ada" } as User };
 const member: GroupMember = { role: "member", joinedAt: "", user: { id: "u2", username: "zoe", displayName: "Zoe" } as User };
 
+// The group itself says whether you have joined and your role (the member list is paged, so you may not be on the page shown).
+const roles: Record<string, "admin" | "member"> = { ada: "admin", zoe: "member" };
+let signedInAs: string | null = null;
+const roleOfViewer = () => (signedInAs && roles[signedInAs]) || null;
+
 function renderAs(username: string | null) {
+  signedInAs = username;
   vi.mocked(useAuth).mockReturnValue({
     user: username ? ({ id: "x", username } as User) : null,
     isLoading: false,
@@ -42,7 +48,8 @@ function renderAs(username: string | null) {
 
 beforeEach(() => {
   Object.values(api).forEach((fn) => fn.mockReset());
-  api.get.mockResolvedValue({ group });
+  signedInAs = null;
+  api.get.mockImplementation(async () => ({ group: { ...group, isMember: Boolean(roleOfViewer()), myRole: roleOfViewer() } }));
   api.members.mockResolvedValue({ members: [admin, member] });
 });
 
@@ -123,5 +130,23 @@ describe("GroupDetailPage", () => {
     api.members.mockRejectedValue(new TypeError("Failed to fetch"));
     renderAs("someone");
     expect(await screen.findByText("Failed to load this group.")).toBeInTheDocument();
+  });
+
+  it("shows more members a page at a time", async () => {
+    api.members.mockResolvedValueOnce({ members: [admin], hasMore: true });
+    api.members.mockResolvedValueOnce({ members: [admin, member], hasMore: false });
+    renderAs("someone");
+    await userEvent.click(await screen.findByRole("button", { name: "Show more members" }));
+    expect(api.members).toHaveBeenLastCalledWith("g1", 2);
+    expect(await screen.findByRole("link", { name: "Zoe" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Ada" })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Show more members" })).not.toBeInTheDocument();
+  });
+
+  it("knows you are a member, and an admin, from the group, even when you aren't on the first page of members", async () => {
+    api.members.mockResolvedValue({ members: [member], hasMore: true });
+    renderAs("ada"); // Ada is an admin but isn't in the list shown
+    expect(await screen.findByText("group chat (moderator)")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Join group" })).not.toBeInTheDocument();
   });
 });

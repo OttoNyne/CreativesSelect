@@ -5,19 +5,29 @@ import { ApiError } from "../../api/client";
 import type { Comment } from "../../types";
 import { Avatar } from "../common/Avatar";
 import { useAuth } from "../../context/AuthContext";
+import { EditBox } from "../common/EditBox";
+import { EditedMark } from "../common/EditedMark";
+
+const MAX_COMMENT = 1000;
 
 export function ProfileComments({ username }: { username: string }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { hash } = useLocation();
 
   useEffect(() => {
     profilesApi
       .getComments(username)
-      .then(({ comments }) => setComments(comments))
+      .then(({ comments, hasMore }) => {
+        setComments(comments);
+        setHasMore(Boolean(hasMore));
+      })
       // e.g. a private profile: show the empty state rather than an unhandled rejection
       .catch(() => setComments([]))
       .finally(() => setLoading(false));
@@ -38,6 +48,33 @@ export function ProfileComments({ username }: { username: string }) {
       setDraft("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't post that comment.");
+    }
+  }
+
+  async function showMore() {
+    const oldest = comments[comments.length - 1];
+    if (!oldest) return;
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const next = await profilesApi.getComments(username, oldest.id);
+      setComments((old) => [...old, ...next.comments.filter((c) => !old.some((o) => o.id === c.id))]);
+      setHasMore(Boolean(next.hasMore));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't load more testimonials.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  async function saveEdit(id: string, text: string): Promise<string | null> {
+    try {
+      const { comment } = await profilesApi.updateComment(id, text);
+      setComments((old) => old.map((c) => (c.id === id ? comment : c)));
+      setEditing(null);
+      return null;
+    } catch (err) {
+      return err instanceof ApiError ? err.message : "Couldn't save that change.";
     }
   }
 
@@ -82,15 +119,35 @@ export function ProfileComments({ username }: { username: string }) {
               <Link to={`/u/${c.author.username}`} className="font-medium text-white/90 hover:underline">
                 {c.author.displayName}
               </Link>
-              <p className="text-white/70">{c.content}</p>
+              {editing === c.id ? (
+                <EditBox text={c.content} maxText={MAX_COMMENT} label="Edit testimonial" rows={3} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
+              ) : (
+                <p className="whitespace-pre-line break-words text-white/70">
+                  {c.content} <EditedMark editedAt={c.editedAt} />
+                </p>
+              )}
             </div>
-            {user && (user.id === c.author.id || user.username === username) && (
-              <button onClick={() => handleDelete(c.id)} className="self-start text-xs text-white/60 hover:text-red-400">
-                ✕
-              </button>
+            {user && editing !== c.id && (
+              <div className="flex shrink-0 gap-2 self-start text-xs">
+                {user.id === c.author.id && (
+                  <button onClick={() => setEditing(c.id)} aria-label="Edit your testimonial" className="text-white/60 hover:text-white">
+                    Edit
+                  </button>
+                )}
+                {(user.id === c.author.id || user.username === username) && (
+                  <button onClick={() => handleDelete(c.id)} aria-label="Delete testimonial" className="text-white/60 hover:text-red-400">
+                    ✕
+                  </button>
+                )}
+              </div>
             )}
           </div>
         ))}
+        {hasMore && (
+          <button type="button" onClick={showMore} disabled={loadingMore} className="text-xs text-[var(--profile-accent-text)] hover:underline disabled:opacity-50">
+            {loadingMore ? "Loading…" : "Show more testimonials"}
+          </button>
+        )}
       </div>
     </div>
   );

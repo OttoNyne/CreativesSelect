@@ -4,9 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { PostCard } from "./PostCard";
 import { useAuth } from "../../context/AuthContext";
+import { postsApi } from "../../api/posts.api";
+import { ApiError } from "../../api/client";
 import type { Post, User } from "../../types";
 
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../../api/posts.api", () => ({ postsApi: { update: vi.fn() } }));
 vi.mock("./PostCommentList", () => ({
   PostCommentList: ({ postId, onCountChange }: { postId: string; onCountChange: (n: number) => void }) => (
     <div>
@@ -133,5 +136,37 @@ describe("PostCard", () => {
   it("doesn't show Delete when no delete handler is provided", () => {
     renderCard(makePost(), "u1");
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
+  });
+
+  it("lets the author change the post, showing the new words with (edited)", async () => {
+    vi.mocked(postsApi.update).mockResolvedValue({ post: makePost({ content: "Sketching all week", editedAt: "2026-05-01T00:00:00.000Z" }) });
+    renderCard(makePost(), "u1");
+    expect(screen.queryByText("(edited)")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const box = screen.getByLabelText("Edit post");
+    await userEvent.clear(box);
+    await userEvent.type(box, "Sketching all week");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(postsApi.update).toHaveBeenCalledWith("p1", "Sketching all week");
+    expect(await screen.findByText(/Sketching all week/)).toBeInTheDocument();
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Edit post")).not.toBeInTheDocument();
+  });
+
+  it("shows why a change couldn't be saved and keeps the box open", async () => {
+    vi.mocked(postsApi.update).mockRejectedValue(new ApiError(429, "Slow down"));
+    renderCard(makePost(), "u1");
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await userEvent.type(screen.getByLabelText("Edit post"), "!");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Slow down")).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit post")).toBeInTheDocument();
+  });
+
+  it("doesn't offer Edit to anyone but the author, and marks an already edited post", () => {
+    renderCard(makePost({ editedAt: "2026-05-01T00:00:00.000Z" }), "someone-else");
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
   });
 });

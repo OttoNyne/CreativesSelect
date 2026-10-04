@@ -9,7 +9,7 @@ import type { Conversation, DirectMessage, User } from "../types";
 
 vi.mock("../api/messages.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/messages.api")>()),
-  messagesApi: { conversations: vi.fn(), thread: vi.fn(), send: vi.fn(), remove: vi.fn(), unreadCount: vi.fn() },
+  messagesApi: { conversations: vi.fn(), thread: vi.fn(), send: vi.fn(), edit: vi.fn(), remove: vi.fn(), unreadCount: vi.fn() },
 }));
 const api = vi.mocked(messagesApi);
 
@@ -171,5 +171,31 @@ describe("MessagesPage", () => {
     api.thread.mockResolvedValue({ user: kai, messages: [], hasMore: false });
     renderAt("/messages/kai");
     expect(await screen.findByText(/No messages yet — say hello/)).toBeInTheDocument();
+  });
+
+  it("lets you change a message you sent in the last fifteen minutes, marking it (edited)", async () => {
+    api.thread.mockResolvedValue({ user: zoe, messages: [msg("m1", "Free Friday?", true), msg("m2", "See you then", false)], hasMore: false });
+    api.edit.mockResolvedValue({ message: msg("m1", "Free Saturday?", true, { editedAt: new Date().toISOString() }) });
+    renderAt("/messages/zoe");
+    await screen.findByText("Free Friday?");
+    expect(screen.getAllByRole("button", { name: "Edit message" })).toHaveLength(1); // not on Zoe's message
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit message" }));
+    const box = screen.getByLabelText("Edit message", { selector: "textarea" });
+    await userEvent.clear(box);
+    await userEvent.type(box, "Free Saturday?");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.edit).toHaveBeenCalledWith("m1", "Free Saturday?");
+    expect(await screen.findByText("Free Saturday?")).toBeInTheDocument();
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
+  });
+
+  it("doesn't offer to change a message after the fifteen minutes are up", async () => {
+    const old = new Date(Date.now() - 16 * 60 * 1000).toISOString();
+    api.thread.mockResolvedValue({ user: zoe, messages: [msg("m1", "Free Friday?", true, { createdAt: old })], hasMore: false });
+    renderAt("/messages/zoe");
+    await screen.findByText("Free Friday?");
+    expect(screen.queryByRole("button", { name: "Edit message" })).not.toBeInTheDocument();
   });
 });

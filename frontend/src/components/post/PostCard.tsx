@@ -6,6 +6,12 @@ import { assetUrl } from "../../api/client";
 import { FramedImage } from "../common/FramedImage";
 import { PostCommentList } from "./PostCommentList";
 import { useAuth } from "../../context/AuthContext";
+import { postsApi } from "../../api/posts.api";
+import { ApiError } from "../../api/client";
+import { EditBox } from "../common/EditBox";
+import { EditedMark } from "../common/EditedMark";
+
+const MAX_POST = 5000;
 
 function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -33,7 +39,22 @@ export function PostCard({
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(autoOpenComments);
   const [commentCount, setCommentCount] = useState(post.commentCount);
+  const [content, setContent] = useState(post.content);
+  const [editedAt, setEditedAt] = useState(post.editedAt ?? null);
+  const [editing, setEditing] = useState(false);
   const isOwner = user?.id === post.authorId;
+
+  async function saveEdit(text: string): Promise<string | null> {
+    try {
+      const { post: updated } = await postsApi.update(post.id, text);
+      setContent(updated.content);
+      setEditedAt(updated.editedAt ?? null);
+      setEditing(false);
+      return null;
+    } catch (err) {
+      return err instanceof ApiError ? err.message : "Couldn't save that change.";
+    }
+  }
 
   return (
     <article className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
@@ -51,7 +72,13 @@ export function PostCard({
         </div>
       </div>
 
-      <p className="mt-3 whitespace-pre-wrap text-sm text-white/90">{post.content}</p>
+      {editing ? (
+        <EditBox text={content} maxText={MAX_POST} label="Edit post" onSave={({ text }) => saveEdit(text)} onCancel={() => setEditing(false)} />
+      ) : (
+        <p className="mt-3 whitespace-pre-wrap break-words text-sm text-white/90">
+          {content} <EditedMark editedAt={editedAt} />
+        </p>
+      )}
 
       {post.imageUrl &&
         (post.imageAspect ? (
@@ -87,8 +114,13 @@ export function PostCard({
         <button onClick={() => setShowComments((s) => !s)} className="hover:text-white">
           💬 {commentCount} comment{commentCount === 1 ? "" : "s"}
         </button>
+        {isOwner && !editing && (
+          <button onClick={() => setEditing(true)} className="ml-auto hover:text-white">
+            Edit
+          </button>
+        )}
         {onDeleted && isOwner && (
-          <button onClick={() => onDeleted(post.id)} className="ml-auto hover:text-red-400">
+          <button onClick={() => onDeleted(post.id)} className={isOwner && !editing ? "hover:text-red-400" : "ml-auto hover:text-red-400"}>
             Delete
           </button>
         )}

@@ -10,7 +10,7 @@ import type { GroupReply, GroupTopic, User } from "../../types";
 
 vi.mock("../../api/groups.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../api/groups.api")>()),
-  groupsApi: { topics: vi.fn(), createTopic: vi.fn(), topic: vi.fn(), deleteTopic: vi.fn(), reply: vi.fn(), deleteReply: vi.fn(), pinTopic: vi.fn() },
+  groupsApi: { topics: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), updateReply: vi.fn(), topic: vi.fn(), deleteTopic: vi.fn(), reply: vi.fn(), deleteReply: vi.fn(), pinTopic: vi.fn() },
 }));
 vi.mock("../../api/moderation.api", () => ({ moderationApi: { report: vi.fn() } }));
 const api = vi.mocked(groupsApi);
@@ -265,5 +265,47 @@ describe("GroupBoard: a topic", () => {
     renderBoard();
     await userEvent.click(await screen.findByRole("button", { name: /Kiln recommendations/ }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't load this topic");
+  });
+});
+
+describe("GroupBoard: editing", () => {
+  it("lets the starter change their topic's title and text", async () => {
+    api.topic.mockResolvedValue({ topic: topic({ mine: true }), replies: [], page: 1, hasMore: false });
+    api.updateTopic.mockResolvedValue({ topic: topic({ mine: true, title: "Kilns, revisited", body: "New text", editedAt: "2026-10-05T00:00:00.000Z" }) });
+    renderBoard();
+    await userEvent.click(await screen.findByRole("button", { name: /Kiln recommendations/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Edit topic" }));
+    const title = screen.getByLabelText("Edit topic: title");
+    await userEvent.clear(title);
+    await userEvent.type(title, "Kilns, revisited");
+    const text = screen.getByLabelText("Edit topic");
+    await userEvent.clear(text);
+    await userEvent.type(text, "New text");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.updateTopic).toHaveBeenCalledWith("g1", "t1", { title: "Kilns, revisited", body: "New text" });
+    expect(await screen.findByRole("heading", { name: /Kilns, revisited/ })).toBeInTheDocument();
+    expect(screen.getByText("New text")).toBeInTheDocument();
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
+  });
+
+  it("lets people change their own reply and not other people's, and not someone else's topic", async () => {
+    api.topic.mockResolvedValue({ topic: topic(), replies: [reply(), reply({ id: "r2", body: "Mine", mine: true, author: ada })], page: 1, hasMore: false });
+    api.updateReply.mockResolvedValue({ reply: reply({ id: "r2", body: "Mine, better", mine: true, author: ada, editedAt: "2026-10-05T00:00:00.000Z" }) });
+    renderBoard();
+    await userEvent.click(await screen.findByRole("button", { name: /Kiln recommendations/ }));
+    await screen.findByText("Mine");
+    expect(screen.queryByRole("button", { name: "Edit topic" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Edit your reply" })).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit your reply" }));
+    const box = screen.getByLabelText("Edit reply");
+    await userEvent.clear(box);
+    await userEvent.type(box, "Mine, better");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(api.updateReply).toHaveBeenCalledWith("g1", "t1", "r2", "Mine, better");
+    expect(await screen.findByText(/Mine, better/)).toBeInTheDocument();
+    expect(screen.getByText("(edited)")).toBeInTheDocument();
   });
 });

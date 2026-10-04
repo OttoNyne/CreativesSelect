@@ -181,17 +181,19 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### Posts — `/api/posts` (entire router requires auth)
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/feed` | Self + accepted friends' posts, newest first, limit 50 |
-| GET | `/user/:username` | Gated by the same visibility check as profiles |
+| GET | `/feed?before=` | Self + accepted friends' posts, newest first, 20 a page (`hasMore`; `before=<post id>` for older ones; anything that isn't an id is ignored) |
+| GET | `/user/:username?before=` | Gated by the same visibility check as profiles; paged the same way |
 | GET | `/:id` | One post (where a comment notification lands). Same visibility gate as the feed; a post that is missing, deleted, private or from a blocked author is the same `404 Post not found` |
-| POST | `/` | `{content, imageUrl?, imageAspect?, imageZoom?, imagePosition?, isAiText?, isAiImage?}` → `201`. The framing fields are checked (`400` for an unknown shape, a zoom outside 1–3, or a position that isn't `"x% y%"` with each 0–100) and ignored on a post with no picture |
+| POST | `/` | `{content (≤5000), imageUrl?, imageAspect?, imageZoom?, imagePosition?, isAiText?, isAiImage?}` → `201`; text is cleaned of hidden characters, empty or over-long is `400`, 20 per 10 minutes (`429`). The framing fields are checked (`400` for an unknown shape, a zoom outside 1–3, or a position that isn't `"x% y%"` with each 0–100) and ignored on a post with no picture |
+| PATCH | `/:id` | Author only (`404` for anyone else): `{content}` → `{post}` with `editedAt` set. Same text checks as creating; only the words change, never the picture, author or date |
 | DELETE | `/:id` | Author only; also deletes the post's AI-generated image from Cloudinary if that user generated it and nothing else still uses it |
 
 ### Comments on posts — mounted at `/api`
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/posts/:postId/comments` | optional | Gated by the post author's visibility |
-| POST | `/posts/:postId/comments` | auth | Same gate; notifies the post author |
+| GET | `/posts/:postId/comments?after=` | optional | Gated by the post author's visibility; oldest first, 20 a page (`hasMore`, `after=<comment id>` for the next) |
+| POST | `/posts/:postId/comments` | auth | Same gate; `{content (≤1000)}` checked like a post; 40 per 10 minutes (`429`); notifies the post author |
+| PATCH | `/comments/:id` | auth | Comment author only (`404` for anyone else, including the post's author): `{content}`; sets `editedAt` |
 | DELETE | `/comments/:id` | auth | Comment author or post author |
 
 ### Friends — `/api/friends` (auth)
@@ -207,12 +209,12 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### Groups — `/api/groups` (auth)
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/?search=` | All groups; no group-level privacy exists by design |
+| GET | `/?search=&page=` | All groups, 20 a page (`hasMore`); no group-level privacy exists by design. Each carries `isMember` and `myRole`, so a page doesn't have to read the member list to know who you are in the group |
 | POST | `/` | Creator auto-joins as `admin` |
 | GET | `/:id` | — |
 | POST | `/:id/join` | 409 if already a member |
 | POST | `/:id/leave` | — |
-| GET | `/:id/members` | Viewer-aware user serialization (see §7) |
+| GET | `/:id/members?page=` | Viewer-aware user serialization (see §7); 50 a page (`hasMore`) |
 | GET | `/:id/messages?before=` | **Members only** (`403` if you haven't joined, `404` for no such group): the group's chat, oldest first, 50 per page; people you've blocked or who blocked you are left out |
 | POST | `/:id/messages` | Members only. `{body}` (trimmed, 1–1000 chars, text) → `201 {message}`; 60 per user per 10 minutes (`429` + `Retry-After`) |
 | DELETE | `/:id/messages/:messageId` | The sender, or an admin of the group; `404` for anyone else, and for a message of a different group |
@@ -221,7 +223,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | POST | `/upload` | auth | multipart, `?purpose=avatars\|wallpapers\|portfolio\|tracks`, 30MB limit → `413`, streamed to Cloudinary. Portfolio accepts images (≤10 MB on the free plan → `413` with a clear message) **and videos** (mp4/webm/quicktime): the length is measured by the storage provider and a video over **30 seconds** (or of unknown length) is deleted again and refused with `400` |
-| POST | `/` | auth | Add a portfolio item by URL. `{type: "image", url}` (https, or an inline AI image) or `{type: "video", url, startSeconds?}` where the link must be **YouTube** (→ `embed`, canonical URL) or a **direct https .mp4/.webm/.mov/.m4v** file (→ `video`, `#fragment` dropped); anything else `400`. Linked videos can't be measured, so they play as a 30-second window from `startSeconds` |
+| POST | `/` | auth | A portfolio holds at most 200 pieces (`400` beyond that, on this path and on upload). Add a portfolio item by URL. `{type: "image", url}` (https, or an inline AI image) or `{type: "video", url, startSeconds?}` where the link must be **YouTube** (→ `embed`, canonical URL) or a **direct https .mp4/.webm/.mov/.m4v** file (→ `video`, `#fragment` dropped); anything else `400`. Linked videos can't be measured, so they play as a 30-second window from `startSeconds` |
 | GET | `/user/:username` | optional | Gated by visibility; each item carries `likes`, `dislikes` and (when signed in) the viewer's `myReaction` |
 | PUT | `/:id/reaction` | auth | `{value: 1 \| -1 \| 0}` (like / dislike / clear) → `{likes, dislikes, myReaction}`; one reaction per person; `404` if the item is missing **or the profile isn't visible to you** (private/blocked); 300 per hour |
 | DELETE | `/:id` | auth | Owner only; also removes its reactions and, if nothing else uses it, the stored file |
@@ -233,6 +235,7 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | GET | `/unread-count` | `{unread}` — drives the nav badge |
 | GET | `/with/:username?before=` | The thread with one friend, oldest first, 50 per page (`hasMore`, `before=<message id>` for earlier ones). Opening it marks their messages read. `403` unless you are accepted friends and neither has blocked the other; `404` unknown user; `400` yourself |
 | POST | `/with/:username` | `{body}` (trimmed, 1–2000 chars, text only) → `201 {message}`. Same friend/block rules; max 60 per user per 10 minutes (`429` with `Retry-After`) |
+| PATCH | `/:id` | The sender only, **within 15 minutes of sending** (`403` with `code: "edit_window_over"` after that; `404` for anyone else): `{body}` → `{message}` with `editedAt`. The other person sees the new words marked (edited) |
 | DELETE | `/:id` | Sender only, removes it for both people; `404` for anyone else (never `403`, so ids aren't probeable) |
 
 ### Moderation — `/api/admin` (administrators only)
@@ -276,6 +279,8 @@ Lasting topics with replies, alongside the group chat. Reading and writing both 
 | POST | `/topics` | `{title (≤100), body (≤2000)}` → `201`; text cleaned of hidden characters; `400` for empty/over-long; 10 an hour (`429`). Author, group, pin state and dates come from the session and address, never the body |
 | GET | `/topics/:topicId?page=` | The topic with its replies oldest first, 50 a page. `404` for a topic in another group or by someone you've blocked; blocked people's replies are left out |
 | POST | `/topics/:topicId/replies` | `{body (≤1000)}` → `201`; raises the topic and its `replyCount`; 30 per 10 minutes (`429`) |
+| PATCH | `/topics/:topicId` | The author only (a group admin can delete, not reword): `{title?, body?}`, same limits as creating; sets `editedAt` |
+| PATCH | `/topics/:topicId/replies/:replyId` | The reply's author only: `{body}`; sets `editedAt` |
 | DELETE | `/topics/:topicId` | The author or a group admin → `204` (with all its replies); anyone else `404` |
 | DELETE | `/topics/:topicId/replies/:replyId` | The reply's author or a group admin → `204`; the count follows |
 | PUT | `/topics/:topicId/pin` | Group admin only (`403` otherwise): `{pinned: boolean}`; at most 3 pinned (`400`) |
@@ -338,6 +343,7 @@ Where it is shown: `GET /profiles/:username`, `GET /friends` and the message con
 | GET | `/unread-count` | How many of your friends' bulletins are newer than the last time you opened the board (`bulletinsSeenAt`); your own never count |
 | POST | `/seen` | → `204`. Marks everything on the board as seen |
 | POST | `/` | Verified email only. `{title (≤80), body (≤500)}` → `201`; text is cleaned of hidden characters; empty or over-long is `400`; 5 a day (`429`) and 10 up at once (`400`). Expires 10 days later. Friends are not sent a notification: they see a badge on the feed |
+| PATCH | `/:id` | Author only: `{title?, body?}`, same limits; sets `editedAt`. The ten days it stays up are not extended by editing |
 | DELETE | `/:id` | Author only → `204`; anyone else (or a malformed id) gets `404` |
 
 ### Blog — `/api/blog` (auth)
@@ -363,7 +369,7 @@ Reminders go out once, at most 10 minutes before the start, as a `live_reminder`
 ### Notifications — `/api/notifications` (auth)
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/` | Latest 50, with resolved actor + live friendship status |
+| GET | `/?before=` | 30 a page, newest first (`hasMore`, `before=<notification id>` for older ones), with resolved actor + live friendship status |
 | POST | `/read-all` | — |
 | POST | `/:id/read` | Scoped to own recipient id |
 | POST | `/:id/accept-offer` | Owner of a help request accepts an offer notification → notifies the offerer (`help_accepted`), once; `404` for anyone but the recipient |
@@ -416,7 +422,7 @@ Reminders go out once, at most 10 minutes before the start, as a `live_reminder`
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (154 tests × 3 browsers, 462 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (158 tests × 3 browsers, 474 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -625,11 +631,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 554 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 583 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 997 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 1024 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,

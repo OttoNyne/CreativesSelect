@@ -92,4 +92,15 @@ describe("GroupsPage", () => {
     renderPage();
     expect(await screen.findByText("Internal server error")).toBeInTheDocument();
   });
+
+  it("shows more groups a page at a time, without repeating any", async () => {
+    api.list.mockResolvedValueOnce({ groups: [painters], hasMore: true });
+    api.list.mockResolvedValueOnce({ groups: [painters, potters], hasMore: false });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Show more groups" }));
+    expect(api.list).toHaveBeenLastCalledWith(undefined, 2);
+    expect(await screen.findByRole("link", { name: "Potters" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Painters" })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Show more groups" })).not.toBeInTheDocument();
+  });
 });

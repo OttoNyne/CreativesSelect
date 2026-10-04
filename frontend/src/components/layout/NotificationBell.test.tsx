@@ -260,3 +260,45 @@ describe("NotificationBell: planned lives", () => {
     expect(await screen.findByText("scheduled a live")).toBeInTheDocument();
   });
 });
+
+describe("NotificationBell: older notifications", () => {
+  it("shows older ones from the oldest on the list, and stops when there are no more", async () => {
+    api.list.mockResolvedValueOnce({ notifications: [note({ id: "n2", payload: {} })], hasMore: true });
+    api.list.mockResolvedValueOnce({ notifications: [note({ id: "n1", type: "friend_accept" })], hasMore: false });
+    render(
+      <MemoryRouter>
+        <NotificationBell />
+      </MemoryRouter>
+    );
+    await userEvent.click(screen.getByLabelText("Notifications"));
+    await userEvent.click(await screen.findByRole("button", { name: "Show older notifications" }));
+
+    expect(api.list).toHaveBeenLastCalledWith("n2");
+    expect(await screen.findByText(/accepted your friend request/)).toBeInTheDocument();
+    expect(screen.getByText(/commented on your post/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show older notifications" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the older ones it has loaded when the list refreshes", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      api.list.mockResolvedValueOnce({ notifications: [note({ id: "n2" })], hasMore: true });
+      api.list.mockResolvedValueOnce({ notifications: [note({ id: "n1", type: "friend_accept" })], hasMore: false });
+      api.list.mockResolvedValue({ notifications: [note({ id: "n3", type: "message", payload: { count: 1 } }), note({ id: "n2" })], hasMore: true });
+      render(
+        <MemoryRouter>
+          <NotificationBell />
+        </MemoryRouter>
+      );
+      await userEvent.click(screen.getByLabelText("Notifications"));
+      await userEvent.click(await screen.findByRole("button", { name: "Show older notifications" }));
+      await screen.findByText(/accepted your friend request/);
+
+      await vi.advanceTimersByTimeAsync(31_000);
+      expect(await screen.findByText(/sent you a message/)).toBeInTheDocument(); // the new one arrived
+      expect(screen.getByText(/accepted your friend request/)).toBeInTheDocument(); // the older one stayed
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

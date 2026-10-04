@@ -40,7 +40,9 @@ export const profilesApi = {
   getTopFriends: (username: string) => api.get<{ topFriends: User[] }>(`/profiles/${username}/top-friends`),
   setTopFriends: (usernames: string[]) =>
     api.put<{ topFriends: User[] }>("/profiles/me/top-friends", { usernames }),
-  getComments: (username: string) => api.get<{ comments: Comment[] }>(`/profiles/${username}/comments`),
+  /** Newest first, twenty at a time; `before` is the id of the oldest you have. */
+  getComments: (username: string, before?: string) => api.get<{ comments: Comment[]; hasMore?: boolean }>(`/profiles/${username}/comments${before ? `?before=${encodeURIComponent(before)}` : ""}`),
+  updateComment: (commentId: string, content: string) => api.patch<{ comment: Comment }>(`/profiles/comments/${encodeURIComponent(commentId)}`, { content }),
   addComment: (username: string, content: string) =>
     api.post<{ comment: Comment }>(`/profiles/${username}/comments`, { content }),
   deleteComment: (commentId: string) => api.delete<void>(`/profiles/comments/${commentId}`),
