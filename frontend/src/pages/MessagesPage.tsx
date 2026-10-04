@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { announceMessagesChanged, MAX_MESSAGE_LENGTH, MESSAGES_CHANGED_EVENT, messagesApi } from "../api/messages.api";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
+import { ActivityBadge } from "../components/common/ActivityBadge";
 import type { Conversation, DirectMessage, User } from "../types";
 
 const THREAD_POLL_MS = 5_000;
@@ -42,6 +43,7 @@ function ConversationList({ conversations, active }: { conversations: Conversati
             <Avatar username={c.user.username} displayName={c.user.displayName} avatarUrl={c.user.avatarUrl} size={36} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-white">{c.user.displayName}</span>
+              <ActivityBadge activity={c.user.activity} className="text-white/60" />
               <span className="block truncate text-xs text-white/60">
                 {c.lastMessage ? `${c.lastMessage.mine ? "You: " : ""}${c.lastMessage.body}` : "No messages yet"}
               </span>
@@ -180,9 +182,12 @@ function Thread({ username }: { username: string }) {
           ←
         </Link>
         {other && <Avatar username={other.username} displayName={other.displayName} avatarUrl={other.avatarUrl} size={32} />}
-        <Link to={`/u/${username}`} className="font-medium text-white hover:underline">
-          {other?.displayName ?? username}
-        </Link>
+        <span className="min-w-0">
+          <Link to={`/u/${username}`} className="block font-medium text-white hover:underline">
+            {other?.displayName ?? username}
+          </Link>
+          <ActivityBadge activity={other?.activity} className="text-white/60" />
+        </span>
       </header>
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">

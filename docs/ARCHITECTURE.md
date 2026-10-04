@@ -97,7 +97,7 @@ MongoDB via Mongoose. 29 collections. `ObjectId` refs are named `ref` below;
 
 | Model | Fields | Relationships |
 |---|---|---|
-| **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `wallpaperMotion` (none/zoom/drift/pan/pulse — how a picture wallpaper moves), `mood` (≤60), `listeningTo` (≤80), `tags` (≤8 lower-case tags of 2–24 characters, indexed; returned only on profiles the viewer may see), `sectionOrder` (the order of the profile's sections: friends, music, portfolio, blog, testimonials — always returned complete) and `hiddenSections` (sections hidden from visitors), `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, `passwordChangedAt` (sessions issued before it are rejected), `bulletinsSeenAt` (when they last looked at the bulletin board; never returned to anyone), timestamps | Referenced by nearly every other model as author/owner/participant |
+| **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `wallpaperMotion` (none/zoom/drift/pan/pulse — how a picture wallpaper moves), `mood` (≤60), `listeningTo` (≤80), `tags` (≤8 lower-case tags of 2–24 characters, indexed; returned only on profiles the viewer may see), `sectionOrder` (the order of the profile's sections: friends, music, portfolio, blog, testimonials — always returned complete) and `hiddenSections` (sections hidden from visitors), `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, `passwordChangedAt` (sessions issued before it are rejected), `bulletinsSeenAt` (when they last looked at the bulletin board; never returned to anyone), `lastActiveAt` (when their open page last checked in; never returned as a time) and `showActivity` (default on: whether friends may see "online now" / "active today"; returned only to the owner), timestamps | Referenced by nearly every other model as author/owner/participant |
 | **Task** | `owner` → User, `title`, `description`, `isPublic` (default false), `done` (= resolved), `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; shown in the UI as a "Help wanted" request — private by default, listed on the public board when `isPublic` |
 | **Post** | `author` → User, `content`, `imageUrl`, `imageAspect` (original/1:1/4:3/16:9), `imageZoom` (1–3), `imagePosition` ("x% y%"), `isAiText`, `isAiImage`, timestamps | Has many Comments. The three framing fields are how the author shaped, zoomed and placed the picture; they are absent on posts made before framing existed, which are shown as they always were |
 | **BlogEntry** | `author` → User, `title` (≤120), `body` (≤10,000, plain text; blank lines separate paragraphs), timestamps, indexed on (author, createdAt) | A longer journal / blog entry on a profile, kept apart from the short feed posts. Visible exactly when its author's profile is |
@@ -252,6 +252,13 @@ The audio never touches this API. A live travels one of two ways, fixed when it 
 | GET / POST | `/:id/comments` | Live chat for people in the room (host + joined listeners); ≤200 chars; 20 per minute; blocked users' comments hidden; `409` once ended |
 | DELETE | `/:id/comments/:commentId` | The author or the host |
 
+### Activity — `/api/activity` (auth)
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/ping` | → `204`. A signed-in page that is open and visible calls this about every 2 minutes. It records `lastActiveAt`, at most once a minute per person, and writes nothing for someone who turned the feature off |
+
+Where it is shown: `GET /profiles/:username`, `GET /friends` and the message conversation list / thread add `activity` (`"online"` within 5 minutes, `"today"` within 24 hours, `"week"` within 7 days, absent after that) **only for an accepted friend of a person who allows it**. The exact time is never sent, and nothing is added for strangers, pending requests, signed-out visitors, search results or anyone you've blocked. `PATCH /profiles/me` takes `showActivity` (boolean); turning it off also clears `lastActiveAt`.
+
 ### Bulletins — `/api/bulletins` (auth)
 | Method | Path | Notes |
 |---|---|---|
@@ -336,7 +343,7 @@ Reminders go out once, at most 10 minutes before the start, as a `live_reminder`
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (134 tests × 3 browsers, 402 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (136 tests × 3 browsers, 408 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -417,6 +424,7 @@ App
 │       │   ├── ProtectedRoute (redirects to /login if !user)
 │       │   │   ├── /          → FeedPage        (PostComposer → ImageAdjuster, PostCard[] → FramedImage + PostCommentList)
 │       │   │   ├── /friends   → FriendsPage
+│       │   │   ├── (ActivityPing, mounted for every signed-in page: the 2-minute check-in behind "online now")
 │       │   │   ├── /bulletins → BulletinsPage         (the bulletin board; a strip on the Feed shows how many are new)
 │       │   │   ├── /blog/new, /blog/:id/edit → BlogEditorPage   (write / change an entry)
 │       │   │   ├── /blog/:id  → BlogEntryPage        (read an entry; author edits/deletes, others report)
@@ -540,11 +548,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 432 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 446 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 882 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 899 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,

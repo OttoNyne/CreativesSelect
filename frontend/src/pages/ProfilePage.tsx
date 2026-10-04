@@ -24,6 +24,7 @@ import { ProfileComments } from "../components/profile/ProfileComments";
 import { PortfolioGrid } from "../components/profile/PortfolioGrid";
 import { MusicPlayer } from "../components/profile/MusicPlayer";
 import { ProfileBlog } from "../components/profile/ProfileBlog";
+import { ActivityBadge } from "../components/common/ActivityBadge";
 import { SectionFrame } from "../components/profile/SectionFrame";
 import { hiddenOf, moveSection, orderOf, type SectionKey } from "../lib/sections";
 import { GenerateTextButton } from "../components/ai/GenerateTextButton";
@@ -254,6 +255,7 @@ export function ProfilePage() {
           <div className="min-w-0 pb-2">
             <h1 className="break-words text-2xl font-bold">{profile.displayName}</h1>
             <p className="text-sm text-[var(--profile-muted)]">@{profile.username}</p>
+            <ActivityBadge activity={profile.activity} className="text-[var(--profile-muted)]" />
             <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
           </div>
 
@@ -335,6 +337,10 @@ export function ProfilePage() {
                   onChange={(e) => saveProfile({ isPrivate: e.target.checked })}
                 />
                 Private profile
+              </label>
+              <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+                <input type="checkbox" checked={profile.showActivity !== false} onChange={(e) => saveProfile({ showActivity: e.target.checked })} />
+                Show my friends when I&apos;m online
               </label>
             </div>
             <div className="flex flex-wrap items-center gap-2">

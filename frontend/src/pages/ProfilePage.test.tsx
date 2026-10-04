@@ -127,6 +127,34 @@ describe("ProfilePage", () => {
     expect(screen.getByRole("link", { name: "Find others tagged lo-fi" })).toHaveAttribute("href", "/search?tag=lo-fi");
   });
 
+  it("shows a friend how recently they were around, and shows nothing when it isn't there", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, activity: "online" } });
+    renderAs(me, "zoe");
+    expect(await screen.findByText("Online now")).toBeInTheDocument();
+  });
+
+  it("shows nothing about activity when the profile doesn't carry it", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(screen.queryByText(/Online now|Active today|Active this week/)).not.toBeInTheDocument();
+  });
+
+  it("lets the owner turn showing when they're online off and on, saved straight away", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, showActivity: true } });
+    profiles.updateMe.mockResolvedValueOnce({ user: { ...me, showActivity: false } });
+    profiles.updateMe.mockResolvedValueOnce({ user: { ...me, showActivity: true } });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const box = screen.getByRole("checkbox", { name: "Show my friends when I'm online" });
+    expect(box).toBeChecked();
+    await userEvent.click(box);
+    expect(profiles.updateMe).toHaveBeenLastCalledWith({ showActivity: false });
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "Show my friends when I'm online" })).not.toBeChecked());
+    await userEvent.click(screen.getByRole("checkbox", { name: "Show my friends when I'm online" }));
+    expect(profiles.updateMe).toHaveBeenLastCalledWith({ showActivity: true });
+  });
+
   it("shows no status or tags when there are none", async () => {
     profiles.get.mockResolvedValue({ user: zoe });
     renderAs(me, "zoe");

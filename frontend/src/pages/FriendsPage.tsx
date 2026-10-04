@@ -4,6 +4,7 @@ import { friendsApi } from "../api/friends.api";
 import { ApiError } from "../api/client";
 import type { FriendRequest, User } from "../types";
 import { Avatar } from "../components/common/Avatar";
+import { ActivityBadge } from "../components/common/ActivityBadge";
 
 export function FriendsPage() {
   const [friends, setFriends] = useState<User[]>([]);
@@ -94,9 +95,12 @@ export function FriendsPage() {
           {friends.map((f) => (
             <div key={f.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
               <Avatar username={f.username} displayName={f.displayName} avatarUrl={f.avatarUrl} size={36} />
-              <Link to={`/u/${f.username}`} className="flex-1 font-medium text-white hover:underline">
-                {f.displayName}
-              </Link>
+              <span className="flex-1">
+                <Link to={`/u/${f.username}`} className="block font-medium text-white hover:underline">
+                  {f.displayName}
+                </Link>
+                <ActivityBadge activity={f.activity} />
+              </span>
               <Link
                 to={`/messages/${f.username}`}
                 className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/80 hover:bg-white/10"

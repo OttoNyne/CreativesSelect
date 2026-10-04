@@ -40,6 +40,15 @@ describe("FriendsPage", () => {
     expect(screen.getByRole("link", { name: "Kai" })).toBeInTheDocument();
   });
 
+  it("shows how recently each friend was around, when they allow it", async () => {
+    api.list.mockResolvedValue({ friends: [{ ...zoe, activity: "online" }, { ...kai, activity: "week" }, { id: "u4", username: "max", displayName: "Max" } as User] });
+    api.requests.mockResolvedValue({ requests: [] });
+    renderPage();
+    expect(await screen.findByText("Online now")).toBeInTheDocument();
+    expect(screen.getByText("Active this week")).toBeInTheDocument();
+    expect(screen.queryByText("Active today")).not.toBeInTheDocument();
+  });
+
   it("shows an empty state, and no requests section, when there's nothing", async () => {
     api.list.mockResolvedValue({ friends: [] });
     api.requests.mockResolvedValue({ requests: [] });

@@ -59,6 +59,15 @@ describe("MessagesPage", () => {
     expect(screen.getByText("Choose a friend to start chatting.")).toBeInTheDocument();
   });
 
+  it("shows who is around in the list of conversations and at the top of a thread", async () => {
+    api.conversations.mockResolvedValue({ conversations: [{ user: { ...zoe, activity: "online" }, lastMessage: null, unread: 0 }, { user: kai, lastMessage: null, unread: 0 }] });
+    api.thread.mockResolvedValue({ user: { ...zoe, activity: "today" }, messages: [], hasMore: false });
+    renderAt("/messages/zoe");
+    expect(await screen.findByText("Online now")).toBeInTheDocument();
+    expect(await screen.findByText("Active today")).toBeInTheDocument();
+    expect(screen.getAllByText(/now|today/)).toHaveLength(2); // nothing for Kai, who shows none
+  });
+
   it("points people without friends to search", async () => {
     api.conversations.mockResolvedValue({ conversations: [] });
     renderAt("/messages");

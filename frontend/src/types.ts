@@ -1,5 +1,8 @@
 import type { SectionKey } from "./lib/sections";
 
+/** How recently someone was active: within minutes, today, or this week. */
+export type Activity = "online" | "today" | "week";
+
 /** How a picture wallpaper moves behind a profile. */
 export type WallpaperMotion = "none" | "zoom" | "drift" | "pan" | "pulse";
 
@@ -33,6 +36,10 @@ export interface User {
   /** The order of the sections below the introduction, and the ones the owner has hidden from visitors. */
   sectionOrder?: SectionKey[];
   hiddenSections?: SectionKey[];
+  /** How recently a friend was around, in rough terms; only ever present for a friend who allows it. */
+  activity?: Activity;
+  /** On your own profile: whether your friends can see when you're online. */
+  showActivity?: boolean;
   isPrivate: boolean;
   createdAt: string;
   theme: ProfileTheme;

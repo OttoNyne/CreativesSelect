@@ -897,6 +897,20 @@ A bulletin is a short message to every friend at once. The risks were spam, read
 
 Covered by 15 backend tests, frontend tests for the board, the feed strip and the date wording, and 3 browser flows (post → friend sees a badge → badge clears → stranger sees nothing → take down).
 
+### 5.44 "Online now" and "last active": presence without surveillance
+
+Showing when someone is around is useful and is also behavioural data (it reveals routines). It was built so that it is visible to as few people as possible, in as little detail as possible, and can be switched off.
+
+- **Friends only, decided when read.** Activity is added to a person's profile, the friends list and the conversations only for an accepted friend of someone who allows it. Strangers, pending requests, signed-out visitors, search/discover results, and anyone blocked either way get nothing (all tested), and a private profile stays private as before.
+- **Coarse on purpose.** The server turns the stored time into one of three words, "online now" (5 minutes), "active today" or "active this week", and sends only that; the exact time is never in any response (tested on the raw response text and in the browser), so it can't be used to infer when someone sleeps. Beyond a week there is nothing to show.
+- **Can be turned off, and turning it off forgets.** `showActivity` is a profile switch (on by default, for friends only — the default is a one-line change if a stricter one is wanted). Switching it off clears the stored time immediately, stops further recording (the ping becomes a no-op), and the page stops pinging. The setting itself is visible only to its owner; `showActivity` must be a real boolean (anything else is `400` and changes nothing).
+- **Only while the page is open and visible.** The check-in comes from the page, not from background requests, and a hidden tab doesn't send it, so "online" means someone is actually looking at the site.
+- **Cheap to serve and hard to abuse.** The ping is one conditional update, at most one write a minute per person whatever the number of calls, and requires a session.
+- **Accessible:** the status is words ("Online now"), with the dot as decoration only.
+- **Not covered:** a friend can watch the page and notice when someone appears online; there is no way to appear online to some friends and not others.
+
+Covered by 14 backend tests, frontend tests for the badge, the check-in timing (hidden tab, off switch, failures) and the three places it appears, and 2 browser flows.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
