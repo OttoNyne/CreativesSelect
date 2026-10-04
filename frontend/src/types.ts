@@ -234,6 +234,31 @@ export interface Conversation {
   unread: number;
 }
 
+/** A discussion topic on a group's board. */
+export interface GroupTopic {
+  id: string;
+  groupId: string;
+  title: string;
+  body: string;
+  pinned: boolean;
+  replyCount: number;
+  createdAt: string;
+  lastActivityAt: string;
+  /** True when the signed-in person started it. */
+  mine: boolean;
+  author: User | null;
+}
+
+/** A reply in a topic on a group's board. */
+export interface GroupReply {
+  id: string;
+  topicId: string;
+  body: string;
+  createdAt: string;
+  mine: boolean;
+  author: User | null;
+}
+
 export interface GroupChatMessage {
   id: string;
   groupId: string;

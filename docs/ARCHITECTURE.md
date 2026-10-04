@@ -92,7 +92,7 @@ flowchart LR
 
 ## 3. Data Model
 
-MongoDB via Mongoose. 31 collections. `ObjectId` refs are named `ref` below;
+MongoDB via Mongoose. 33 collections. `ObjectId` refs are named `ref` below;
 `unique` compound indexes are noted where they exist.
 
 | Model | Fields | Relationships |
@@ -118,6 +118,8 @@ MongoDB via Mongoose. 31 collections. `ObjectId` refs are named `ref` below;
 | **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted/live_started/message/live_scheduled/live_reminder/blog_post), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
 | **Message** | `sender` → User, `recipient` → User, `pair` ("smaller id:larger id" — one key per two people, indexed with `createdAt`), `body` (≤2000 chars), `readAt`, timestamps | A direct message between two friends; one document is both people's copy, so a delete or account deletion removes it for both |
 | **GroupMessage** | `group` → Group, `sender` → User, `body` (≤1000 chars), timestamps | A message in a group's chat; only members can read or write; removed with its sender's account or its group |
+| **GroupTopic** | `group` → Group, `author` → User, `title` (≤100), `body` (≤2000), `pinned`, `replyCount`, `lastActivityAt`, timestamps, indexed on (group, pinned, lastActivityAt) | A discussion topic on a group's board; members only. Rises when replied to; an admin can pin up to 3 |
+| **GroupReply** | `topic` → GroupTopic, `group` → Group, `author` → User, `body` (≤1000), timestamps | A reply in a board topic; removed with its topic |
 | **PasswordReset** | `user` → User, `tokenHash` (SHA-256, unique), `expireAt` (TTL, 1 hour) | At most one outstanding "reset my password" link per user; only a hash of the token is stored, so the database never holds a usable link |
 | **LiveSession** | `host` → User, `title` (≤80), `status` (live/ended), `lastHeartbeat`, `endedAt`, `expireAt` (TTL, set when it ends) | One voice-only live broadcast. It counts as live only while its host keeps sending heartbeats |
 | **ScheduledLive** | `host` → User, `title` (≤80), `startsAt`, `reminders` [User] (who asked to be reminded), `status` (scheduled/started/cancelled), `liveId`, `remindedAt` (set once, when reminders go out), `expireAt` (TTL, 2 days after the start) | A live a host plans ahead. Starting it from the plan links it to the real LiveSession; plans clean themselves up |
@@ -127,7 +129,7 @@ MongoDB via Mongoose. 31 collections. `ObjectId` refs are named `ref` below;
 | **EmailVerification** | `user` → User, `tokenHash` (SHA-256, unique), `expireAt` (TTL, 24 hours) | One outstanding "confirm your email" link per user; only a hash of the token is stored. Confirming sets `User.emailVerified` |
 | **RateLimitHit** | `key`, `at`, `expireAt` (TTL index) | One row per rate-limited action; stored in MongoDB so limits survive restarts and are shared by every server instance, and expired rows delete themselves |
 | **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
-| **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment/blogEntry/bulletin), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
+| **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment/blogEntry/bulletin/groupTopic/groupReply), `targetId`, `reason`, `status` (open/reviewed/dismissed), timestamps | Moderation queue; no reviewer UI built yet |
 
 **User-ownership scoping**: every resource that belongs to one user carries an
 explicit `owner`/`author` ObjectId, and every route that reads or writes it
@@ -230,6 +232,20 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | GET | `/with/:username?before=` | The thread with one friend, oldest first, 50 per page (`hasMore`, `before=<message id>` for earlier ones). Opening it marks their messages read. `403` unless you are accepted friends and neither has blocked the other; `404` unknown user; `400` yourself |
 | POST | `/with/:username` | `{body}` (trimmed, 1–2000 chars, text only) → `201 {message}`. Same friend/block rules; max 60 per user per 10 minutes (`429` with `Retry-After`) |
 | DELETE | `/:id` | Sender only, removes it for both people; `404` for anyone else (never `403`, so ids aren't probeable) |
+
+### Group boards — `/api/groups/:id/topics` (auth, members only)
+Lasting topics with replies, alongside the group chat. Reading and writing both need membership (`403` for a group you haven't joined, `404` for one that doesn't exist or a malformed id), so leaving a group ends access.
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/topics?page=` | Pinned first, then most recently active, 20 a page (`hasMore`). Topics by people you've blocked (or who blocked you) are left out |
+| POST | `/topics` | `{title (≤100), body (≤2000)}` → `201`; text cleaned of hidden characters; `400` for empty/over-long; 10 an hour (`429`). Author, group, pin state and dates come from the session and address, never the body |
+| GET | `/topics/:topicId?page=` | The topic with its replies oldest first, 50 a page. `404` for a topic in another group or by someone you've blocked; blocked people's replies are left out |
+| POST | `/topics/:topicId/replies` | `{body (≤1000)}` → `201`; raises the topic and its `replyCount`; 30 per 10 minutes (`429`) |
+| DELETE | `/topics/:topicId` | The author or a group admin → `204` (with all its replies); anyone else `404` |
+| DELETE | `/topics/:topicId/replies/:replyId` | The reply's author or a group admin → `204`; the count follows |
+| PUT | `/topics/:topicId/pin` | Group admin only (`403` otherwise): `{pinned: boolean}`; at most 3 pinned (`400`) |
+
+Account deletion removes a person's topics (with every reply in them) and their replies in other topics, and puts those topics' reply counts right; an empty group that goes with its last member takes its board with it.
 
 ### Live (voice) — `/api/live` (auth)
 The audio never touches this API. A live travels one of two ways, fixed when it starts: **`sfu`** (when LiveKit is configured) — the host sends it once to a media server that fans it out to **50–100 listeners** — or **`mesh`** — straight between browsers over WebRTC, which only carries 8. This API lists rooms, counts listeners, creates media rooms and hands out access tokens, passes the handshake messages for browser-to-browser lives, and carries the live chat.
@@ -364,7 +380,7 @@ Reminders go out once, at most 10 minutes before the start, as a `live_reminder`
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (142 tests × 3 browsers, 426 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (145 tests × 3 browsers, 435 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -570,11 +586,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 480 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 502 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 924 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 942 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,

@@ -938,6 +938,23 @@ Albums group a person's portfolio pieces under names. The risks were putting a p
 
 Covered by 14 backend tests, frontend tests for the album bar, the filtering and the per-piece menu, and 3 browser flows.
 
+### 5.47 Group boards: lasting discussion, with the same membership rule as the chat
+
+A board gives each group lasting topics with replies. It is the first group content that stays around, so the rules for who can read it, who can remove it and what it costs to abuse it matter more than for the chat.
+
+- **Members only, for reading and writing, checked on every route.** A non-member gets `403` (the group exists) or `404` (it doesn't, or the id is malformed) and cannot read, post, reply, delete or pin; leaving a group ends access immediately (tested). Groups themselves are open to join by design, so this is the same trust boundary as the group chat.
+- **A topic belongs to exactly one group.** Every topic and reply lookup includes the group from the address, so an id from one group used under another is a plain `404`, and an admin of one group has no power in another (both tested).
+- **Moderation matches the chat.** The author, or a group admin, can remove a topic (with its replies) or a reply; anyone else gets `404`. Only an admin can pin (`403` otherwise), at most 3 per group so pinning can't bury the board.
+- **The server owns the facts.** Author, group, pin state, reply count and dates are set from the session and the address; a body that sends `author`, `group`, `pinned`, `replyCount` or `lastActivityAt` has them ignored (tested).
+- **Text is shown as text.** Title, topic and replies are cleaned of hidden characters on the server (over-length is `400`, never cut) and drawn as plain text, so markup is displayed as typed (unit and browser tested).
+- **Blocking is honoured both ways.** Topics and replies by someone you've blocked, or who blocked you, are left out, and you can't open or reply to a blocked person's topic.
+- **Bounded:** 10 topics an hour and 30 replies per 10 minutes per person, 20 topics and 50 replies a page.
+- **Cleaned up with accounts and groups.** Deleting an account removes its topics (with all replies in them, including other people's) and its replies elsewhere, then recounts those topics' replies; an empty group deleted with its last member takes its board with it. Trade-off, stated plainly: other people's replies disappear when the person who started their topic deletes their account.
+- **Reportable:** topics and replies are report targets (`groupTopic`, `groupReply`) with a Report button on anyone else's post, and reports about a person's board posts go with their account.
+- **Not covered:** there is no editing of a topic or reply, and no notification of replies yet.
+
+Covered by 22 backend tests, frontend tests for the board, topic view and the group page, and 3 browser flows.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

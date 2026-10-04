@@ -6,6 +6,7 @@ import type { Group, GroupMember } from "../types";
 import { Avatar } from "../components/common/Avatar";
 import { useAuth } from "../context/AuthContext";
 import { GroupChat } from "../components/group/GroupChat";
+import { GroupBoard } from "../components/group/GroupBoard";
 
 export function GroupDetailPage() {
   const { id = "" } = useParams();
@@ -75,6 +76,8 @@ export function GroupDetailPage() {
           {isMember ? "Leave group" : "Join group"}
         </button>
       </div>
+
+      {isMember && <GroupBoard groupId={id} canModerate={members.some((m) => m.user.username === user?.username && m.role === "admin")} />}
 
       {isMember && <GroupChat groupId={id} canModerate={members.some((m) => m.user.username === user?.username && m.role === "admin")} />}
 

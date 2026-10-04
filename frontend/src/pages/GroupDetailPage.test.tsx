@@ -14,6 +14,9 @@ vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("../components/group/GroupChat", () => ({
   GroupChat: ({ canModerate }: { canModerate: boolean }) => <div>group chat{canModerate ? " (moderator)" : ""}</div>,
 }));
+vi.mock("../components/group/GroupBoard", () => ({
+  GroupBoard: ({ canModerate }: { canModerate: boolean }) => <div>group board{canModerate ? " (moderator)" : ""}</div>,
+}));
 const api = vi.mocked(groupsApi);
 
 const group = { id: "g1", name: "Painters", description: "We paint", memberCount: 2, isMember: false } as Group;
@@ -57,16 +60,19 @@ describe("GroupDetailPage", () => {
     renderAs("someone");
     await screen.findByRole("heading", { name: "Painters" });
     expect(screen.queryByText(/group chat/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/group board/)).not.toBeInTheDocument();
   });
 
   it("shows the chat to a member", async () => {
     renderAs("zoe");
     expect(await screen.findByText("group chat")).toBeInTheDocument();
+    expect(screen.getByText("group board")).toBeInTheDocument();
   });
 
   it("lets a group admin moderate the chat", async () => {
     renderAs("ada");
     expect(await screen.findByText("group chat (moderator)")).toBeInTheDocument();
+    expect(screen.getByText("group board (moderator)")).toBeInTheDocument();
   });
 
   it("offers Join to a non-member, and reloads the roster after joining", async () => {
