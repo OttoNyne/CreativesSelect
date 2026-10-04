@@ -62,6 +62,16 @@ describe("notificationTarget", () => {
   });
 });
 
+describe("notificationTarget: blog entries", () => {
+  it("opens the entry", () => {
+    expect(notificationTarget(n("blog_post", { entryId: "e1" }), "me")).toEqual({ to: "/blog/e1", label: "Read entry" });
+  });
+  it("falls back to the author's profile when the entry isn't named", () => {
+    expect(notificationTarget(n("blog_post", {}), "me")).toEqual({ to: "/u/zoe", label: "View profile" });
+    expect(notificationTarget(n("blog_post", {}, null), "me")).toBeNull();
+  });
+});
+
 describe("notificationTarget: planned lives", () => {
   it("announcements and reminders go to the Live page, where the schedule is", () => {
     expect(notificationTarget(n("live_scheduled", { scheduledId: "p1" }), "me")).toEqual({ to: "/live", label: "See upcoming lives" });

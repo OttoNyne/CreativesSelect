@@ -26,3 +26,10 @@ export function earliestStart(now: Date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+/** "October 4, 2026": a date on its own, in the viewer's own time zone. */
+export function formatDay(iso: string | Date, locale?: string): string {
+  const date = typeof iso === "string" ? new Date(iso) : iso;
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(date);
+}

@@ -145,10 +145,29 @@ export interface BoardTask {
   author: User;
 }
 
+/** An entry in a list: the start of it, not the whole text. */
+export interface BlogSummary {
+  id: string;
+  title: string;
+  excerpt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BlogEntry {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  isAuthor: boolean;
+  author: User;
+}
+
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

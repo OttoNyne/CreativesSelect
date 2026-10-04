@@ -1,7 +1,7 @@
 import { InfoPage } from "../components/layout/InfoPage";
 
 const FEATURES = [
-  { icon: "🎨", title: "A profile that's yours", text: "Pick your colours, fonts and wallpaper, add a bio, show your top friends, share your mood and what you're listening to, tag what you do, and collect testimonials. Describe a wallpaper (or start from one of your photos) and let AI make it, then choose how it moves. Any AI picture on the site can start from a reference photo of your own." },
+  { icon: "🎨", title: "A profile that's yours", text: "Pick your colours, fonts and wallpaper, add a bio, show your top friends, share your mood and what you're listening to, tag what you do, write blog entries, and collect testimonials. Describe a wallpaper (or start from one of your photos) and let AI make it, then choose how it moves. Any AI picture on the site can start from a reference photo of your own." },
   { icon: "🖼️", title: "Portfolio", text: "Show pictures and short videos (up to 30 seconds). Visitors can like or dislike each piece." },
   { icon: "🎵", title: "Music", text: "Add up to five tracks — YouTube links or your own uploads — arrange them in the order you like, and they keep playing as you browse." },
   { icon: "📝", title: "Feed", text: "Share what you're working on with a picture you can frame: choose its shape, zoom and placement before posting." },

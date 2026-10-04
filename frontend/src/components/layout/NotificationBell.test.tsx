@@ -200,6 +200,18 @@ describe("NotificationBell: where clicking goes", () => {
   });
 });
 
+describe("NotificationBell: blog entries", () => {
+  it("announces a new entry with its title and links to it", async () => {
+    await openWith([note({ type: "blog_post", payload: { title: "A day in the studio", entryId: "e1" } })]);
+    expect(await screen.findByText(/wrote a blog entry: "A day in the studio"/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Read entry" })).toHaveAttribute("href", "/blog/e1");
+  });
+  it("copes with a notification missing its details", async () => {
+    await openWith([note({ id: "b", type: "blog_post", payload: {} })]);
+    expect(await screen.findByText("wrote a blog entry")).toBeInTheDocument();
+  });
+});
+
 describe("NotificationBell: planned lives", () => {
   it("announces a planned live with its title and time, and takes you to the schedule", async () => {
     await openWith([note({ type: "live_scheduled", payload: { title: "Friday jam", startsAt: "2099-10-10T19:00:00.000Z", scheduledId: "p1" } })]);

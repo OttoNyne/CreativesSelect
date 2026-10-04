@@ -21,6 +21,7 @@ vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("../components/profile/TopFriendsList", () => ({ TopFriendsList: () => <div>top friends</div> }));
 vi.mock("../components/profile/MusicPlayer", () => ({ MusicPlayer: () => <div>music</div> }));
 vi.mock("../components/profile/PortfolioGrid", () => ({ PortfolioGrid: () => <div>portfolio</div> }));
+vi.mock("../components/profile/ProfileBlog", () => ({ ProfileBlog: ({ isOwner }: { isOwner: boolean }) => <div>blog {isOwner ? "owner" : "visitor"}</div> }));
 vi.mock("../components/profile/ProfileComments", () => ({ ProfileComments: () => <div>guestbook</div> }));
 vi.mock("../components/common/ImagePositioner", () => ({ ImagePositioner: () => <div>positioner</div> }));
 

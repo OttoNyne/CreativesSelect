@@ -23,6 +23,7 @@ import { TopFriendsList } from "../components/profile/TopFriendsList";
 import { ProfileComments } from "../components/profile/ProfileComments";
 import { PortfolioGrid } from "../components/profile/PortfolioGrid";
 import { MusicPlayer } from "../components/profile/MusicPlayer";
+import { ProfileBlog } from "../components/profile/ProfileBlog";
 import { GenerateTextButton } from "../components/ai/GenerateTextButton";
 import { ImageSearchPicker } from "../components/ai/ImageSearchPicker";
 import { DeleteAccount } from "../components/profile/DeleteAccount";
@@ -401,6 +402,9 @@ export function ProfilePage() {
           </div>
           <div className="sm:col-span-2">
             <PortfolioGrid username={profile.username} isOwner={isOwner} />
+          </div>
+          <div className="sm:col-span-2">
+            <ProfileBlog username={profile.username} isOwner={isOwner} />
           </div>
           <div className="sm:col-span-2">
             <ProfileComments username={profile.username} />

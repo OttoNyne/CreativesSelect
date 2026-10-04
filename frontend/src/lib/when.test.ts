@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { earliestStart, formatWhen, untilText } from "./when";
+import { earliestStart, formatDay, formatWhen, untilText } from "./when";
 
 const NOW = new Date("2026-10-10T12:00:00Z");
 const at = (ms: number) => new Date(NOW.getTime() + ms).toISOString();
 const MIN = 60_000;
+
+describe("formatDay", () => {
+  it("writes a date out in full, and nothing for something that isn't a date", () => {
+    expect(formatDay("2026-10-04T12:00:00.000Z", "en-US")).toBe("October 4, 2026");
+    expect(formatDay(new Date("2026-01-09T12:00:00Z"), "en-US")).toBe("January 9, 2026");
+    expect(formatDay("nope")).toBe("");
+  });
+});
 
 describe("untilText", () => {
   it("says how long until a time, in a few words", () => {

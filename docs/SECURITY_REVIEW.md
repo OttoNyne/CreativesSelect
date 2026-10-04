@@ -854,6 +854,23 @@ tricks, listing people who chose to be private, and the tag list becoming a way 
 
 Covered by 22 backend tests, and frontend tests for the tag rules, the editor, the profile display, the discover page and 3 browser runs.
 
+### 5.41 Blog entries: long text from users, with the same privacy as their profile
+
+Blog entries are the first long free text on the site (up to 10,000 characters), readable by other people, and announced to friends.
+
+- **Reading follows the profile.** The list uses the same gate as the rest of a profile (private → friends only, blocked either way → refused),
+  and a single entry whose author you can't see answers `404`, the same as a missing one or a malformed id, so the answer doesn't reveal which entries exist.
+  Only signed-in people can read; the profile page doesn't even ask when you're signed out.
+- **Only the author can change or delete.** The route finds the entry by id *and* author, so anyone else gets `404` and nothing changes; the author is set from the session, never from the body
+  (a request that sends `author` or `createdAt` has them ignored — tested).
+- **Text is shown as text.** The browser draws title and body as plain text (the paragraphs are plain elements; markup in an entry is displayed as typed, tested in unit and browser tests), and the server removes
+  control and zero-width/direction-override characters, normalises line breaks and allows at most one blank line in a row. Over-long input is `400`, never silently cut.
+- **Volume is bounded:** a verified email (when the operator requires it), 10 writes an hour, 200 entries per author, 10 per page; lists carry only an excerpt, so a long entry isn't sent 10 times over.
+- **Reportable:** entries are a report target (`blogEntry`); a report, the entry, and the friends' announcement all go with the author's account, and deleting an entry removes the announcements.
+- **Not covered:** there are no comments on entries yet; entries aren't moderated for content (reports are the route), and a friend who has already read an entry can have kept a copy.
+
+Covered by 18 backend tests, frontend tests for the list, the entry page, the editor, the notification and the date, and 3 browser flows (write → friend notified → edit → delete; validation; a private profile's entry).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

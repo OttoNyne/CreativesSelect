@@ -23,6 +23,8 @@ import { LiveRoomPage } from "./pages/LiveRoomPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { AboutPage } from "./pages/AboutPage";
+import { BlogEntryPage } from "./pages/BlogEntryPage";
+import { BlogEditorPage } from "./pages/BlogEditorPage";
 import { PostPage } from "./pages/PostPage";
 import { FeaturesPage } from "./pages/FeaturesPage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
@@ -50,6 +52,9 @@ export default function App() {
             <Route path="/" element={<FeedPage />} />
             <Route path="/friends" element={<FriendsPage />} />
             <Route path="/posts/:id" element={<PostPage />} />
+            <Route path="/blog/new" element={<BlogEditorPage />} />
+            <Route path="/blog/:id" element={<BlogEntryPage />} />
+            <Route path="/blog/:id/edit" element={<BlogEditorPage />} />
             <Route path="/live" element={<LivePage />} />
             <Route path="/live/:id" element={<LiveRoomPage />} />
             <Route path="/messages" element={<MessagesPage />} />
