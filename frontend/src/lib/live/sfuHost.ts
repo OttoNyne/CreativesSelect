@@ -21,6 +21,8 @@ export interface SfuHostOptions {
   startWithRelay?: boolean;
   /** How many times to start over after the connection is lost, before giving up. */
   maxAttempts?: number;
+  /** Who is speaking right now (user ids, the host's own included), as the media server hears it — for the speaking ring on the stage. */
+  onSpeakers?: (ids: string[]) => void;
   /** A plain-words line about what the connection is doing, for the "connection details" a host can read out if it misbehaves. */
   onDiagnostic?: (line: string) => void;
   /** Loads the media-server client library (only needed for big lives, so it isn't in the main bundle). */
@@ -173,6 +175,9 @@ export class SfuHost {
           this.guestStream = new MediaStream([track.mediaStreamTrack]);
           this.opts.onGuestStream?.(this.guestStream);
         }
+      });
+      room.on(lk.RoomEvent.ActiveSpeakersChanged, (speakers) => {
+        if (this.room === room) this.opts.onSpeakers?.(speakers.map((p) => p.identity));
       });
       room.on(lk.RoomEvent.TrackUnsubscribed, (track) => {
         if (this.room === room && track.kind === "audio") this.guestStream?.removeTrack(track.mediaStreamTrack);

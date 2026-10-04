@@ -5,12 +5,12 @@ import { API_BASE } from "../api/base";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
 import { LiveChat } from "../components/live/LiveChat";
-import { HostStage, ListenerStage } from "../components/live/StagePanel";
+import { ListenerStage } from "../components/live/StagePanel";
+import { HostConsole } from "../components/live/HostConsole";
 import { useStage } from "../lib/live/useStage";
 import { ShareButton } from "../components/share/ShareButton";
 import { liveUrl } from "../lib/share";
 import { keepScreenOn } from "../lib/wakeLock";
-import { ConnectionDetails } from "../components/live/ConnectionDetails";
 import { describeNetwork, onMobileData } from "../lib/live/networkInfo";
 import type { HostConnection, MicrophoneState } from "../lib/live/sfuHost";
 import { LiveHost } from "../lib/live/host";
@@ -71,6 +71,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
   const [ended, setEnded] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [connection, setConnection] = useState<HostConnection>("live");
+  const [speaking, setSpeaking] = useState<string[]>([]);
   const [mic, setMic] = useState<MicrophoneState>("ok");
   // What the connection has been doing, for the "connection details" (and whether the phone itself has lost its internet).
   const [details, setDetails] = useState<string[]>([]);
@@ -115,6 +116,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
                 note(`Microphone: ${state}`);
               },
               onDiagnostic: note,
+              onSpeakers: setSpeaking,
               // on mobile data the direct audio route is often blocked, so don't start with it
               startWithRelay: onMobileData(),
               heartbeatMs: room.heartbeatMs,
@@ -212,45 +214,20 @@ function HostRoom({ room }: { room: LiveRoom }) {
       <Header room={room} listening={listeners} />
       <audio ref={guestAudioRef} autoPlay playsInline />
       {stream ? (
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-          <p role="status" className="text-sm text-white/80">
-            {muted ? "Your microphone is muted — listeners can't hear you." : "You're live — listeners can hear your microphone."}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button onClick={toggleMute} aria-pressed={muted} className="rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
-              {muted ? "Unmute microphone" : "Mute microphone"}
-            </button>
-            <button onClick={handleEnd} className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500">
-              End live
-            </button>
-          </div>
-          {!phoneOnline && (
-            <p role="alert" className="mt-3 text-sm text-amber-300">
-              Your phone has lost its internet connection, so listeners can't hear you. The live will pick up again by itself when it is back; stay on this page.
-            </p>
-          )}
-          {phoneOnline && !failure && connection === "reconnecting" && (
-            <p role="status" className="mt-3 text-sm text-amber-300">
-              Your connection dropped — reconnecting. Listeners may hear a short gap. Stay on this page.
-            </p>
-          )}
-          {!failure && mic !== "ok" && (
-            <p role="alert" className="mt-3 text-sm text-amber-300">
-              {mic === "ended"
-                ? "Your phone has stopped the microphone, so listeners can't hear you. Another app may have taken it. End this live and start again."
-                : "Your phone has paused the microphone, so listeners can't hear you right now. Keep this page open with the screen on (it pauses when the screen locks or you switch apps)."}
-            </p>
-          )}
-          {failure && (
-            <p role="alert" className="mt-3 text-sm text-red-400">
-              {failure} Listeners can't hear you — end this live and start a new one to try again.
-            </p>
-          )}
-          <ConnectionDetails lines={details} open={Boolean(failure) || connection === "reconnecting" || mic !== "ok" || !phoneOnline} />
-          <p className="mt-3 text-xs text-white/60">
-            Up to {room.maxListeners} people can listen. Leaving this page, or closing the tab, ends your live and turns your microphone off.
-          </p>
-        </div>
+        <HostConsole
+          room={room}
+          stage={stage}
+          onStageChange={refreshStage}
+          muted={muted}
+          onToggleMute={toggleMute}
+          onEnd={handleEnd}
+          phoneOnline={phoneOnline}
+          connection={connection}
+          failure={failure}
+          mic={mic}
+          details={details}
+          speaking={speaking}
+        />
       ) : (
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
           <p className="text-sm text-white/80">Your microphone isn&apos;t on, so no one can hear you. Allow it to carry on with this live.</p>
@@ -274,8 +251,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
           Tap to hear your guests
         </button>
       )}
-      {stream && stage && <HostStage liveId={id} stage={stage} onChange={refreshStage} />}
-      <LiveChat liveId={id} isHost open pollMs={room.commentPollMs} />
+      {!stream && <LiveChat liveId={id} isHost open pollMs={room.commentPollMs} />}
     </div>
   );
 }

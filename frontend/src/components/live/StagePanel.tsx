@@ -18,7 +18,27 @@ const smallButton = "rounded-md border border-white/20 px-2.5 py-1 text-xs text-
 const primaryButton = "rounded-md bg-violet-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-violet-500 disabled:opacity-50";
 
 /** The host's view: who is asking to speak, who is invited, who is on stage, and everyone else to pick from. */
-export function HostStage({ liveId, stage, onChange }: { liveId: string; stage: LiveStage; onChange: () => void }) {
+export type HostStageSection = "speaking" | "invited" | "requests" | "listeners";
+const ALL_SECTIONS: HostStageSection[] = ["speaking", "invited", "requests", "listeners"];
+
+export function HostStage({
+  liveId,
+  stage,
+  onChange,
+  sections = ALL_SECTIONS,
+  heading = true,
+  label = "Guests on stage",
+}: {
+  liveId: string;
+  stage: LiveStage;
+  onChange: () => void;
+  /** Which lists to show (the rest of the host's screen may show the others elsewhere). */
+  sections?: HostStageSection[];
+  /** The "On stage  n of 9" heading and the headphones reminder. */
+  heading?: boolean;
+  label?: string;
+}) {
+  const show = (s: HostStageSection) => sections.includes(s);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requests = stage.requests ?? [];
@@ -47,21 +67,25 @@ export function HostStage({ liveId, stage, onChange }: { liveId: string; stage: 
   );
 
   return (
-    <section aria-label="Guests on stage" className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-white">On stage</h2>
-        <span className="text-xs text-white/60" aria-live="polite">
-          {taken} of {stage.maxGuests} guest places used
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-white/60">Invite listeners to speak. Use headphones while guests are on stage so their voices don&apos;t echo back.</p>
+    <section aria-label={label} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+      {heading && (
+        <>
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold text-white">On stage</h2>
+            <span className="text-xs text-white/60" aria-live="polite">
+              {taken} of {stage.maxGuests} guest places used
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-white/60">Invite listeners to speak. Use headphones while guests are on stage so their voices don&apos;t echo back.</p>
+        </>
+      )}
       {error && (
         <p role="alert" className="mt-2 text-sm text-red-400">
           {error}
         </p>
       )}
 
-      {stage.guests.length > 0 && (
+      {show("speaking") && stage.guests.length > 0 && (
         <>
           <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Speaking</h3>
           <ul className="divide-y divide-white/5">
@@ -76,7 +100,7 @@ export function HostStage({ liveId, stage, onChange }: { liveId: string; stage: 
         </>
       )}
 
-      {invited.length > 0 && (
+      {show("invited") && invited.length > 0 && (
         <>
           <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Invited</h3>
           <ul className="divide-y divide-white/5">
@@ -92,7 +116,7 @@ export function HostStage({ liveId, stage, onChange }: { liveId: string; stage: 
         </>
       )}
 
-      {requests.length > 0 && (
+      {show("requests") && requests.length > 0 && (
         <>
           <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Asking to speak</h3>
           <ul className="divide-y divide-white/5">
@@ -108,17 +132,21 @@ export function HostStage({ liveId, stage, onChange }: { liveId: string; stage: 
         </>
       )}
 
-      <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Listening ({listeners.length})</h3>
-      {listeners.length === 0 ? (
-        <p className="mt-1 text-sm text-white/60">No one else is listening yet.</p>
-      ) : (
-        <ul className="mt-1 max-h-56 divide-y divide-white/5 overflow-y-auto pr-1">
-          {listeners.map(({ user }) => (
-            <Person key={user.id} user={user}>
-              {invite(user)}
-            </Person>
-          ))}
-        </ul>
+      {show("listeners") && (
+        <>
+        <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Listening ({listeners.length})</h3>
+        {listeners.length === 0 ? (
+          <p className="mt-1 text-sm text-white/60">No one else is listening yet.</p>
+        ) : (
+          <ul className="mt-1 max-h-56 divide-y divide-white/5 overflow-y-auto pr-1">
+            {listeners.map(({ user }) => (
+              <Person key={user.id} user={user}>
+                {invite(user)}
+              </Person>
+            ))}
+          </ul>
+        )}
+        </>
       )}
       {full && <p className="mt-2 text-xs text-white/60">The stage is full. Remove a guest to invite someone else.</p>}
     </section>

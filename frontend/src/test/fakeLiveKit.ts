@@ -8,6 +8,7 @@ export const RoomEvent = {
   Reconnecting: "reconnecting",
   Reconnected: "reconnected",
   Disconnected: "disconnected",
+  ActiveSpeakersChanged: "activeSpeakersChanged",
   ConnectionStateChanged: "connectionStateChanged",
   SignalConnected: "signalConnected",
   SignalReconnecting: "signalReconnecting",

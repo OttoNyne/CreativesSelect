@@ -9,12 +9,27 @@ const DEFAULT_POLL_MS = 3_000;
 const KEEP = 200; // comments kept on screen
 
 // The live room's chat. Polls for anything newer than the last comment it has.
-export function LiveChat({ liveId, isHost, open, pollMs = DEFAULT_POLL_MS }: { liveId: string; isHost: boolean; open: boolean; pollMs?: number }) {
+export function LiveChat({
+  liveId,
+  isHost,
+  open,
+  pollMs = DEFAULT_POLL_MS,
+  onFresh,
+}: {
+  liveId: string;
+  isHost: boolean;
+  open: boolean;
+  pollMs?: number;
+  /** Called with how many new comments from other people have just arrived (for an unread count). */
+  onFresh?: (count: number) => void;
+}) {
   const [comments, setComments] = useState<LiveComment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const lastId = useRef<string | undefined>(undefined);
+  const onFreshRef = useRef(onFresh);
+  onFreshRef.current = onFresh;
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,7 +38,10 @@ export function LiveChat({ liveId, isHost, open, pollMs = DEFAULT_POLL_MS }: { l
       try {
         const { comments: fresh } = await liveApi.comments(liveId, lastId.current);
         if (cancelled || !fresh.length) return;
+        const firstLoad = lastId.current === undefined;
         lastId.current = fresh[fresh.length - 1].id;
+        const others = fresh.filter((c) => !c.mine).length;
+        if (!firstLoad && others > 0) onFreshRef.current?.(others);
         setComments((prev) => [...prev, ...fresh.filter((c) => !prev.some((p) => p.id === c.id))].slice(-KEEP));
       } catch {
         // a failed poll just tries again next time

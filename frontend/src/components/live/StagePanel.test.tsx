@@ -150,3 +150,27 @@ describe("ListenerStage", () => {
     expect(screen.getByRole("button", { name: "Ask to speak" })).toBeDisabled();
   });
 });
+
+describe("HostStage: choosing sections", () => {
+  const full = stage({ guests: [{ user: lena }], invited: [{ user: bo }], requests: [{ user: cy }], listeners: [{ user: dee }] });
+
+  it("shows only the lists asked for, with or without the heading", () => {
+    const { rerender } = render(<HostStage liveId="l1" stage={full} onChange={() => {}} sections={["requests"]} heading={false} label="Asking to speak" />);
+    expect(screen.getByRole("region", { name: "Asking to speak" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Invite Cy to speak" })).toBeInTheDocument();
+    for (const gone of [/Remove Lena/, /Withdraw the invitation to Bo/, /Invite Dee/]) expect(screen.queryByRole("button", { name: gone })).not.toBeInTheDocument();
+    expect(screen.queryByText(/guest places used/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Listening (1)")).not.toBeInTheDocument();
+
+    rerender(<HostStage liveId="l1" stage={full} onChange={() => {}} sections={["listeners"]} heading={false} label="Listeners" />);
+    expect(screen.getByRole("button", { name: "Invite Dee to speak" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Invite Cy to speak" })).not.toBeInTheDocument();
+  });
+
+  it("shows everything, with the heading, when not told otherwise", () => {
+    render(<HostStage liveId="l1" stage={full} onChange={() => {}} />);
+    expect(screen.getByRole("region", { name: "Guests on stage" })).toBeInTheDocument();
+    expect(screen.getByText("2 of 9 guest places used")).toBeInTheDocument();
+    for (const name of [/Remove Lena/, /Withdraw the invitation to Bo/, /Invite Cy to speak/, /Invite Dee to speak/]) expect(screen.getByRole("button", { name })).toBeInTheDocument();
+  });
+});

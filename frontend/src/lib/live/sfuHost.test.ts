@@ -448,3 +448,35 @@ describe("SfuHost: a phone on mobile data", () => {
     host.stop();
   });
 });
+
+describe("SfuHost: who is speaking", () => {
+  it("reports the people the media server hears, by user id, as it changes", async () => {
+    const heard: string[][] = [];
+    const { host } = setup({ onSpeakers: (ids) => heard.push(ids) });
+    host.start();
+    await settle();
+    lastRoom().emit(RoomEvent.ActiveSpeakersChanged, [{ identity: "host-id" }, { identity: "guest-id" }]);
+    lastRoom().emit(RoomEvent.ActiveSpeakersChanged, []);
+    expect(heard).toEqual([["host-id", "guest-id"], []]);
+    host.stop();
+  });
+
+  it("ignores a connection that has been replaced, and works with nobody listening in", async () => {
+    const heard: string[][] = [];
+    const { host } = setup({ onSpeakers: (ids) => heard.push(ids) });
+    host.start();
+    await settle();
+    const first = lastRoom();
+    first.emit(RoomEvent.Disconnected);
+    await vi.advanceTimersByTimeAsync(2_000);
+    first.emit(RoomEvent.ActiveSpeakersChanged, [{ identity: "old" }]);
+    expect(heard).toEqual([]);
+    host.stop();
+
+    const quiet = setup();
+    quiet.host.start();
+    await settle();
+    expect(() => lastRoom().emit(RoomEvent.ActiveSpeakersChanged, [{ identity: "x" }])).not.toThrow();
+    quiet.host.stop();
+  });
+});

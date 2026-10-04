@@ -148,3 +148,21 @@ describe("LiveChat", () => {
     expect(screen.getByText(/Love this/)).toBeInTheDocument();
   });
 });
+
+describe("LiveChat: telling the page about new comments", () => {
+  it("reports comments from other people that arrive after the first load, and not your own", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const onFresh = vi.fn();
+    const mine = (id: string) => ({ id, userId: "me", user: null, mine: true, body: "mine", createdAt: "" }) as never;
+    const theirs = (id: string) => ({ id, userId: "x", user: null, mine: false, body: "theirs", createdAt: "" }) as never;
+    const comments = vi.mocked((await import("../../api/live.api")).liveApi.comments);
+    comments.mockResolvedValueOnce({ comments: [theirs("c1")] }); // what was already there
+    comments.mockResolvedValue({ comments: [theirs("c2"), mine("c3"), theirs("c4")] });
+    render(<LiveChat liveId="l1" isHost open pollMs={1_000} onFresh={onFresh} />);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(onFresh).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1_100);
+    expect(onFresh).toHaveBeenCalledWith(2);
+    vi.useRealTimers();
+  });
+});
