@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { liveApi, MAX_LIVE_TITLE_LENGTH } from "../api/live.api";
+import { scheduledApi } from "../api/scheduled.api";
+import { ScheduleLive } from "../components/live/ScheduleLive";
+import { UpcomingLives } from "../components/live/UpcomingLives";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
 import { liveAudioSupported, UNSUPPORTED_MESSAGE } from "../lib/live/rtc";
 import { holdStreamFor, MIC_CONSTRAINTS, micErrorMessage } from "../lib/live/hostStream";
-import type { LiveRoom } from "../types";
+import type { LiveRoom, ScheduledLive } from "../types";
 
 const POLL_MS = 10_000;
 
@@ -18,6 +21,22 @@ export function LivePage() {
   const [title, setTitle] = useState("");
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [plans, setPlans] = useState<ScheduledLive[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPlans = () =>
+      scheduledApi
+        .list()
+        .then(({ scheduled }) => !cancelled && setPlans(scheduled))
+        .catch(() => !cancelled && setPlans((old) => old ?? []));
+    void loadPlans();
+    const timer = setInterval(() => !document.hidden && void loadPlans(), 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,9 +62,14 @@ export function LivePage() {
     };
   }, []);
 
-  async function handleGoLive(e: React.FormEvent) {
+  function handleGoLive(e: React.FormEvent) {
     e.preventDefault();
-    const name = title.trim();
+    void startLive(title.trim());
+  }
+
+  // Starts a live (optionally as the fulfilment of a planned one). The microphone prompt has to come from the tap that got
+  // us here, so this is called straight from the button's handler.
+  async function startLive(name: string, scheduledId?: string) {
     if (!name || starting) return;
     setStartError(null);
     if (!navigator.mediaDevices?.getUserMedia || !liveAudioSupported()) {
@@ -61,7 +85,7 @@ export function LivePage() {
       return setStartError(micErrorMessage(err));
     }
     try {
-      const { live } = await liveApi.start(name);
+      const { live } = await (scheduledId ? liveApi.start(name, scheduledId) : liveApi.start(name));
       holdStreamFor(live.id, stream);
       navigate(`/live/${live.id}`);
     } catch (err) {
@@ -106,6 +130,10 @@ export function LivePage() {
           </p>
         )}
       </form>
+
+      <ScheduleLive onScheduled={(plan) => setPlans((old) => [...(old ?? []), plan].sort((a, b) => a.startsAt.localeCompare(b.startsAt)))} />
+
+      <UpcomingLives plans={plans} onChange={setPlans} onStartNow={(plan) => void startLive(plan.title, plan.id)} starting={starting} />
 
       <section aria-label="Live now">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Live now</h2>

@@ -199,3 +199,27 @@ describe("NotificationBell: where clicking goes", () => {
     expect(screen.queryByRole("link", { name: /View|Open|Listen/ })).not.toBeInTheDocument();
   });
 });
+
+describe("NotificationBell: planned lives", () => {
+  it("announces a planned live with its title and time, and takes you to the schedule", async () => {
+    await openWith([note({ type: "live_scheduled", payload: { title: "Friday jam", startsAt: "2099-10-10T19:00:00.000Z", scheduledId: "p1" } })]);
+    expect(await screen.findByText(/scheduled a live: "Friday jam"/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See upcoming lives" })).toHaveAttribute("href", "/live");
+  });
+
+  it("says a planned live starts soon, for someone who asked to be reminded", async () => {
+    await openWith([note({ type: "live_reminder", payload: { title: "Friday jam", scheduledId: "p1" } })]);
+    expect(await screen.findByText(/has a live starting soon: "Friday jam"/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open Live" })).toHaveAttribute("href", "/live");
+  });
+
+  it("tells the host their own live starts soon", async () => {
+    await openWith([note({ type: "live_reminder", payload: { title: "Friday jam", scheduledId: "p1", own: true } })]);
+    expect(await screen.findByText(/your live "Friday jam" starts soon/)).toBeInTheDocument();
+  });
+
+  it("copes with a notification missing its details", async () => {
+    await openWith([note({ id: "a", type: "live_scheduled", payload: {} })]);
+    expect(await screen.findByText("scheduled a live")).toBeInTheDocument();
+  });
+});

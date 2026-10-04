@@ -1,17 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { LivePage } from "./LivePage";
 import { liveApi } from "../api/live.api";
+import { scheduledApi } from "../api/scheduled.api";
 import { ApiError } from "../api/client";
 import { getStreamFor } from "../lib/live/hostStream";
 import { FakeStream } from "../test/fakeRtc";
-import type { LiveRoom, User } from "../types";
+import type { LiveRoom, ScheduledLive, User } from "../types";
 
 vi.mock("../api/live.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/live.api")>()),
   liveApi: { list: vi.fn(), start: vi.fn() },
+}));
+vi.mock("../api/scheduled.api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/scheduled.api")>()),
+  scheduledApi: { list: vi.fn(async () => ({ scheduled: [] })), create: vi.fn(), cancel: vi.fn(), remind: vi.fn(), unremind: vi.fn() },
 }));
 const api = vi.mocked(liveApi);
 
@@ -153,5 +158,78 @@ describe("LivePage: going live", () => {
     await submit();
     expect(await screen.findByRole("alert")).toHaveTextContent(/can't broadcast live audio/);
     expect(getUserMedia).not.toHaveBeenCalled();
+  });
+});
+
+describe("LivePage: scheduled lives", () => {
+  const sched = vi.mocked(scheduledApi);
+  const plan = (over: Partial<ScheduledLive> = {}): ScheduledLive => ({
+    id: "p1",
+    title: "Friday jam",
+    startsAt: new Date(Date.now() + 3 * 3_600_000).toISOString(),
+    host,
+    isHost: false,
+    reminding: false,
+    reminderCount: 0,
+    ...over,
+  });
+  beforeEach(() => {
+    sched.list.mockReset();
+    sched.list.mockResolvedValue({ scheduled: [] });
+  });
+
+  it("lists what people have planned", async () => {
+    sched.list.mockResolvedValue({ scheduled: [plan(), plan({ id: "p2", title: "Late show" })] });
+    renderPage();
+    expect(await screen.findByText("Friday jam")).toBeInTheDocument();
+    expect(screen.getByText("Late show")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Upcoming lives" })).toBeInTheDocument();
+  });
+
+  it("invites the first plan when nothing is scheduled, and carries on if the schedule can't be loaded", async () => {
+    renderPage();
+    expect(await screen.findByText(/Nothing is scheduled yet/)).toBeInTheDocument();
+    cleanup();
+    sched.list.mockRejectedValue(new Error("down"));
+    renderPage();
+    expect(await screen.findByText(/Nothing is scheduled yet/)).toBeInTheDocument();
+    expect(await screen.findByRole("form", { name: "Go live" }).catch(() => screen.getByLabelText("Live title"))).toBeInTheDocument();
+  });
+
+  it("adds a plan to the list as soon as it is made, in time order", async () => {
+    const soon = plan({ id: "p1", title: "Soon", startsAt: new Date(Date.now() + 2 * 3_600_000).toISOString(), isHost: true });
+    const later = plan({ id: "p2", title: "Later", startsAt: new Date(Date.now() + 9 * 3_600_000).toISOString() });
+    sched.list.mockResolvedValue({ scheduled: [later] });
+    sched.create.mockResolvedValue({ scheduled: soon });
+    renderPage();
+    await screen.findByText("Later");
+    fireEvent.change(screen.getByLabelText("Plan title"), { target: { value: "Soon" } });
+    fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "2099-01-01T10:00" } });
+    await userEvent.click(screen.getByRole("button", { name: "Schedule" }));
+    await screen.findByText("Soon");
+    const titles = screen.getAllByRole("listitem").map((li) => li.querySelector("p")?.textContent);
+    expect(titles).toEqual(["Soon", "Later"]);
+  });
+
+  it("starts a planned live from its own button: microphone first, then the live, naming the plan", async () => {
+    const stream = new FakeStream();
+    getUserMedia.mockResolvedValue(stream);
+    api.start.mockResolvedValue({ live: room({ id: "new2", isHost: true }) });
+    sched.list.mockResolvedValue({ scheduled: [plan({ isHost: true })] });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Start now" }));
+    expect(getUserMedia).toHaveBeenCalled();
+    expect(api.start).toHaveBeenCalledWith("Friday jam", "p1");
+    expect(await screen.findByText(/Room/)).toBeInTheDocument();
+    expect(getStreamFor("new2")).toBe(stream);
+  });
+
+  it("takes a reminder request back off the list view when it is toggled", async () => {
+    sched.list.mockResolvedValue({ scheduled: [plan()] });
+    sched.remind.mockResolvedValue({ reminding: true, reminderCount: 4 });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Remind me about Friday jam" }));
+    expect(await screen.findByRole("button", { name: "Stop reminding me about Friday jam" })).toBeInTheDocument();
+    expect(screen.getByText(/4 reminding/)).toBeInTheDocument();
   });
 });

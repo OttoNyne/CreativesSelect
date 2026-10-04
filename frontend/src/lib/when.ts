@@ -1,0 +1,28 @@
+/** "Fri, Oct 10, 7:00 PM": a date and time in the viewer's own time zone. */
+export function formatWhen(iso: string | Date, locale?: string): string {
+  const date = typeof iso === "string" ? new Date(iso) : iso;
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(date);
+}
+
+/** How long until a time, in a few words: "starting now", "in 25 minutes", "in 3 hours", "in 2 days". Past times say "started". */
+export function untilText(iso: string | Date, now: Date = new Date()): string {
+  const date = typeof iso === "string" ? new Date(iso) : iso;
+  const ms = date.getTime() - now.getTime();
+  if (Number.isNaN(ms)) return "";
+  if (ms < -60_000) return "started";
+  if (ms < 60_000) return "starting now";
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? "" : "s"}`;
+  const hours = Math.round(ms / 3_600_000);
+  if (hours < 24) return `in ${hours} hour${hours === 1 ? "" : "s"}`;
+  const days = Math.round(ms / 86_400_000);
+  return `in ${days} day${days === 1 ? "" : "s"}`;
+}
+
+/** The earliest time a plan can be made for (the server wants at least 5 minutes ahead), as a datetime-local value. */
+export function earliestStart(now: Date = new Date()): string {
+  const d = new Date(now.getTime() + 6 * 60_000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

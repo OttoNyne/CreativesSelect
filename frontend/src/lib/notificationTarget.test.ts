@@ -61,3 +61,10 @@ describe("notificationTarget", () => {
     expect(notificationTarget(n("live_started", { liveId: null }), "me")).toBeNull();
   });
 });
+
+describe("notificationTarget: planned lives", () => {
+  it("announcements and reminders go to the Live page, where the schedule is", () => {
+    expect(notificationTarget(n("live_scheduled", { scheduledId: "p1" }), "me")).toEqual({ to: "/live", label: "See upcoming lives" });
+    expect(notificationTarget(n("live_reminder", { scheduledId: "p1" }), "me")).toEqual({ to: "/live", label: "Open Live" });
+  });
+});

@@ -24,6 +24,10 @@ export interface User {
   wallpaperPosition: string;
   /** How a picture wallpaper moves; absent on profiles saved before wallpapers could move (treated as "none"). */
   wallpaperMotion?: WallpaperMotion;
+  /** A short status line, what they are listening to, and what they do (lower-case tags). Absent on a private profile you can't see. */
+  mood?: string;
+  listeningTo?: string;
+  tags?: string[];
   isPrivate: boolean;
   createdAt: string;
   theme: ProfileTheme;
@@ -144,7 +148,7 @@ export interface BoardTask {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's
@@ -215,6 +219,18 @@ export interface LiveStage {
   invited?: { user: User }[];
   /** Everyone else listening, for the host to pick from. */
   listeners?: { user: User }[];
+}
+
+/** A live a host has planned for later. */
+export interface ScheduledLive {
+  id: string;
+  title: string;
+  startsAt: string;
+  host: User;
+  isHost: boolean;
+  /** Whether the viewer asked to be reminded. */
+  reminding: boolean;
+  reminderCount: number;
 }
 
 export interface LiveComment {

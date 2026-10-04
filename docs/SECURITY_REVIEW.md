@@ -818,6 +818,42 @@ host connection giving up for good after a single drop.
   control; the page explains what it sees. A host who locks the screen or switches app for longer than 45 s will still find the live ended.
 Covered by 36 frontend tests and 9 browser runs.
 
+### 5.39 Planning a live ahead, with reminders
+
+A host can schedule a live and people can ask to be reminded. The risks were spam, leaking who is planning what, and reminders that
+repeat or arrive for something that no longer exists.
+
+- **Who can plan:** only a verified email, 5 upcoming plans per host, 10 a hour, a start 5 minutes to 30 days ahead, a title of at most 80
+  characters shown as plain text. Only accepted friends are told; nobody else is sent anything on creation.
+- **Who can see a plan:** the same rules as a live — hosts you blocked (or who blocked you) are omitted, and a private-profile host's plans are
+  seen only by friends and themselves. A plan you can't see is `404` to remind yourself about, the same answer as a missing one.
+- **Only the host can cancel**, and cancelling (or the account being deleted) removes the plan, its notifications and the person's reminder entries.
+- **Reminders are sent once.** The plan is claimed with a single atomic update, so the 60-second timer, a page load and a second server can't
+  each send one. A plan more than 2 hours past its time is not reminded (an outage doesn't produce a flood of stale reminders).
+  Plans expire on their own 2 days after the start.
+- **Starting a live from a plan** only works for the host's own plan (the id is checked against the host); it can't be used to mark someone else's plan started.
+- **Not covered:** a reminder is an in-app notification, not an email or push message, so it reaches people only when they next have the site open.
+
+Covered by 22 backend tests, 4 frontend test files (calendar wording, form, list, Live page, notification bell and links) and 5 browser runs.
+
+### 5.40 Mood, "listening to", tags and discovering people
+
+Profiles gained a short mood line, a "listening to" line and up to 8 tags, and the search page gained a browse-by-tag list and the newest
+creatives. This adds free text that other people read and a new way to list accounts, so the risks were markup/invisible-character
+tricks, listing people who chose to be private, and the tag list becoming a way to enumerate accounts.
+
+- **Text is shown as text.** The lines are plain React text (no markup is ever rendered) and the server also strips control and invisible
+  characters (zero-width and direction-override characters that can disguise text), so a mood can't be made to look like something else. Over-length or invalid input is `400`, not silently cut.
+- **Tags are normalised the same way in the browser and on the server** (lower case, 2–24 letters/numbers/spaces/hyphens, a letter or number first, no duplicates, at most 8). The tag
+  link in an address is checked again before it's used, so `/search?tag=<script>` is ignored.
+- **Private profiles are never listed.** Discover and the popular-tags counts include public profiles only, and a private profile's mood and tags are not returned to people who can't see the profile.
+  Blocks work both ways (no one you blocked, or who blocked you, appears), and you are never listed to yourself.
+- **Not an enumeration list:** the list is paged (20 a page, 50 pages at most) and shows only what a public profile already shows; a signed-in session is required.
+- **Reserved addresses:** `discover` and `tags` can't be taken as usernames, so they can never shadow the new routes.
+- **Not covered:** tags and moods are not moderated for content, only for form (the report button on a profile is the way to flag one).
+
+Covered by 22 backend tests, and frontend tests for the tag rules, the editor, the profile display, the discover page and 3 browser runs.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

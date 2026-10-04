@@ -16,7 +16,8 @@ export interface LiveSignal {
 export const liveApi = {
   list: () => api.get<{ lives: LiveRoom[]; config?: { mode: "mesh" | "sfu"; maxListeners: number } }>("/live"),
   get: (id: string) => api.get<{ live: LiveRoom }>(`/live/${id}`),
-  start: (title: string) => api.post<{ live: LiveRoom }>("/live", { title }),
+  /** Start a live; `scheduledId` says which planned live this is (it is then closed, and people who asked for a reminder are told). */
+  start: (title: string, scheduledId?: string) => api.post<{ live: LiveRoom }>("/live", scheduledId ? { title, scheduledId } : { title }),
   end: (id: string) => api.post<void>(`/live/${id}/end`),
   join: (id: string) => api.post<{ live: LiveRoom }>(`/live/${id}/join`),
   leave: (id: string) => api.post<void>(`/live/${id}/leave`),

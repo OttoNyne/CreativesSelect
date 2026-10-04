@@ -13,6 +13,8 @@ import { ShareButton } from "../components/share/ShareButton";
 import { MovingWallpaper } from "../components/profile/MovingWallpaper";
 import { WallpaperStudio } from "../components/profile/WallpaperStudio";
 import { motionOf } from "../lib/wallpaperMotion";
+import { ProfileMood, ProfileTags } from "../components/profile/ProfileStatus";
+import { StatusEditor, TagEditor } from "../components/profile/StatusEditor";
 import { profileUrl } from "../lib/share";
 import { Avatar } from "../components/common/Avatar";
 import { ImagePositioner } from "../components/common/ImagePositioner";
@@ -36,6 +38,9 @@ export function ProfilePage() {
   const [notFound, setNotFound] = useState(false);
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState("");
+  const [mood, setMood] = useState("");
+  const [listeningTo, setListeningTo] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [theme, setTheme] = useState<ProfileTheme>({});
   const [isFriend, setIsFriend] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
@@ -58,6 +63,9 @@ export function ProfilePage() {
         if (cancelled) return;
         setProfile(user);
         setBio(user.bio ?? "");
+        setMood(user.mood ?? "");
+        setListeningTo(user.listeningTo ?? "");
+        setTags(user.tags ?? []);
         setTheme(user.theme);
       })
       .catch(() => {
@@ -223,6 +231,7 @@ export function ProfilePage() {
           <div className="min-w-0 pb-2">
             <h1 className="break-words text-2xl font-bold">{profile.displayName}</h1>
             <p className="text-sm text-[var(--profile-muted)]">@{profile.username}</p>
+            <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
           </div>
 
           <div className="ml-auto flex flex-wrap gap-2 pb-2">
@@ -292,6 +301,8 @@ export function ProfilePage() {
               placeholder="Tell people what you make…"
               className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm placeholder:text-white/55 focus:outline-none"
             />
+            <StatusEditor mood={mood} listeningTo={listeningTo} onMood={setMood} onListeningTo={setListeningTo} />
+            <TagEditor tags={tags} onChange={setTags} />
             <div className="flex flex-wrap items-center gap-2">
               <GenerateTextButton kind="bio" getPrompt={() => bio || profile.displayName} onGenerated={setBio} />
               <label className="ml-auto flex items-center gap-2 text-sm text-[var(--profile-muted)]">
@@ -361,7 +372,7 @@ export function ProfilePage() {
               />
             )}
             <button
-              onClick={() => saveProfile({ bio, theme })}
+              onClick={() => saveProfile({ bio, theme, mood, listeningTo, tags })}
               disabled={saving}
               className="rounded-md px-4 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
               style={{ background: "var(--profile-accent-fill)" }}
@@ -375,7 +386,10 @@ export function ProfilePage() {
             </div>
           </div>
         ) : (
-          <p className="mt-4 text-sm">{profile.bio || "No bio yet."}</p>
+          <>
+            <p className="mt-4 text-sm">{profile.bio || "No bio yet."}</p>
+            <ProfileTags tags={profile.tags} />
+          </>
         )}
 
         <div className="mt-6 grid grid-cols-1 gap-4 pb-10 sm:grid-cols-2">

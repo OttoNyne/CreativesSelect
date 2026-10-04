@@ -6,6 +6,7 @@ import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
 import { useAuth } from "../../context/AuthContext";
 import { notificationTarget } from "../../lib/notificationTarget";
+import { formatWhen } from "../../lib/when";
 import type { Notification } from "../../types";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -42,6 +43,12 @@ function describe(n: Notification): string {
     }
     case "live_started":
       return typeof n.payload.title === "string" ? `is live now: "${n.payload.title}"` : "is live now";
+    case "live_scheduled":
+      return typeof n.payload.title === "string" && typeof n.payload.startsAt === "string"
+        ? `scheduled a live: "${n.payload.title}", ${formatWhen(n.payload.startsAt)}`
+        : "scheduled a live";
+    case "live_reminder":
+      return n.payload.own === true ? `— your live "${String(n.payload.title ?? "")}" starts soon` : `has a live starting soon: "${String(n.payload.title ?? "")}"`;
     case "help_offer":
       return typeof n.payload.title === "string"
         ? `offered to help with "${n.payload.title}"`

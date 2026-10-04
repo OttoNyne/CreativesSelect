@@ -37,6 +37,10 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const liveId = str(n.payload.liveId);
       return liveId ? { to: `/live/${liveId}`, label: "Listen live" } : null;
     }
+    case "live_scheduled":
+      return { to: "/live", label: "See upcoming lives" };
+    case "live_reminder":
+      return { to: "/live", label: "Open Live" };
     case "group_invite": {
       const groupId = str(n.payload.groupId);
       return { to: groupId ? `/groups/${groupId}` : "/groups", label: "View group" };

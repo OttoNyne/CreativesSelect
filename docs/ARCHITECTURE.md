@@ -92,12 +92,12 @@ flowchart LR
 
 ## 3. Data Model
 
-MongoDB via Mongoose. 26 collections. `ObjectId` refs are named `ref` below;
+MongoDB via Mongoose. 27 collections. `ObjectId` refs are named `ref` below;
 `unique` compound indexes are noted where they exist.
 
 | Model | Fields | Relationships |
 |---|---|---|
-| **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `wallpaperMotion` (none/zoom/drift/pan/pulse — how a picture wallpaper moves), `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, `passwordChangedAt` (sessions issued before it are rejected), timestamps | Referenced by nearly every other model as author/owner/participant |
+| **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `wallpaperMotion` (none/zoom/drift/pan/pulse — how a picture wallpaper moves), `mood` (≤60), `listeningTo` (≤80), `tags` (≤8 lower-case tags of 2–24 characters, indexed; returned only on profiles the viewer may see), `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, `passwordChangedAt` (sessions issued before it are rejected), timestamps | Referenced by nearly every other model as author/owner/participant |
 | **Task** | `owner` → User, `title`, `description`, `isPublic` (default false), `done` (= resolved), `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; shown in the UI as a "Help wanted" request — private by default, listed on the public board when `isPublic` |
 | **Post** | `author` → User, `content`, `imageUrl`, `imageAspect` (original/1:1/4:3/16:9), `imageZoom` (1–3), `imagePosition` ("x% y%"), `isAiText`, `isAiImage`, timestamps | Has many Comments. The three framing fields are how the author shaped, zoomed and placed the picture; they are absent on posts made before framing existed, which are shown as they always were |
 | **Comment** | `post` → Post, `author` → User, `content`, timestamps | Belongs to one Post |
@@ -111,11 +111,12 @@ MongoDB via Mongoose. 26 collections. `ObjectId` refs are named `ref` below;
 | **UsernameHistory** | `username`, `user` → User, `expireAt` (TTL) | A username someone gave up, reserved for them for 30 days so it can't be instantly taken over |
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
 | **StoredAsset** | `owner` → User, `url`, `publicId`, `resourceType` (image/video/raw), `kind` (ai/upload), timestamps | Ledger of every file the server itself stored on Cloudinary (AI images and uploads) and whose it is — the only thing that lets the app delete an asset safely |
-| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted/live_started/message), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
+| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted/live_started/message/live_scheduled/live_reminder), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
 | **Message** | `sender` → User, `recipient` → User, `pair` ("smaller id:larger id" — one key per two people, indexed with `createdAt`), `body` (≤2000 chars), `readAt`, timestamps | A direct message between two friends; one document is both people's copy, so a delete or account deletion removes it for both |
 | **GroupMessage** | `group` → Group, `sender` → User, `body` (≤1000 chars), timestamps | A message in a group's chat; only members can read or write; removed with its sender's account or its group |
 | **PasswordReset** | `user` → User, `tokenHash` (SHA-256, unique), `expireAt` (TTL, 1 hour) | At most one outstanding "reset my password" link per user; only a hash of the token is stored, so the database never holds a usable link |
 | **LiveSession** | `host` → User, `title` (≤80), `status` (live/ended), `lastHeartbeat`, `endedAt`, `expireAt` (TTL, set when it ends) | One voice-only live broadcast. It counts as live only while its host keeps sending heartbeats |
+| **ScheduledLive** | `host` → User, `title` (≤80), `startsAt`, `reminders` [User] (who asked to be reminded), `status` (scheduled/started/cancelled), `liveId`, `remindedAt` (set once, when reminders go out), `expireAt` (TTL, 2 days after the start) | A live a host plans ahead. Starting it from the plan links it to the real LiveSession; plans clean themselves up |
 | **LiveListener** | `session` → LiveSession, `user` → User, `lastSeen`, `stage` (listener/requested/invited/speaking — big lives only), `expireAt` (TTL), unique on (session, user) | Someone listening; "active" means they pinged in the last 30 s |
 | **LiveSignal** | `session`, `from` → User, `to` → User, `kind` (offer/answer/ice), `data`, `expireAt` (TTL, 5 min) | A WebRTC handshake message passed between two browsers through the API; never contains audio |
 | **LiveComment** | `session`, `user` → User, `body` (≤200), `expireAt` (TTL, 24 h) | A live chat message |
@@ -156,7 +157,9 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/?search=` | auth | Search by username/displayName (regex, case-insensitive) |
-| PATCH | `/me` | auth | Update own displayName (1–80 chars, trimmed)/bio (≤1000)/avatar/wallpaper/isPrivate/theme; a replaced avatar/wallpaper the server stored is deleted from Cloudinary if nothing else uses it |
+| GET | `/discover?tag=&page=` | auth | Public profiles only, newest first, 20 a page (`hasMore`); never yourself or anyone you blocked / who blocked you; `tag` narrows to people with that tag |
+| GET | `/tags?q=` | auth | The 24 most used tags on public profiles (`{tag, count}`); `q` narrows to tags starting with it. Private profiles are not counted |
+| PATCH | `/me` | auth | Update own displayName (1–80 chars, trimmed)/bio (≤1000)/mood (≤60)/listeningTo (≤80)/tags (≤8)/avatar/wallpaper/isPrivate/theme; text is cleaned of control and invisible characters, tags are normalised (lower case, 2–24 letters/numbers/spaces/hyphens, no duplicates) and anything invalid is `400`; a replaced avatar/wallpaper the server stored is deleted from Cloudinary if nothing else uses it |
 | DELETE | `/me` | auth | `{password}` → `204`. Permanently deletes the account and everything it owns (posts, comments on them, friendships, media, tracks, requests, notifications, reports, stored files); groups it created are handed to another member or removed if empty |
 | PUT | `/me/top-friends` | auth | `{usernames: string[]}`, max 8 → `200 {topFriends}` (the saved list, same shape as `GET`). Only accepted friends are kept; anything else is ignored |
 | PUT | `/me/username` | auth | `{username}` → `200 {user}` and a re-issued session cookie. 3–30 letters/numbers/underscores (stored lowercase); `409` if taken or reserved for someone else (a name you give up stays yours for 30 days); `429` after 3 changes a day |
@@ -247,6 +250,17 @@ The audio never touches this API. A live travels one of two ways, fixed when it 
 | GET / POST | `/:id/comments` | Live chat for people in the room (host + joined listeners); ≤200 chars; 20 per minute; blocked users' comments hidden; `409` once ended |
 | DELETE | `/:id/comments/:commentId` | The author or the host |
 
+### Scheduled lives — `/api/scheduled-lives` (auth)
+A host plans a live ahead; people who want to be there ask for a reminder. Nothing here carries audio — starting the live is still `POST /api/live`.
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/` | Upcoming plans (including ones that started in the last 30 min), soonest first, each with `remindMe` for the viewer. Plans by blocked hosts, and by private-profile hosts who aren't your friends, are omitted |
+| POST | `/` | Verified email only. `{title}` (1–80) and `{startsAt}` (5 minutes to 30 days ahead) → `201`; at most 5 upcoming per host (`409`), 10 an hour (`429`). Tells the host's accepted friends with a `live_scheduled` notification |
+| DELETE | `/:id` | Host only: cancels the plan and removes its notifications |
+| POST / DELETE | `/:id/remind` | Ask for / drop a reminder. `404` unless you may see the plan; `400` for your own; `409` once it started more than 30 min ago |
+
+Reminders go out once, at most 10 minutes before the start, as a `live_reminder` notification to everyone who asked. A 60-second timer in the server sends them, and reading the plans or the notifications does the same check (throttled to once per 15 s), so a restarted or sleeping server still sends them on the next visit. Each plan is claimed with one atomic update (`remindedAt`) so two servers can't send twice; a plan more than 2 hours late is not reminded. Starting a live with `{scheduledId}` (`POST /api/live`) marks the plan started, removes the "scheduled"/"reminder" notifications and tells reminded people who aren't friends that the live is on.
+
 ### Notifications — `/api/notifications` (auth)
 | Method | Path | Notes |
 |---|---|---|
@@ -302,7 +316,7 @@ The audio never touches this API. A live travels one of two ways, fixed when it 
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (117 tests × 3 browsers, 351 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (125 tests × 3 browsers, 375 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -387,9 +401,9 @@ App
 │       │   │   ├── /messages  → MessagesPage (conversation list + open thread; /messages/:username)
 │       │   │   ├── /groups    → GroupsPage
 │       │   │   ├── /groups/:id→ GroupDetailPage      (GroupChat for members)
-│       │   │   ├── /live      → LivePage             (who's live + Go live)
+│       │   │   ├── /live      → LivePage             (who's live + Go live + schedule / upcoming lives)
 │       │   │   ├── /live/:id  → LiveRoomPage         (host or listener view; LiveChat; HostStage/ListenerStage (useStage polls) for guests on stage; lib/live/host.ts + listener.ts hold the WebRTC logic, sfuHost/sfuListener the media-server one)
-│       │   │   ├── /search    → SearchPage
+│       │   │   ├── /search    → SearchPage           (find by name, browse by tag, newest creatives)
 │       │   │   └── /help-wanted → TasksPage: public board + my requests (/tasks redirects here)
 │       │   ├── /u/:username → ProfilePage (attachUserIfPresent server-side, not client-gated)
 │       │   │   ├── ThemeEditor (warns when a text colour can't be read), ImagePositioner
@@ -503,11 +517,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 343 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 387 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 760 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 822 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,

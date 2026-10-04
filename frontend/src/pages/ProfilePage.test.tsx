@@ -10,7 +10,8 @@ import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types";
 
-vi.mock("../api/profiles.api", () => ({ profilesApi: { get: vi.fn(), updateMe: vi.fn(), deleteMe: vi.fn(), changeUsername: vi.fn() } }));
+vi.mock("../api/profiles.api", () => ({ profilesApi: { get: vi.fn(), updateMe: vi.fn(), deleteMe: vi.fn(), changeUsername: vi.fn(), tags: vi.fn() } }));
+vi.mock("../context/PlaybackContext", () => ({ usePlayback: () => ({ current: null }) }));
 vi.mock("../api/friends.api", () => ({ friendsApi: { list: vi.fn(), request: vi.fn() } }));
 vi.mock("../api/moderation.api", () => ({ moderationApi: { block: vi.fn(), report: vi.fn() } }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
@@ -44,6 +45,7 @@ function renderAs(viewer: User | null, username: string) {
 beforeEach(() => {
   [profiles, friends, vi.mocked(moderationApi)].forEach((api) => Object.values(api).forEach((fn) => fn.mockReset()));
   friends.list.mockResolvedValue({ friends: [] });
+  profiles.tags.mockResolvedValue({ tags: [{ tag: "painter", count: 3 }] });
 });
 
 describe("ProfilePage", () => {
@@ -112,6 +114,40 @@ describe("ProfilePage", () => {
 
     await waitFor(() => expect(profiles.updateMe).toHaveBeenCalled());
     expect(profiles.updateMe.mock.calls[0][0]).toMatchObject({ bio: "Painter and potter" });
+  });
+
+  it("shows a creative's mood, what they are listening to and tags that lead to others who do the same", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, mood: "feeling creative", listeningTo: "Blue in Green", tags: ["potter", "lo-fi"] } });
+    renderAs(me, "zoe");
+
+    expect(await screen.findByText("feeling creative")).toBeInTheDocument();
+    expect(screen.getByText("Blue in Green")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Find others tagged potter" })).toHaveAttribute("href", "/search?tag=potter");
+    expect(screen.getByRole("link", { name: "Find others tagged lo-fi" })).toHaveAttribute("href", "/search?tag=lo-fi");
+  });
+
+  it("shows no status or tags when there are none", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(screen.queryByRole("list", { name: "Status" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Tags" })).not.toBeInTheDocument();
+  });
+
+  it("lets the owner set a mood, what they are listening to and tags, saved with the profile", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, tags: ["painter"] } });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, mood: "calm", listeningTo: "Kind of Blue", tags: ["painter", "muralist"] } });
+    renderAs(me, "me");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    await userEvent.type(screen.getByLabelText("Mood"), "calm");
+    await userEvent.type(screen.getByLabelText("Listening to"), "Kind of Blue");
+    await userEvent.type(screen.getByLabelText(/What do you do\?/), "Muralist{enter}");
+    expect(screen.getByRole("list", { name: "Your tags" })).toHaveTextContent("#muralist");
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(profiles.updateMe).toHaveBeenCalled());
+    expect(profiles.updateMe.mock.calls[0][0]).toMatchObject({ mood: "calm", listeningTo: "Kind of Blue", tags: ["painter", "muralist"] });
   });
 
   it("auto-saves the private-profile toggle", async () => {
