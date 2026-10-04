@@ -871,6 +871,18 @@ Blog entries are the first long free text on the site (up to 10,000 characters),
 
 Covered by 18 backend tests, frontend tests for the list, the entry page, the editor, the notification and the date, and 3 browser flows (write → friend notified → edit → delete; validation; a private profile's entry).
 
+### 5.42 Rearranging and hiding profile sections
+
+The owner can put the parts of their profile (top friends, music, portfolio, blog, testimonials) in any order and hide any of them from visitors.
+
+- **Strict input:** `sectionOrder` must be every known section exactly once and `hiddenSections` only known names, each once; anything else (a short list, a duplicate, an unknown name, a non-list, an injection-style object) is `400` and nothing in the request is saved. Only the owner's own profile can be changed (`PATCH /me`, by session).
+- **Stored loosely, read strictly:** an older profile with nothing saved, or a saved order from before a section was added, is completed on read, so a new section appears in its usual place instead of vanishing.
+- **Hiding is presentation, not privacy.** A hidden section is not drawn for visitors, but the data behind it (for example the portfolio or blog endpoints) is governed by the profile's privacy and block rules, exactly as before; to keep content from people, make the profile private or delete it. The editor says "Hidden from visitors" rather than "private" for this reason.
+- **Private profiles:** the arrangement is part of the profile and is not returned to someone who can't see the profile.
+- **Accessible controls:** up / down / hide buttons with names ("Move Music up"), not drag-only, so keyboard, screen-reader and phone users can arrange sections; changes save straight away and an error is shown if one can't be saved.
+
+Covered by 12 backend tests, frontend tests for the helpers, the frame and the profile page, and 3 browser runs (incl. a phone-width layout).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

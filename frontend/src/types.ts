@@ -1,3 +1,5 @@
+import type { SectionKey } from "./lib/sections";
+
 /** How a picture wallpaper moves behind a profile. */
 export type WallpaperMotion = "none" | "zoom" | "drift" | "pan" | "pulse";
 
@@ -28,6 +30,9 @@ export interface User {
   mood?: string;
   listeningTo?: string;
   tags?: string[];
+  /** The order of the sections below the introduction, and the ones the owner has hidden from visitors. */
+  sectionOrder?: SectionKey[];
+  hiddenSections?: SectionKey[];
   isPrivate: boolean;
   createdAt: string;
   theme: ProfileTheme;

@@ -236,6 +236,77 @@ describe("ProfilePage", () => {
   });
 });
 
+describe("ProfilePage: the order of the sections", () => {
+  const SECTION_TEXT = ["top friends", "music", "portfolio", "blog visitor", "guestbook"];
+  const shownOrder = () =>
+    SECTION_TEXT.map((text) => ({ text, el: screen.queryByText(new RegExp(`^${text}`)) }))
+      .filter((s) => s.el)
+      .sort((a, b) => (a.el!.compareDocumentPosition(b.el!) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+      .map((s) => s.text);
+
+  it("shows the sections in the usual order by default", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(shownOrder()).toEqual(SECTION_TEXT);
+  });
+
+  it("shows them in the owner's order, and leaves out the ones they hid", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, sectionOrder: ["blog", "portfolio", "testimonials", "music", "friends"], hiddenSections: ["music"] } });
+    renderAs(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(shownOrder()).toEqual(["blog visitor", "portfolio", "guestbook", "top friends"]);
+    expect(screen.queryByRole("group", { name: /section$/ })).not.toBeInTheDocument(); // no controls for a visitor
+  });
+
+  it("doesn't show the owner their hidden sections either, until they edit", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, hiddenSections: ["portfolio"] } });
+    renderAs(me, "me");
+    await screen.findByRole("button", { name: "Edit profile" });
+    expect(screen.queryByText("portfolio")).not.toBeInTheDocument();
+    expect(screen.getByText("blog owner")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Edit profile" }));
+    const group = screen.getByRole("group", { name: "Portfolio section" });
+    expect(group).toHaveTextContent("Hidden from visitors");
+    expect(group).toHaveTextContent("portfolio");
+  });
+
+  it("lets the owner move a section, saving the new order straight away", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, sectionOrder: ["music", "friends", "portfolio", "blog", "testimonials"] } });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    expect(screen.getByRole("button", { name: "Move Top friends up" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Move Music up" }));
+    expect(profiles.updateMe).toHaveBeenCalledWith({ sectionOrder: ["music", "friends", "portfolio", "blog", "testimonials"] });
+    await waitFor(() => expect(shownOrder().slice(0, 2)).toEqual(["music", "top friends"]));
+  });
+
+  it("lets the owner hide a section and show it again", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    profiles.updateMe.mockResolvedValueOnce({ user: { ...me, hiddenSections: ["blog"] } });
+    profiles.updateMe.mockResolvedValueOnce({ user: { ...me, hiddenSections: [] } });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    await userEvent.click(screen.getByRole("button", { name: "Hide Blog" }));
+    expect(profiles.updateMe).toHaveBeenLastCalledWith({ hiddenSections: ["blog"] });
+    await userEvent.click(await screen.findByRole("button", { name: "Show Blog" }));
+    expect(profiles.updateMe).toHaveBeenLastCalledWith({ hiddenSections: [] });
+  });
+
+  it("says so, and keeps the order, when a change can't be saved", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    profiles.updateMe.mockRejectedValue(new ApiError(500, "boom"));
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    await userEvent.click(screen.getByRole("button", { name: "Move Music up" }));
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("boom"));
+    expect(shownOrder().slice(0, 2)).toEqual(["top friends", "music"]);
+    alertSpy.mockRestore();
+  });
+});
+
 describe("ProfilePage on different backgrounds", () => {
   const withTheme = (theme: User["theme"], extra: Partial<User> = {}) => ({ ...zoe, theme, ...extra }) as User;
   const pageOf = async () => (await screen.findByRole("heading", { name: "Zoe" })).closest("[data-scheme]") as HTMLElement;

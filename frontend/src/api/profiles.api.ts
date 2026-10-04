@@ -1,5 +1,6 @@
 import { api } from "./client";
 import type { Comment, ProfileTheme, User, WallpaperMotion } from "../types";
+import type { SectionKey } from "../lib/sections";
 
 export interface UpdateProfileInput {
   displayName?: string;
@@ -12,6 +13,8 @@ export interface UpdateProfileInput {
   mood?: string;
   listeningTo?: string;
   tags?: string[];
+  sectionOrder?: SectionKey[];
+  hiddenSections?: SectionKey[];
   isPrivate?: boolean;
   theme?: ProfileTheme;
 }

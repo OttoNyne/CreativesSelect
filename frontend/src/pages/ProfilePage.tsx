@@ -24,6 +24,8 @@ import { ProfileComments } from "../components/profile/ProfileComments";
 import { PortfolioGrid } from "../components/profile/PortfolioGrid";
 import { MusicPlayer } from "../components/profile/MusicPlayer";
 import { ProfileBlog } from "../components/profile/ProfileBlog";
+import { SectionFrame } from "../components/profile/SectionFrame";
+import { hiddenOf, moveSection, orderOf, type SectionKey } from "../lib/sections";
 import { GenerateTextButton } from "../components/ai/GenerateTextButton";
 import { ImageSearchPicker } from "../components/ai/ImageSearchPicker";
 import { DeleteAccount } from "../components/profile/DeleteAccount";
@@ -167,6 +169,26 @@ export function ProfilePage() {
   if (!profile) {
     return <div className="p-8 text-center text-white/60">Loading profile…</div>;
   }
+
+  // The sections below the introduction, in the owner's order. While editing the owner sees every one (with controls); everyone else,
+  // and the owner outside editing, sees only the ones that aren't hidden.
+  const order = orderOf(profile);
+  const hidden = hiddenOf(profile);
+  const rearranging = isOwner && editing;
+  const sectionBody = (key: SectionKey) => {
+    switch (key) {
+      case "friends":
+        return <TopFriendsList username={profile.username} isOwner={isOwner} />;
+      case "music":
+        return <MusicPlayer username={profile.username} isOwner={isOwner} />;
+      case "portfolio":
+        return <PortfolioGrid username={profile.username} isOwner={isOwner} />;
+      case "blog":
+        return <ProfileBlog username={profile.username} isOwner={isOwner} />;
+      case "testimonials":
+        return <ProfileComments username={profile.username} />;
+    }
+  };
 
   const wallpaperUrl = assetUrl(profile.wallpaperUrl);
   const isVideoWallpaper = profile.wallpaperType === "video" && Boolean(wallpaperUrl);
@@ -393,22 +415,28 @@ export function ProfilePage() {
           </>
         )}
 
-        <div className="mt-6 grid grid-cols-1 gap-4 pb-10 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <TopFriendsList username={profile.username} isOwner={isOwner} />
-          </div>
-          <div className="sm:col-span-2">
-            <MusicPlayer username={profile.username} isOwner={isOwner} />
-          </div>
-          <div className="sm:col-span-2">
-            <PortfolioGrid username={profile.username} isOwner={isOwner} />
-          </div>
-          <div className="sm:col-span-2">
-            <ProfileBlog username={profile.username} isOwner={isOwner} />
-          </div>
-          <div className="sm:col-span-2">
-            <ProfileComments username={profile.username} />
-          </div>
+        <div className="mt-6 flex flex-col gap-4 pb-10">
+          {order
+            .filter((key) => rearranging || !hidden.includes(key))
+            .map((key, i, shown) => {
+              const section = sectionBody(key);
+              return rearranging ? (
+                <SectionFrame
+                  key={key}
+                  section={key}
+                  position={i + 1}
+                  total={shown.length}
+                  hidden={hidden.includes(key)}
+                  disabled={saving}
+                  onMove={(direction) => saveProfile({ sectionOrder: moveSection(order, key, direction) })}
+                  onToggleHidden={() => saveProfile({ hiddenSections: hidden.includes(key) ? hidden.filter((h) => h !== key) : [...hidden, key] })}
+                >
+                  {section}
+                </SectionFrame>
+              ) : (
+                <div key={key}>{section}</div>
+              );
+            })}
         </div>
       </div>
     </div>
