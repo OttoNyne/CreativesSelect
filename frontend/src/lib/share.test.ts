@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PNG } from "pngjs";
 import { scanQr } from "../test/scanQr";
-import { CANONICAL_SITE, liveUrl, profileUrl, qrCodeFor, siteOrigin } from "./share";
+import { CANONICAL_SITE, inviteUrl, liveUrl, profileUrl, qrCodeFor, siteOrigin } from "./share";
 
 describe("which address gets shared", () => {
   it("is the real domain on the live site, however it was reached", () => {
@@ -22,6 +22,13 @@ describe("which address gets shared", () => {
     expect(profileUrl("zoe_1")).toBe(`${window.location.origin}/u/zoe_1`);
     expect(profileUrl("a/b c")).toBe(`${window.location.origin}/u/a%2Fb%20c`);
     expect(liveUrl("abc123")).toBe(`${window.location.origin}/live/abc123`);
+  });
+});
+
+describe("the invite link", () => {
+  it("points at the join page on this site, with the code safely encoded", () => {
+    expect(inviteUrl("AbCd_-12")).toBe(`${siteOrigin()}/join/AbCd_-12`);
+    expect(inviteUrl("a/b c")).toBe(`${siteOrigin()}/join/a%2Fb%20c`);
   });
 });
 

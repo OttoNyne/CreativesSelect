@@ -15,6 +15,8 @@ export function siteOrigin(location: Pick<Location, "origin" | "hostname"> = win
 
 export const siteUrl = () => siteOrigin();
 export const profileUrl = (username: string) => `${siteOrigin()}/u/${encodeURIComponent(username)}`;
+/** The link a friend opens to join through someone's invite. */
+export const inviteUrl = (code: string) => `${siteOrigin()}/join/${encodeURIComponent(code)}`;
 export const liveUrl = (liveId: string) => `${siteOrigin()}/live/${encodeURIComponent(liveId)}`;
 
 /** A QR code for `url` as a PNG data address (loaded on demand: it is only needed when someone opens the share window). */

@@ -37,6 +37,8 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const liveId = str(n.payload.liveId);
       return liveId ? { to: `/live/${liveId}`, label: "Listen live" } : null;
     }
+    case "invite_joined":
+      return actorProfile ? { to: actorProfile.to, label: "View profile" } : { to: "/friends", label: "See your friends" };
     case "blog_post": {
       const entryId = str(n.payload.entryId);
       return entryId ? { to: `/blog/${entryId}`, label: "Read entry" } : actorProfile;

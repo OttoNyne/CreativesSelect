@@ -43,6 +43,8 @@ function describe(n: Notification): string {
     }
     case "live_started":
       return typeof n.payload.title === "string" ? `is live now: "${n.payload.title}"` : "is live now";
+    case "invite_joined":
+      return "joined with your invite link — you're friends";
     case "blog_post":
       return typeof n.payload.title === "string" ? `wrote a blog entry: "${n.payload.title}"` : "wrote a blog entry";
     case "live_scheduled":

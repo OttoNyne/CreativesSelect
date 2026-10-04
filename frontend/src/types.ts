@@ -174,6 +174,24 @@ export interface ProfileVisitor {
   day: string;
 }
 
+/** Who is inviting someone, as shown on an invite link. */
+export interface Inviter {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+/** A link someone shares so a friend can join and be their friend straight away. */
+export interface Invite {
+  id: string;
+  code: string;
+  uses: number;
+  maxUses: number;
+  expiresAt: string;
+  createdAt: string;
+  joined: { user: User; at: string }[];
+}
+
 /** A short message from someone to all of their friends; it comes down after a while. */
 export interface Bulletin {
   id: string;
@@ -207,7 +225,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

@@ -4,11 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { RegisterPage } from "./RegisterPage";
 import { authApi } from "../api/auth.api";
+import { invitesApi } from "../api/invites.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types";
 
 vi.mock("../api/auth.api", () => ({ authApi: { register: vi.fn() } }));
+vi.mock("../api/invites.api", () => ({ invitesApi: { preview: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 const register = vi.mocked(authApi.register);
 const setUser = vi.fn();
@@ -36,6 +38,70 @@ beforeEach(() => {
   register.mockReset();
   setUser.mockReset();
   vi.mocked(useAuth).mockReturnValue({ user: null, isLoading: false, setUser, refresh: async () => {} });
+});
+
+function renderJoin(code = "AbCdEf123456_-xy") {
+  render(
+    <MemoryRouter initialEntries={[`/join/${code}`]}>
+      <Routes>
+        <Route path="/join/:code" element={<RegisterPage />} />
+        <Route path="/" element={<div>Home feed</div>} />
+        <Route path="/friends" element={<div>Friends page</div>} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
+describe("RegisterPage: through an invite link", () => {
+  const ana = { username: "ana", displayName: "Ana Maker", avatarUrl: null };
+  const newUser = { id: "1", username: "sam_paints", displayName: "Sam Painter" } as User;
+
+  it("says who is inviting, sends the code with the sign-up, and then shows the new friend", async () => {
+    vi.mocked(invitesApi.preview).mockResolvedValue({ inviter: ana });
+    register.mockResolvedValue({ user: newUser, invitedBy: "ana" });
+    renderJoin();
+    expect(await screen.findByText(/invited you/)).toHaveTextContent("Ana Maker invited you");
+    expect(invitesApi.preview).toHaveBeenCalledWith("AbCdEf123456_-xy");
+    await fill();
+    await userEvent.click(screen.getByRole("button", { name: "Sign up" }));
+    expect(register).toHaveBeenCalledWith(expect.objectContaining({ invite: "AbCdEf123456_-xy", username: "sam_paints" }));
+    expect(await screen.findByText("Friends page")).toBeInTheDocument();
+  });
+
+  it("goes to the feed if the server didn't make them friends", async () => {
+    vi.mocked(invitesApi.preview).mockResolvedValue({ inviter: ana });
+    register.mockResolvedValue({ user: newUser });
+    renderJoin();
+    await screen.findByText(/invited you/);
+    await fill();
+    await userEvent.click(screen.getByRole("button", { name: "Sign up" }));
+    expect(await screen.findByText("Home feed")).toBeInTheDocument();
+  });
+
+  it("says when the link isn't valid any more, still lets them sign up, and doesn't send the code", async () => {
+    vi.mocked(invitesApi.preview).mockRejectedValue(new ApiError(404, "This invite link isn't valid any more"));
+    register.mockResolvedValue({ user: newUser });
+    renderJoin();
+    expect(await screen.findByText(/isn't valid any more/)).toBeInTheDocument();
+    await fill();
+    await userEvent.click(screen.getByRole("button", { name: "Sign up" }));
+    expect(register).toHaveBeenCalledWith({ displayName: "Sam Painter", username: "sam_paints", email: "sam@example.com", password: "long-enough-1" });
+    expect(await screen.findByText("Home feed")).toBeInTheDocument();
+  });
+
+  it("shows the plain sign-up page at /register, with no invite message and no lookup", async () => {
+    renderPage();
+    expect(screen.queryByText(/invited you|isn't valid any more/)).not.toBeInTheDocument();
+    expect(invitesApi.preview).not.toHaveBeenCalled();
+  });
+
+  it("tells someone who is already signed in, and doesn't hide the form", async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: newUser, isLoading: false, setUser, refresh: async () => {} });
+    vi.mocked(invitesApi.preview).mockResolvedValue({ inviter: ana });
+    renderJoin();
+    expect(await screen.findByText(/already signed in/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go to your feed" })).toHaveAttribute("href", "/");
+  });
 });
 
 describe("RegisterPage", () => {

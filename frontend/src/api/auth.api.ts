@@ -6,6 +6,8 @@ export interface RegisterInput {
   username: string;
   password: string;
   displayName: string;
+  /** The code from an invite link, if they came in through one. */
+  invite?: string;
 }
 
 export interface LoginInput {
@@ -14,7 +16,7 @@ export interface LoginInput {
 }
 
 export const authApi = {
-  register: (input: RegisterInput) => api.post<{ user: User }>("/auth/register", input),
+  register: (input: RegisterInput) => api.post<{ user: User; invitedBy?: string }>("/auth/register", input),
   login: (input: LoginInput) => api.post<{ user: User }>("/auth/login", input),
   logout: () => api.post<void>("/auth/logout"),
   changePassword: (currentPassword: string, newPassword: string) =>

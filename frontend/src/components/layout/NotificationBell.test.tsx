@@ -200,6 +200,14 @@ describe("NotificationBell: where clicking goes", () => {
   });
 });
 
+describe("NotificationBell: invite links", () => {
+  it("says someone joined through your link, and links to them", async () => {
+    await openWith([note({ type: "invite_joined", payload: { inviteId: "i1" } })]);
+    expect(await screen.findByText(/joined with your invite link/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View profile" })).toBeInTheDocument();
+  });
+});
+
 describe("NotificationBell: blog entries", () => {
   it("announces a new entry with its title and links to it", async () => {
     await openWith([note({ type: "blog_post", payload: { title: "A day in the studio", entryId: "e1" } })]);

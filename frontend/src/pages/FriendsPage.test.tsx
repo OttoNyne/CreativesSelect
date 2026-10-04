@@ -10,6 +10,7 @@ import type { FriendRequest, User } from "../types";
 vi.mock("../api/friends.api", () => ({
   friendsApi: { list: vi.fn(), requests: vi.fn(), accept: vi.fn(), decline: vi.fn(), remove: vi.fn(), request: vi.fn() },
 }));
+vi.mock("../components/friends/InviteFriends", () => ({ InviteFriends: () => <div>invite friends panel</div> }));
 const api = vi.mocked(friendsApi);
 
 const zoe = { id: "u2", username: "zoe", displayName: "Zoe" } as User;
@@ -47,6 +48,11 @@ describe("FriendsPage", () => {
     expect(await screen.findByText("Online now")).toBeInTheDocument();
     expect(screen.getByText("Active this week")).toBeInTheDocument();
     expect(screen.queryByText("Active today")).not.toBeInTheDocument();
+  });
+
+  it("offers the invite panel above the lists", async () => {
+    renderPage();
+    expect(await screen.findByText("invite friends panel")).toBeInTheDocument();
   });
 
   it("shows an empty state, and no requests section, when there's nothing", async () => {

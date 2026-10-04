@@ -955,6 +955,21 @@ A board gives each group lasting topics with replies. It is the first group cont
 
 Covered by 22 backend tests, frontend tests for the board, topic view and the group page, and 3 browser flows.
 
+### 5.48 Invite links: friends by link, without a leaked link becoming a way in
+
+An invite link makes whoever signs up through it the inviter's friend immediately, with no request to accept. That is convenient and dangerous: a friend can see a private profile, so a link that leaks (posted publicly, forwarded widely) could hand strangers access to someone's private content. The design limits what a leaked link can do.
+
+- **Short-lived, capped and revocable.** A link expires after 7 days, works for at most 10 sign-ups, and its owner can switch it off at any time; at most 3 usable links per person and 10 new links a day (and a verified email where the operator requires it). The worst case of a fully leaked link is 10 new friends in a week, and the owner can see every one of them.
+- **The cap can't be beaten by speed.** A use is counted and checked in one atomic update (unexpired, not switched off, uses below the cap), so ten simultaneous sign-ups on a link with two places let in exactly two (tested with four at once).
+- **The owner sees and is told.** Each joiner is listed under the link (with the day they joined) and the inviter gets an `invite_joined` notification with the new person; the Friends page's Unfriend works as for any friend, and switching a link off keeps nobody out who is already in (so it is explicit that existing friends stay).
+- **Unguessable and not an oracle.** The code is 96 random bits (12 random bytes, URL-safe). The public preview returns only the inviter's name, address and picture, never an id, email or privacy setting, answers every kind of invalid link identically (tested: wrong, malformed, too long, expired, switched off, full) and is limited to 60 lookups an hour per client address, so codes can't be enumerated and the endpoint can't be used to learn who has links.
+- **A bad code never blocks sign-up and never leaks.** Registration with an unusable code creates the account normally with no friendship and no mention of why; a code over 64 characters is a `400` like any other bad input.
+- **Stored as is, on purpose.** Unlike password-reset and email-confirmation tokens (which are stored only as hashes because they grant access to an account), an invite code is stored in the clear so its owner can see and share the link again; it grants only a friendship, and only within the limits above. This is a deliberate trade-off.
+- **Cleanup.** Deleting an account deletes its links and removes the person from other links' lists of who joined; the notifications they caused go with them.
+- **Not covered:** an invitee becomes a friend without an explicit acceptance (that is the feature); anyone holding a link within its week can use it, so people should share it only with those they mean to.
+
+Covered by 14 backend tests, frontend tests for the panel, the sign-up page and the notification, and 3 browser flows.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

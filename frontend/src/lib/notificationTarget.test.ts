@@ -62,6 +62,13 @@ describe("notificationTarget", () => {
   });
 });
 
+describe("notificationTarget: invite links", () => {
+  it("opens the profile of the person who joined, or the friends page if they are gone", () => {
+    expect(notificationTarget(n("invite_joined", { inviteId: "i1" }), "me")).toEqual({ to: "/u/zoe", label: "View profile" });
+    expect(notificationTarget(n("invite_joined", {}, null), "me")).toEqual({ to: "/friends", label: "See your friends" });
+  });
+});
+
 describe("notificationTarget: blog entries", () => {
   it("opens the entry", () => {
     expect(notificationTarget(n("blog_post", { entryId: "e1" }), "me")).toEqual({ to: "/blog/e1", label: "Read entry" });

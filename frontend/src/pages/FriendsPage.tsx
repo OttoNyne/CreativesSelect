@@ -5,6 +5,7 @@ import { ApiError } from "../api/client";
 import type { FriendRequest, User } from "../types";
 import { Avatar } from "../components/common/Avatar";
 import { ActivityBadge } from "../components/common/ActivityBadge";
+import { InviteFriends } from "../components/friends/InviteFriends";
 
 export function FriendsPage() {
   const [friends, setFriends] = useState<User[]>([]);
@@ -66,6 +67,7 @@ export function FriendsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
       {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+      <InviteFriends />
       {requests.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Friend Requests</h2>
