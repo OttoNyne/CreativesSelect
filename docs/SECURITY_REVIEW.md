@@ -970,6 +970,21 @@ An invite link makes whoever signs up through it the inviter's friend immediatel
 
 Covered by 14 backend tests, frontend tests for the panel, the sign-up page and the notification, and 3 browser flows.
 
+### 5.49 The getting-started checklist: a nudge that can't be gamed and doesn't track anyone
+
+The welcome flow guides new accounts through confirming their email, adding a picture and bio, a first portfolio piece, a first friend and a first post. The risks were a client being able to fake progress (for example to skip email confirmation), exposing activity data, and nagging people who didn't ask.
+
+- **Derived, not stored.** Each step is computed on the server from the person's own data at the moment of asking (email confirmed, a picture, a non-blank bio, a portfolio piece, an accepted friendship, a post), so nothing a client sends can mark one done, and the checklist can't disagree with the account (tested step by step, including that a blank bio and a pending friend request don't count and that a friendship counts in either direction).
+- **Cosmetic only.** The checklist never gates a feature: completing or skipping it changes nothing about what the person can do, so it can't be used to bypass the email-confirmation requirement where the operator turns that on.
+- **Only the person's own data.** The endpoint reads only the signed-in account's own state and returns six booleans plus whether to show it; it takes no user id, so it can't be pointed at someone else (tested: two accounts' checklists are independent).
+- **One thing is remembered, and it is private.** Hiding it saves a single timestamp on the account, idempotent, never returned by any profile or other response (tested).
+- **Doesn't nag.** It is shown only to accounts at most 14 days old, so people who joined long before it existed never see it, and it disappears by itself when every step is done or when hidden.
+- **Failure is quiet.** If the checklist can't be loaded the feed shows nothing extra instead of an error.
+- **Accessible:** progress is a labelled progress bar and "n of 6 done"; a finished step says "done" in words for screen readers, not only a tick colour; each step is a real link or button.
+- **Not covered:** the checklist cannot be brought back after it is hidden (only the underlying steps remain available from the profile).
+
+Covered by 10 backend tests, frontend tests for the card, the feed and the profile's edit link, and 3 browser flows.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { profilesApi } from "../api/profiles.api";
 import { friendsApi } from "../api/friends.api";
@@ -43,6 +43,7 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<User | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [searchParams] = useSearchParams();
   const [bio, setBio] = useState("");
   const [mood, setMood] = useState("");
   const [listeningTo, setListeningTo] = useState("");
@@ -101,6 +102,12 @@ export function ProfilePage() {
   useEffect(() => {
     if (recordsVisits) profileViewsApi.record(username).catch(() => {}); // a missed visit isn't worth an error
   }, [recordsVisits, username]);
+
+  // A link such as the getting-started checklist's "Add a profile picture" opens the owner's own profile ready to edit.
+  const wantsEdit = isOwner && searchParams.get("edit") === "1";
+  useEffect(() => {
+    if (wantsEdit) setEditing(true);
+  }, [wantsEdit]);
 
   /** Saves the change; says so (and returns false) if it couldn't. */
   async function saveProfile(updates: Parameters<typeof profilesApi.updateMe>[0]): Promise<boolean> {

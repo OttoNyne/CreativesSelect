@@ -13,6 +13,7 @@ vi.mock("../api/posts.api", () => ({
 }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
 vi.mock("../components/bulletins/BulletinsStrip", () => ({ BulletinsStrip: () => <div>bulletins strip</div> }));
+vi.mock("../components/onboarding/WelcomeChecklist", () => ({ WelcomeChecklist: () => <div>welcome checklist</div> }));
 vi.mock("../api/ai.api", () => ({ aiApi: { generateText: vi.fn(), generateImage: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 const api = vi.mocked(postsApi);
@@ -51,6 +52,12 @@ beforeEach(() => {
 });
 
 describe("FeedPage", () => {
+  it("shows the getting-started checklist above the posts", async () => {
+    api.feed.mockResolvedValue({ posts: [] });
+    renderPage();
+    expect(await screen.findByText("welcome checklist")).toBeInTheDocument();
+  });
+
   it("shows the feed, including the AI badges", async () => {
     api.feed.mockResolvedValue({
       posts: [post(), post({ id: "p2", authorId: "u2", author: { id: "u2", username: "zoe", displayName: "Zoe" } as never, content: "Zoe's post", isAiImage: true })],

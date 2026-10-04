@@ -174,6 +174,17 @@ export interface ProfileVisitor {
   day: string;
 }
 
+export type OnboardingStepKey = "email" | "avatar" | "bio" | "portfolio" | "friend" | "post";
+
+/** The getting-started checklist: each step ticked from what the person has really done. */
+export interface OnboardingState {
+  steps: { key: OnboardingStepKey; done: boolean }[];
+  allDone: boolean;
+  dismissed: boolean;
+  /** Whether to show it: a recent account, not finished, not hidden. */
+  show: boolean;
+}
+
 /** Who is inviting someone, as shown on an invite link. */
 export interface Inviter {
   username: string;

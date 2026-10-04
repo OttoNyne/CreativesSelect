@@ -62,6 +62,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   return (
     <form onSubmit={handleSubmit} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <textarea
+        id="post-composer"
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Share what you're working on…"

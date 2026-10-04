@@ -34,10 +34,10 @@ const friends = vi.mocked(friendsApi);
 const zoe = { id: "u2", username: "zoe", displayName: "Zoe", bio: "Potter", isPrivate: false, theme: {}, wallpaperType: "image", wallpaperPosition: "50% 50%" } as unknown as User;
 const me = { ...zoe, id: "me", username: "me", displayName: "Me", bio: "Painter" } as User;
 
-function renderAs(viewer: User | null, username: string) {
+function renderAs(viewer: User | null, username: string, search = "") {
   vi.mocked(useAuth).mockReturnValue({ user: viewer, isLoading: false, setUser: vi.fn(), refresh: async () => {} });
   render(
-    <MemoryRouter initialEntries={[`/u/${username}`]}>
+    <MemoryRouter initialEntries={[`/u/${username}${search}`]}>
       <Routes>
         <Route path="/u/:username" element={<ProfilePage />} />
         <Route path="/login" element={<div>Login screen</div>} />
@@ -229,6 +229,25 @@ describe("ProfilePage", () => {
     await waitFor(() => expect(screen.getByRole("checkbox", { name: "Profile views" })).toBeChecked());
     await userEvent.click(screen.getByRole("checkbox", { name: "Profile views" }));
     expect(profiles.updateMe).toHaveBeenLastCalledWith({ profileViews: false });
+  });
+
+  it("opens the owner's own profile ready to edit when the address asks for it (the checklist's links)", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    renderAs(me, "me", "?edit=1");
+    expect(await screen.findByRole("button", { name: "Done editing" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Tell people what you make/)).toBeInTheDocument();
+  });
+
+  it("doesn't open editing without that, or for someone else's profile", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    renderAs(me, "me");
+    expect(await screen.findByRole("button", { name: "Edit profile" })).toBeInTheDocument();
+    cleanup();
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe", "?edit=1");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(screen.queryByRole("button", { name: "Done editing" })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Tell people what you make/)).not.toBeInTheDocument();
   });
 
   it("shows no status or tags when there are none", async () => {
