@@ -40,6 +40,8 @@ export interface User {
   activity?: Activity;
   /** On your own profile: whether your friends can see when you're online. */
   showActivity?: boolean;
+  /** On your own profile: whether profile views are on (off by default). */
+  profileViews?: boolean;
   isPrivate: boolean;
   createdAt: string;
   theme: ProfileTheme;
@@ -155,6 +157,12 @@ export interface BoardTask {
   dueDate?: string;
   createdAt: string;
   author: User;
+}
+
+/** Someone who looked at your profile, and the day they last did (a calendar day, in UTC). */
+export interface ProfileVisitor {
+  user: User;
+  day: string;
 }
 
 /** A short message from someone to all of their friends; it comes down after a while. */

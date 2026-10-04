@@ -25,6 +25,8 @@ import { PortfolioGrid } from "../components/profile/PortfolioGrid";
 import { MusicPlayer } from "../components/profile/MusicPlayer";
 import { ProfileBlog } from "../components/profile/ProfileBlog";
 import { ActivityBadge } from "../components/common/ActivityBadge";
+import { ProfileVisitors } from "../components/profile/ProfileVisitors";
+import { profileViewsApi } from "../api/profileViews.api";
 import { SectionFrame } from "../components/profile/SectionFrame";
 import { hiddenOf, moveSection, orderOf, type SectionKey } from "../lib/sections";
 import { GenerateTextButton } from "../components/ai/GenerateTextButton";
@@ -93,6 +95,12 @@ export function ProfilePage() {
     // which would otherwise wipe out unsaved bio/theme edits in progress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, viewer?.username]);
+
+  // Opening someone else's profile counts as a visit, but only if you have profile views on (the server also needs them to).
+  const recordsVisits = Boolean(viewer?.profileViews) && !isOwner && profile?.username === username;
+  useEffect(() => {
+    if (recordsVisits) profileViewsApi.record(username).catch(() => {}); // a missed visit isn't worth an error
+  }, [recordsVisits, username]);
 
   /** Saves the change; says so (and returns false) if it couldn't. */
   async function saveProfile(updates: Parameters<typeof profilesApi.updateMe>[0]): Promise<boolean> {
@@ -342,6 +350,14 @@ export function ProfilePage() {
                 <input type="checkbox" checked={profile.showActivity !== false} onChange={(e) => saveProfile({ showActivity: e.target.checked })} />
                 Show my friends when I&apos;m online
               </label>
+              <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+                <input type="checkbox" checked={profile.profileViews === true} onChange={(e) => saveProfile({ profileViews: e.target.checked })} />
+                Profile views
+              </label>
+              <p className="w-full text-xs text-[var(--profile-muted)]">
+                Off by default. Turn on to see who visits your profile; you then show up to other people who have it on when you visit theirs. Turning it off deletes
+                every visit.
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-white/60">Avatar:</span>
@@ -420,6 +436,8 @@ export function ProfilePage() {
             <ProfileTags tags={profile.tags} />
           </>
         )}
+
+        {isOwner && viewer?.profileViews && <ProfileVisitors />}
 
         <div className="mt-6 flex flex-col gap-4 pb-10">
           {order

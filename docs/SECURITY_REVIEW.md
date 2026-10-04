@@ -911,6 +911,20 @@ Showing when someone is around is useful and is also behavioural data (it reveal
 
 Covered by 14 backend tests, frontend tests for the badge, the check-in timing (hidden tab, off switch, failures) and the three places it appears, and 2 browser flows.
 
+### 5.45 Opt-in profile views: "who looked at my profile" only by mutual consent
+
+Telling people who has looked at their profile is the most privacy-sensitive feature on the site: it records what individuals do. It is therefore opt-in on both sides, off by default, minimal, and deletable.
+
+- **Mutual consent.** A visit is recorded only if the visitor has turned profile views on **and** the profile's owner has it on at that moment, and the owner is shown only visitors who still have it on. You can't watch others without being watchable. Nothing at all is recorded about anyone who hasn't opted in, and turning it on later never reveals visits from before (tested).
+- **Recording reveals nothing.** The recording call answers `204` in every case (feature off for either side, profile private or blocked, profile missing, own profile, rate limit), so it can't be used as an oracle for whether someone has the feature on, whether a profile exists, or whether you may see it.
+- **Only what you could already see.** No visit is recorded for a profile the visitor can't open (private and not a friend, or blocked either way), and an owner never sees a visitor they have blocked.
+- **Coarse and short-lived.** The list shows a calendar day (UTC), never a time (tested on the raw response), one entry per person; a second look within 30 minutes isn't a new visit; entries expire after 30 days through a TTL, and the list also filters on the expiry; at most 50 are shown.
+- **Off means gone.** Turning the setting off deletes every visit to you and every visit you made (only after the whole request has been accepted, so a refused request never deletes anything); each party's account deletion removes both kinds. The setting is visible only to its owner and must be a real boolean.
+- **Bounded:** 300 recordings an hour per person, one row per pair.
+- **Not covered:** an owner who sees one visitor knows that person has it on and visited; a visitor can't tell whether the owner had it on (by design, the visit simply may not be shown).
+
+Covered by 20 backend tests, frontend tests for the card, the day wording and the recording rules on the profile page, and 3 browser flows.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

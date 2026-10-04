@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { daysLeft, earliestStart, formatDay, formatWhen, untilText } from "./when";
+import { daysLeft, earliestStart, formatCalendarDay, formatDay, formatWhen, untilText } from "./when";
 
 const NOW = new Date("2026-10-10T12:00:00Z");
 const at = (ms: number) => new Date(NOW.getTime() + ms).toISOString();
 const MIN = 60_000;
+
+describe("formatCalendarDay", () => {
+  it("writes a UTC calendar day out in full, whatever the viewer's time zone", () => {
+    expect(formatCalendarDay("2026-10-04", "en-US")).toBe("October 4, 2026");
+    expect(formatCalendarDay("2026-01-01", "en-US")).toBe("January 1, 2026");
+  });
+  it("says nothing for something that isn't a day", () => {
+    for (const bad of ["", "nope", "2026-13-45x", "2026-10-4", "2026-10-04T12:00:00Z"]) expect(formatCalendarDay(bad)).toBe("");
+  });
+});
 
 describe("daysLeft", () => {
   it("counts days to the nearest, and says less than a day near the end", () => {

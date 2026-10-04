@@ -43,3 +43,12 @@ export function daysLeft(expiresAt: string | Date, now: Date = new Date()): stri
   const days = Math.round(left); // a bulletin made a moment ago has "10 days", not "9"
   return `${days} day${days === 1 ? "" : "s"} left`;
 }
+
+/** A calendar day given as "2026-10-04" (a UTC day, as the server sends it), written out: "October 4, 2026". */
+export function formatCalendarDay(day: string, locale?: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!match) return "";
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }).format(date);
+}

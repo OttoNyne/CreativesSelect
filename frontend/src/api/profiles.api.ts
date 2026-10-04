@@ -16,6 +16,7 @@ export interface UpdateProfileInput {
   sectionOrder?: SectionKey[];
   hiddenSections?: SectionKey[];
   showActivity?: boolean;
+  profileViews?: boolean;
   isPrivate?: boolean;
   theme?: ProfileTheme;
 }

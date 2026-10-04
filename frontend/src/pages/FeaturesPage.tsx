@@ -10,7 +10,7 @@ const FEATURES = [
   { icon: "🤝", title: "Help wanted", text: "Post a request on the public board, or offer to help someone else with theirs." },
   { icon: "🎙️", title: "Live audio", text: "Go live with your voice, chat with listeners as you talk, bring up to 9 listeners on stage to speak, let your friends know you're on, and schedule one ahead so people can ask for a reminder. Find other creatives by name or tag. Share a live, a profile or the whole site with a QR code." },
   { icon: "✨", title: "AI assistance", text: "Optionally generate a caption or an image to get started. Anything AI-made is clearly labelled." },
-  { icon: "🔒", title: "Privacy and safety", text: "Private profiles, blocking, reporting, a switch to hide when you're online from friends, email confirmation, password reset, and full account deletion." },
+  { icon: "🔒", title: "Privacy and safety", text: "Private profiles, blocking, reporting, a switch to hide when you're online from friends, optional profile views that only work when both people turn them on, email confirmation, password reset, and full account deletion." },
   { icon: "📱", title: "Works on your phone", text: "Use it in any browser, or add it to your Home Screen to open it like an app." },
 ];
 

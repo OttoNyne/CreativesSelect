@@ -6,6 +6,7 @@ import { ProfilePage } from "./ProfilePage";
 import { profilesApi } from "../api/profiles.api";
 import { friendsApi } from "../api/friends.api";
 import { moderationApi } from "../api/moderation.api";
+import { profileViewsApi } from "../api/profileViews.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types";
@@ -21,6 +22,8 @@ vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("../components/profile/TopFriendsList", () => ({ TopFriendsList: () => <div>top friends</div> }));
 vi.mock("../components/profile/MusicPlayer", () => ({ MusicPlayer: () => <div>music</div> }));
 vi.mock("../components/profile/PortfolioGrid", () => ({ PortfolioGrid: () => <div>portfolio</div> }));
+vi.mock("../api/profileViews.api", () => ({ profileViewsApi: { record: vi.fn(), list: vi.fn() } }));
+vi.mock("../components/profile/ProfileVisitors", () => ({ ProfileVisitors: () => <div>recent visitors</div> }));
 vi.mock("../components/profile/ProfileBlog", () => ({ ProfileBlog: ({ isOwner }: { isOwner: boolean }) => <div>blog {isOwner ? "owner" : "visitor"}</div> }));
 vi.mock("../components/profile/ProfileComments", () => ({ ProfileComments: () => <div>guestbook</div> }));
 vi.mock("../components/common/ImagePositioner", () => ({ ImagePositioner: () => <div>positioner</div> }));
@@ -45,6 +48,8 @@ function renderAs(viewer: User | null, username: string) {
 
 beforeEach(() => {
   [profiles, friends, vi.mocked(moderationApi)].forEach((api) => Object.values(api).forEach((fn) => fn.mockReset()));
+  vi.mocked(profileViewsApi.record).mockReset();
+  vi.mocked(profileViewsApi.record).mockResolvedValue(undefined);
   friends.list.mockResolvedValue({ friends: [] });
   profiles.tags.mockResolvedValue({ tags: [{ tag: "painter", count: 3 }] });
 });
@@ -153,6 +158,77 @@ describe("ProfilePage", () => {
     await waitFor(() => expect(screen.getByRole("checkbox", { name: "Show my friends when I'm online" })).not.toBeChecked());
     await userEvent.click(screen.getByRole("checkbox", { name: "Show my friends when I'm online" }));
     expect(profiles.updateMe).toHaveBeenLastCalledWith({ showActivity: true });
+  });
+
+  it("counts a visit to someone else's profile when you have profile views on", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs({ ...me, profileViews: true }, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    await waitFor(() => expect(profileViewsApi.record).toHaveBeenCalledWith("zoe"));
+    expect(profileViewsApi.record).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts nothing when you haven't turned profile views on, or when you look at your own profile", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(profileViewsApi.record).not.toHaveBeenCalled();
+  });
+
+  it("doesn't count a look at your own profile", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, profileViews: true } });
+    renderAs({ ...me, profileViews: true }, "me");
+    await screen.findByRole("button", { name: "Edit profile" });
+    expect(profileViewsApi.record).not.toHaveBeenCalled();
+  });
+
+  it("doesn't count a profile that couldn't be opened", async () => {
+    profiles.get.mockRejectedValue(new ApiError(404, "not found"));
+    renderAs({ ...me, profileViews: true }, "zoe");
+    await screen.findByText(/unavailable/);
+    expect(profileViewsApi.record).not.toHaveBeenCalled();
+  });
+
+  it("keeps going if a visit can't be recorded", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    vi.mocked(profileViewsApi.record).mockRejectedValue(new ApiError(500, "boom"));
+    renderAs({ ...me, profileViews: true }, "zoe");
+    expect(await screen.findByRole("heading", { name: "Zoe" })).toBeInTheDocument();
+  });
+
+  it("shows the owner their recent visitors only when profile views are on", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, profileViews: false } });
+    renderAs({ ...me, profileViews: false }, "me");
+    await screen.findByRole("button", { name: "Edit profile" });
+    expect(screen.queryByText("recent visitors")).not.toBeInTheDocument();
+  });
+
+  it("shows the owner their recent visitors when profile views are on, and nobody else", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, profileViews: true } });
+    renderAs({ ...me, profileViews: true }, "me");
+    expect(await screen.findByText("recent visitors")).toBeInTheDocument();
+  });
+
+  it("never shows visitors on someone else's profile", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs({ ...me, profileViews: true }, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(screen.queryByText("recent visitors")).not.toBeInTheDocument();
+  });
+
+  it("lets the owner turn profile views on and off, saved straight away", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    profiles.updateMe.mockResolvedValueOnce({ user: { ...me, profileViews: true } });
+    profiles.updateMe.mockResolvedValueOnce({ user: { ...me, profileViews: false } });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const box = screen.getByRole("checkbox", { name: "Profile views" });
+    expect(box).not.toBeChecked();
+    await userEvent.click(box);
+    expect(profiles.updateMe).toHaveBeenLastCalledWith({ profileViews: true });
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "Profile views" })).toBeChecked());
+    await userEvent.click(screen.getByRole("checkbox", { name: "Profile views" }));
+    expect(profiles.updateMe).toHaveBeenLastCalledWith({ profileViews: false });
   });
 
   it("shows no status or tags when there are none", async () => {
