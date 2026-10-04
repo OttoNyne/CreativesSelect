@@ -200,6 +200,23 @@ describe("NotificationBell: where clicking goes", () => {
   });
 });
 
+describe("NotificationBell: moderation", () => {
+  it("thanks someone whose report led to action, and someone whose report didn't", async () => {
+    await openWith([note({ id: "a", type: "report_resolved", payload: { outcome: "action_taken" }, actor: null }), note({ id: "b", type: "report_resolved", payload: { outcome: "no_action" }, actor: null })]);
+    expect(await screen.findByText(/took action. Thank you/)).toBeInTheDocument();
+    expect(screen.getByText(/found nothing to act on. Thank you/)).toBeInTheDocument();
+  });
+  it("tells someone what kind of thing of theirs was removed, and gives no link", async () => {
+    await openWith([note({ type: "content_removed", payload: { what: "blog entry" }, actor: null })]);
+    expect(await screen.findByText(/removed your blog entry for breaking the site's rules/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /View|Read|Open/ })).not.toBeInTheDocument();
+  });
+  it("copes with a removal notice missing its details", async () => {
+    await openWith([note({ type: "content_removed", payload: {}, actor: null })]);
+    expect(await screen.findByText(/removed your content/)).toBeInTheDocument();
+  });
+});
+
 describe("NotificationBell: invite links", () => {
   it("says someone joined through your link, and links to them", async () => {
     await openWith([note({ type: "invite_joined", payload: { inviteId: "i1" } })]);

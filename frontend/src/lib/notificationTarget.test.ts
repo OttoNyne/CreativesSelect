@@ -62,6 +62,13 @@ describe("notificationTarget", () => {
   });
 });
 
+describe("notificationTarget: moderation", () => {
+  it("has nowhere to send a report thank-you or a removal notice", () => {
+    expect(notificationTarget(n("report_resolved", { outcome: "action_taken" }, null), "me")).toBeNull();
+    expect(notificationTarget(n("content_removed", { what: "post" }, null), "me")).toBeNull();
+  });
+});
+
 describe("notificationTarget: invite links", () => {
   it("opens the profile of the person who joined, or the friends page if they are gone", () => {
     expect(notificationTarget(n("invite_joined", { inviteId: "i1" }), "me")).toEqual({ to: "/u/zoe", label: "View profile" });

@@ -51,7 +51,7 @@ API on `:5000` — the same same-origin shape as production (Vercel proxies
 **Two extras the newer specs use.** Emails: the API writes them to files instead of sending them
 when `MAIL_OUTBOX_DIR` is set (ignored in production), and the password-reset test reads the link
 from there — start the API with it (CI does) and run Playwright with the same value, e.g.
-`MAIL_OUTBOX_DIR=/tmp/mail` for both. Without it that one test is skipped. Voice: the Chrome project
+`MAIL_OUTBOX_DIR=/tmp/mail` for both. Without it that one test is skipped. The moderation tests need the same folder, **and** an API started with `ADMIN_EMAILS=mod-chromium@example.com,mod-webkit@example.com,mod-iphone@example.com` (CI does): each browser project signs up as its own moderator with one of those addresses and confirms it from the emailed link. Voice: the Chrome project
 starts with a fake microphone (it plays a test tone), so the live-audio test can run for real; WebKit
 can't fake a microphone, and Playwright's WebKit build has no WebRTC at all, so there those tests check
 the page's "this browser can't play live audio" message instead.

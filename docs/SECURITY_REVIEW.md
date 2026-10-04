@@ -985,6 +985,22 @@ The welcome flow guides new accounts through confirming their email, adding a pi
 
 Covered by 10 backend tests, frontend tests for the card, the feed and the profile's edit link, and 3 browser flows.
 
+### 5.50 The moderation review queue: powerful tools that only the right people can reach, with a record
+
+Reports had been collected for a while with no way to read or act on them. Giving moderators the power to delete content and suspend accounts is the most dangerous thing added to the site, so the risks were: someone gaining moderator access, a moderator abusing or fumbling that power, reports being used to attack people, and the tools giving away that they exist.
+
+- **Who is a moderator is configuration, not data.** Only addresses listed in the server's `ADMIN_EMAILS` setting, and only when that address is **confirmed** on the account. Nothing a member can do (a profile field, a username, a sign-up form) can make them one; registering with a moderator's address doesn't help because the confirmation link goes to the real owner's inbox. The check runs against the database on every request, so removing an address, or a moderator's address ceasing to be confirmed, ends access immediately (tested). Where nobody is listed there are no moderators.
+- **The tools don't announce themselves.** Every admin route answers `404` to a signed-in non-moderator, the same as a path that doesn't exist (tested for each route), the Moderation link appears only for moderators, and the screen itself says "There's nothing here" to anyone else.
+- **Decisions are explicit and recorded.** A moderator chooses dismiss, remove, suspend, or remove and suspend, with an optional note; every decision (and every lifted suspension) is written to a record showing who decided, what kind of thing, about whom, and the note, but never the removed content. Moderators can't suspend themselves or another administrator, an account can't be "removed" this way, and a refused decision changes nothing (tested: open reports stay open).
+- **Reports are checked and can't flood the queue.** The thing must exist, you can't report yourself, the reason is cleaned and capped at 500 characters, repeat reports of the same thing while it waits collapse into one, and a person can make 30 an hour. Reports are grouped by target so five people reporting one post is one case, and a later report about something already handled starts a new case.
+- **Content is shown as text.** The review screen draws the reported text as plain text, cut at 600 characters, so reported markup can't act against the moderator (unit and browser tested).
+- **Suspension is thorough but not destructive.** A suspended account can't sign in (said only after a correct password, so it doesn't reveal which accounts are suspended), its sessions stop working, its profile and everything reached through it is not found by others, and it is left out of search, discovery and tag counts; nothing is deleted, and a moderator can lift it. Removing content is a separate, explicit choice.
+- **Everyone concerned is told, minimally.** Each reporter gets one thank-you that says only whether action was taken; the author of removed content is told what kind of thing was removed. Neither learns who reported, who decided, or the note.
+- **Accounts leaving:** deleting an account removes the reports about it and about its content; the decision record keeps only identifiers and the moderator's own note.
+- **Not covered:** suspension is indefinite until lifted (no timed suspensions or appeals), suspended people's existing content in other people's feeds is hidden only through their profile (a moderator removes specific content when it matters), there is no second-moderator review, and the person reported isn't given a chance to respond. The suspension and "removed" messages don't explain the rule that was broken beyond what the moderator writes in their private note.
+
+Covered by 28 backend tests, frontend tests for the screen, the link and the notifications, and 3 browser flows (including a moderator reviewing, deciding and the author being suspended, signed out and let back in).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

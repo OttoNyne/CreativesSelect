@@ -36,6 +36,22 @@ beforeEach(() => {
   setUser.mockReset();
 });
 
+describe("NavBar: moderation", () => {
+  it("shows the Moderation link to a moderator only", () => {
+    renderBar({ ...sam, isAdmin: true });
+    expect(screen.getByRole("link", { name: "Moderation" })).toHaveAttribute("href", "/admin/moderation");
+  });
+  it("shows it to nobody else", () => {
+    renderBar(sam);
+    expect(screen.queryByRole("link", { name: "Moderation" })).not.toBeInTheDocument();
+  });
+  it("shows it in the phone menu too, for a moderator", async () => {
+    renderBar({ ...sam, isAdmin: true });
+    await userEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(screen.getAllByRole("link", { name: "Moderation" })).toHaveLength(2);
+  });
+});
+
 describe("NavBar", () => {
   it("offers Log in and Sign up when signed out, and no app links", () => {
     renderBar(null);

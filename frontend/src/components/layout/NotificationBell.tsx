@@ -43,6 +43,10 @@ function describe(n: Notification): string {
     }
     case "live_started":
       return typeof n.payload.title === "string" ? `is live now: "${n.payload.title}"` : "is live now";
+    case "report_resolved":
+      return n.payload.outcome === "action_taken" ? "— a moderator looked at your report and took action. Thank you." : "— a moderator looked at your report and found nothing to act on. Thank you.";
+    case "content_removed":
+      return `— a moderator removed your ${typeof n.payload.what === "string" ? n.payload.what : "content"} for breaking the site's rules`;
     case "invite_joined":
       return "joined with your invite link — you're friends";
     case "blog_post":

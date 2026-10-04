@@ -54,6 +54,11 @@ export function NavBar() {
                 </Link>
               ))}
               <MessagesLink className="text-white/70 hover:text-white" />
+              {user.isAdmin && (
+                <Link to="/admin/moderation" className="text-amber-300 hover:text-amber-200">
+                  Moderation
+                </Link>
+              )}
               <NotificationBell />
               <Link to={`/u/${user.username}`} className="flex items-center gap-2 text-white/90 hover:text-white">
                 <Avatar username={user.username} displayName={user.displayName} avatarUrl={user.avatarUrl} size={28} />
@@ -114,6 +119,11 @@ export function NavBar() {
               {link.label}
             </Link>
           ))}
+          {user.isAdmin && (
+            <Link to="/admin/moderation" onClick={() => setMenuOpen(false)} className="block rounded-md px-2 py-2 text-amber-300 hover:bg-white/10">
+              Moderation
+            </Link>
+          )}
           <MessagesLink
             onClick={() => setMenuOpen(false)}
             className="block rounded-md px-2 py-2 text-white/70 hover:bg-white/10 hover:text-white"

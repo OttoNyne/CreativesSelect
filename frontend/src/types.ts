@@ -42,6 +42,8 @@ export interface User {
   showActivity?: boolean;
   /** On your own profile: whether profile views are on (off by default). */
   profileViews?: boolean;
+  /** On your own profile: whether you are a moderator of the site. */
+  isAdmin?: boolean;
   isPrivate: boolean;
   createdAt: string;
   theme: ProfileTheme;
@@ -174,6 +176,45 @@ export interface ProfileVisitor {
   day: string;
 }
 
+/** What a report is about, as shown to a moderator. */
+export interface ModerationTarget {
+  type: string;
+  author: User | null;
+  title?: string;
+  text?: string;
+  image?: string | null;
+  link?: string | null;
+}
+
+/** Everything reported about one thing. */
+export interface ModerationCase {
+  targetType: string;
+  targetId: string;
+  exists: boolean;
+  target: ModerationTarget | null;
+  count: number;
+  reports: { id: string; reason: string; createdAt: string; reporter: User | null }[];
+}
+
+/** A moderator's decision, as kept in the record. */
+export interface AdminAction {
+  id: string;
+  targetType: string;
+  targetId: string;
+  action: string;
+  note: string;
+  reportCount: number;
+  createdAt: string;
+  admin: User | null;
+  subject: User | null;
+}
+
+export interface SuspendedAccount {
+  user: User;
+  suspendedAt: string;
+  note: string;
+}
+
 export type OnboardingStepKey = "email" | "avatar" | "bio" | "portfolio" | "friend" | "post";
 
 /** The getting-started checklist: each step ticked from what the person has really done. */
@@ -236,7 +277,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's
