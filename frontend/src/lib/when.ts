@@ -33,3 +33,13 @@ export function formatDay(iso: string | Date, locale?: string): string {
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(date);
 }
+
+/** How long a bulletin has left: "3 days left", "1 day left", "less than a day left". */
+export function daysLeft(expiresAt: string | Date, now: Date = new Date()): string {
+  const date = typeof expiresAt === "string" ? new Date(expiresAt) : expiresAt;
+  if (Number.isNaN(date.getTime())) return "";
+  const left = (date.getTime() - now.getTime()) / 86_400_000;
+  if (left < 1) return "less than a day left";
+  const days = Math.round(left); // a bulletin made a moment ago has "10 days", not "9"
+  return `${days} day${days === 1 ? "" : "s"} left`;
+}

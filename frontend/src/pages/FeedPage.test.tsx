@@ -12,6 +12,7 @@ vi.mock("../api/posts.api", () => ({
   postsApi: { feed: vi.fn(), create: vi.fn(), remove: vi.fn(), comments: vi.fn(), addComment: vi.fn(), removeComment: vi.fn() },
 }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
+vi.mock("../components/bulletins/BulletinsStrip", () => ({ BulletinsStrip: () => <div>bulletins strip</div> }));
 vi.mock("../api/ai.api", () => ({ aiApi: { generateText: vi.fn(), generateImage: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 const api = vi.mocked(postsApi);

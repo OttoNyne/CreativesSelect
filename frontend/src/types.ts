@@ -150,6 +150,17 @@ export interface BoardTask {
   author: User;
 }
 
+/** A short message from someone to all of their friends; it comes down after a while. */
+export interface Bulletin {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  expiresAt: string;
+  isMine: boolean;
+  author: User;
+}
+
 /** An entry in a list: the start of it, not the whole text. */
 export interface BlogSummary {
   id: string;

@@ -1,9 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { earliestStart, formatDay, formatWhen, untilText } from "./when";
+import { daysLeft, earliestStart, formatDay, formatWhen, untilText } from "./when";
 
 const NOW = new Date("2026-10-10T12:00:00Z");
 const at = (ms: number) => new Date(NOW.getTime() + ms).toISOString();
 const MIN = 60_000;
+
+describe("daysLeft", () => {
+  it("counts days to the nearest, and says less than a day near the end", () => {
+    expect(daysLeft(at(10 * 24 * 60 * MIN - 1000), NOW)).toBe("10 days left");
+    expect(daysLeft(at(2 * 24 * 60 * MIN + 1000), NOW)).toBe("2 days left");
+    expect(daysLeft(at(24 * 60 * MIN + 1000), NOW)).toBe("1 day left");
+    expect(daysLeft(at(23 * 60 * MIN), NOW)).toBe("less than a day left");
+    expect(daysLeft(at(-MIN), NOW)).toBe("less than a day left");
+    expect(daysLeft("nope", NOW)).toBe("");
+  });
+});
 
 describe("formatDay", () => {
   it("writes a date out in full, and nothing for something that isn't a date", () => {

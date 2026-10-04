@@ -883,6 +883,20 @@ The owner can put the parts of their profile (top friends, music, portfolio, blo
 
 Covered by 12 backend tests, frontend tests for the helpers, the frame and the profile page, and 3 browser runs (incl. a phone-width layout).
 
+### 5.43 Bulletins: broadcasting to friends without becoming a spam channel
+
+A bulletin is a short message to every friend at once. The risks were spam, readers who shouldn't see it, and stale content.
+
+- **Friends only, decided when read.** A bulletin is returned only to its author and to people who are accepted friends *now* (and not blocked either way), regardless of whether the author's profile is public. Unfriending or blocking takes the board away immediately; a pending request shows nothing.
+- **Bounded:** verified email (when required), 5 a day, 10 up at once, 500 characters of plain text (cleaned of hidden characters), 50 on the board; each bulletin expires after 10 days through a database TTL, and the board also filters on the expiry so a late clean-up never shows an old one.
+- **No notification fan-out.** Friends see a count on the feed instead of one notification per friend, so a busy poster can't flood anyone's notification list; the "seen" time is private (never in any profile response).
+- **Author-only removal** (found by id *and* author, otherwise the same `404` as a missing one); the author, dates and expiry come from the server, never from the request body (tested with a forged `author`/`expireAt`).
+- **Reportable** (`bulletin` is a report target); bulletins and their reports go with the account.
+- **Shown as text:** markup in a bulletin is displayed as typed (unit and browser tested).
+- **Not covered:** a friend can still copy a bulletin before it expires, and bulletins are not moderated for content beyond reports.
+
+Covered by 15 backend tests, frontend tests for the board, the feed strip and the date wording, and 3 browser flows (post → friend sees a badge → badge clears → stranger sees nothing → take down).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

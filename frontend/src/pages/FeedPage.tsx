@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { postsApi } from "../api/posts.api";
 import { PostComposer } from "../components/post/PostComposer";
+import { BulletinsStrip } from "../components/bulletins/BulletinsStrip";
 import { PostCard } from "../components/post/PostCard";
 import { ApiError } from "../api/client";
 import type { Post } from "../types";
@@ -41,6 +42,7 @@ export function FeedPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
       {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+      <BulletinsStrip />
       <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} />
 
       {status === "loading" && <div className="text-center text-white/60">Loading feed…</div>}
