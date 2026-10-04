@@ -20,7 +20,7 @@ function Tile({
   return (
     <li
       aria-label={`${name}${speaking ? ", speaking" : ""}${state ? `, ${state.toLowerCase()}` : ""}`}
-      className={`relative flex h-28 flex-col items-center justify-center gap-1 rounded-xl border bg-white/[0.03] p-2 text-center ${
+      className={`flex h-32 flex-col items-center justify-center gap-1 rounded-xl border bg-white/[0.03] p-2 text-center ${
         speaking ? "border-2 border-emerald-400" : state === "Invited" ? "border-dashed border-white/30" : "border-white/10"
       }`}
     >
@@ -29,7 +29,7 @@ function Tile({
       {state && <span className="text-[11px] text-white/70">{state}</span>}
       {speaking && !state && <span className="text-[11px] text-emerald-300">Speaking</span>}
       {onRemove && (
-        <button onClick={onRemove} aria-label={removeLabel} className="absolute right-1 top-1 rounded px-1.5 py-0.5 text-[11px] text-white/70 hover:bg-white/10 hover:text-white">
+        <button onClick={onRemove} aria-label={removeLabel} className="rounded border border-white/15 px-2 py-0.5 text-[11px] text-white/80 hover:bg-white/10 hover:text-white">
           Remove
         </button>
       )}
@@ -74,7 +74,7 @@ export function StageTiles({
         <Tile key={user.id} user={user} name={user.displayName} state="Invited" />
       ))}
       {Array.from({ length: free }, (_, i) => (
-        <li key={`free-${i}`} className="h-28">
+        <li key={`free-${i}`} className="h-32">
           <button
             onClick={onFindListeners}
             aria-label="Invite someone to speak"
