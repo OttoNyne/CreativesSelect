@@ -17,6 +17,8 @@ export interface SfuHostOptions {
   onConnection?: (state: HostConnection) => void;
   /** The phone (or another app) paused or took the microphone: nobody can hear the host until it is back. */
   onMicrophone?: (state: MicrophoneState) => void;
+  /** Go through the media server's relay from the first connection (for a phone on mobile data, where the direct route is often blocked). */
+  startWithRelay?: boolean;
   /** How many times to start over after the connection is lost, before giving up. */
   maxAttempts?: number;
   /** A plain-words line about what the connection is doing, for the "connection details" a host can read out if it misbehaves. */
@@ -56,6 +58,7 @@ export class SfuHost {
   constructor(opts: SfuHostOptions) {
     this.opts = opts;
     this.heartbeatPoller = new Poller(() => this.beat(), opts.heartbeatMs ?? 20_000);
+    this.useRelay = Boolean(opts.startWithRelay);
   }
 
   start() {

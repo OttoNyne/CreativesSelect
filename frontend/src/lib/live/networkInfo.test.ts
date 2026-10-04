@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeNetwork } from "./networkInfo";
+import { describeNetwork, onMobileData } from "./networkInfo";
 
 const nav = (over: Record<string, unknown>) => over as unknown as Navigator;
 
@@ -17,5 +17,12 @@ describe("describeNetwork", () => {
 
   it("notes data saver", () => {
     expect(describeNetwork(nav({ onLine: true, connection: { saveData: true } }))).toBe("Online · data saver on");
+  });
+});
+
+describe("onMobileData", () => {
+  it("is true only when the browser says the phone is on mobile data", () => {
+    expect(onMobileData(nav({ connection: { type: "cellular" } }))).toBe(true);
+    for (const connection of [{ type: "wifi" }, { type: "ethernet" }, {}, undefined]) expect(onMobileData(nav({ connection }))).toBe(false);
   });
 });

@@ -11,7 +11,7 @@ import { ShareButton } from "../components/share/ShareButton";
 import { liveUrl } from "../lib/share";
 import { keepScreenOn } from "../lib/wakeLock";
 import { ConnectionDetails } from "../components/live/ConnectionDetails";
-import { describeNetwork } from "../lib/live/networkInfo";
+import { describeNetwork, onMobileData } from "../lib/live/networkInfo";
 import type { HostConnection, MicrophoneState } from "../lib/live/sfuHost";
 import { LiveHost } from "../lib/live/host";
 import { LiveListener, type ListenerState } from "../lib/live/listener";
@@ -115,6 +115,8 @@ function HostRoom({ room }: { room: LiveRoom }) {
                 note(`Microphone: ${state}`);
               },
               onDiagnostic: note,
+              // on mobile data the direct audio route is often blocked, so don't start with it
+              startWithRelay: onMobileData(),
               heartbeatMs: room.heartbeatMs,
               onGuestStream: (guests) => {
                 const el = guestAudioRef.current;

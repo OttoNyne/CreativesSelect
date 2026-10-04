@@ -6,6 +6,11 @@ interface NetworkInformation {
   saveData?: boolean;
 }
 
+/** Whether the browser says this phone is on mobile data (only some browsers say; absent means "don't know"). */
+export function onMobileData(nav: Navigator = navigator): boolean {
+  return (nav as Navigator & { connection?: NetworkInformation }).connection?.type === "cellular";
+}
+
 /** One line about the phone's own network, as the browser reports it (not every browser says much). */
 export function describeNetwork(nav: Navigator = navigator): string {
   const info = (nav as Navigator & { connection?: NetworkInformation }).connection;

@@ -424,3 +424,27 @@ describe("SfuHost: connection details", () => {
     host.stop();
   });
 });
+
+describe("SfuHost: a phone on mobile data", () => {
+  it("goes through the relay from the very first connection, and says so", async () => {
+    const lines: string[] = [];
+    const { host } = setup({ startWithRelay: true, onDiagnostic: (l) => lines.push(l) });
+    host.start();
+    await settle();
+    expect((lastRoom().connectOptions as { rtcConfig?: { iceTransportPolicy?: string } }).rtcConfig?.iceTransportPolicy).toBe("relay");
+    expect(lines[0]).toBe("Connecting to the live audio service (try 1, through the relay)");
+    expect(lastRoom().published).toHaveLength(1);
+    host.stop();
+  });
+
+  it("stays on the relay when it has to start over", async () => {
+    const { host } = setup({ startWithRelay: true });
+    host.start();
+    await settle();
+    await vi.advanceTimersByTimeAsync(60_000);
+    lastRoom().emit(RoomEvent.Disconnected);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect((lastRoom().connectOptions as { rtcConfig?: { iceTransportPolicy?: string } }).rtcConfig?.iceTransportPolicy).toBe("relay");
+    host.stop();
+  });
+});
