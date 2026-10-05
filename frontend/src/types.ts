@@ -132,6 +132,8 @@ export interface MediaItem {
   dislikes: number;
   /** The signed-in viewer's own reaction: 1 like, -1 dislike, 0 none. */
   myReaction: 1 | -1 | 0;
+  /** How many comments the piece has. */
+  commentCount?: number;
   createdAt: string;
 }
 
@@ -283,7 +285,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

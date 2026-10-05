@@ -198,7 +198,7 @@ export function ProfilePage() {
       case "music":
         return <MusicPlayer username={profile.username} isOwner={isOwner} />;
       case "portfolio":
-        return <PortfolioGrid username={profile.username} isOwner={isOwner} />;
+        return <PortfolioGrid username={profile.username} isOwner={isOwner} focusPiece={searchParams.get("piece")} focusComment={searchParams.get("comment")} />;
       case "blog":
         return <ProfileBlog username={profile.username} isOwner={isOwner} />;
       case "testimonials":

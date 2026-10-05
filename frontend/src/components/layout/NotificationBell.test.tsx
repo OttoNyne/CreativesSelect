@@ -151,6 +151,12 @@ describe("NotificationBell: where clicking goes", () => {
     expect(where()).toBe("/u/me#testimonials");
   });
 
+  it("a comment on a portfolio piece: opens that piece and comment on your profile", async () => {
+    await openAndRender([note({ type: "media_comment", payload: { mediaId: "m7", commentId: "c9" } })]);
+    await userEvent.click(screen.getByText(/commented on your portfolio/));
+    expect(where()).toBe("/u/me?piece=m7&comment=c9#portfolio");
+  });
+
   it("someone accepting your friend request: opens their profile", async () => {
     await openAndRender([note({ type: "friend_accept" })]);
     await userEvent.click(screen.getByText(/accepted your friend request/));

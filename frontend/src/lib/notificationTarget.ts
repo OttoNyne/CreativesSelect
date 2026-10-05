@@ -22,6 +22,12 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const commentId = str(n.payload.commentId);
       return { to: `/posts/${postId}${commentId ? `?comment=${encodeURIComponent(commentId)}` : ""}`, label: "View post" };
     }
+    case "media_comment": {
+      const mediaId = str(n.payload.mediaId);
+      if (!mediaId || !viewerUsername) return viewerUsername ? { to: `/u/${viewerUsername}#portfolio`, label: "View portfolio" } : null;
+      const commentId = str(n.payload.commentId);
+      return { to: `/u/${viewerUsername}?piece=${encodeURIComponent(mediaId)}${commentId ? `&comment=${encodeURIComponent(commentId)}` : ""}#portfolio`, label: "View comment" };
+    }
     case "profile_comment":
       return viewerUsername ? { to: `/u/${viewerUsername}#testimonials`, label: "View testimonial" } : null;
     case "message":

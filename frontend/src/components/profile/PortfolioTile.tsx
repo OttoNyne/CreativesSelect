@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { assetUrl } from "../../api/client";
 import { clipWindow, directVideoSrc, playableVideoUrl, videoPosterUrl, youtubeEmbedUrl } from "../../lib/video";
 import type { Album, MediaItem } from "../../types";
@@ -5,8 +6,8 @@ import type { Album, MediaItem } from "../../types";
 type Reaction = 1 | -1 | 0;
 
 // One portfolio piece: the picture/video/audio, an always-visible remove
-// button for its owner (hover-only controls don't exist on phones), and
-// like/dislike buttons.
+// button for its owner (hover-only controls don't exist on phones),
+// like/dislike buttons and a button for its comments, which open beside it.
 export function PortfolioTile({
   item,
   isOwner,
@@ -15,6 +16,9 @@ export function PortfolioTile({
   onReact,
   albums = [],
   onMove,
+  commentsOpen = false,
+  onToggleComments,
+  comments,
 }: {
   item: MediaItem;
   isOwner: boolean;
@@ -24,6 +28,10 @@ export function PortfolioTile({
   /** Their albums, and how to move this piece into one (owner only). */
   albums?: Album[];
   onMove?: (id: string, albumId: string | null) => void;
+  /** Whether the comments are showing, how to show or hide them, and what to show. */
+  commentsOpen?: boolean;
+  onToggleComments?: (id: string) => void;
+  comments?: ReactNode;
 }) {
   const isVideoish = item.type === "video" || item.type === "embed";
   const embed = item.type === "embed" ? youtubeEmbedUrl(item.url, item.startSeconds ?? 0) : null;
@@ -40,7 +48,8 @@ export function PortfolioTile({
   }
 
   return (
-    <div className={`overflow-hidden rounded-lg border border-white/10 ${isVideoish ? "col-span-2" : ""}`}>
+    <div id={`piece-${item.id}`} className={`scroll-mt-20 overflow-hidden rounded-lg border border-white/10 ${commentsOpen ? "col-span-full sm:flex" : isVideoish ? "col-span-2" : ""}`}>
+      <div className={commentsOpen ? "sm:w-72 sm:shrink-0" : "min-w-0"}>
       <div className="relative">
         {item.type === "audio" ? (
           <audio controls src={assetUrl(item.url)} className="w-full" />
@@ -116,6 +125,18 @@ export function PortfolioTile({
         >
           👎 {item.dislikes}
         </button>
+        {onToggleComments && (
+          <button
+            type="button"
+            onClick={() => onToggleComments(item.id)}
+            aria-expanded={commentsOpen}
+            aria-label={`Comments (${item.commentCount ?? 0})`}
+            title={commentsOpen ? "Hide comments" : "Show comments"}
+            className={`rounded-md px-2 py-0.5 text-xs ${commentsOpen ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/10"}`}
+          >
+            💬 {item.commentCount ?? 0}
+          </button>
+        )}
         {item.caption && <span className="ml-auto truncate text-[11px] text-white/60">{item.caption}</span>}
       </div>
       {isOwner && onMove && albums.length > 0 && (
@@ -135,6 +156,8 @@ export function PortfolioTile({
           </select>
         </div>
       )}
+      </div>
+      {commentsOpen && comments && <div className="min-w-0 flex-1 border-t border-white/10 px-3 pb-3 sm:border-l sm:border-t-0">{comments}</div>}
     </div>
   );
 }

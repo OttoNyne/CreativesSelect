@@ -33,6 +33,8 @@ function describe(n: Notification): string {
       return "commented on your post";
     case "profile_comment":
       return "left a comment on your profile";
+    case "media_comment":
+      return "commented on your portfolio";
     case "help_accepted":
       return typeof n.payload.title === "string"
         ? `accepted your offer to help with "${n.payload.title}"`

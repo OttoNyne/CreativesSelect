@@ -1,0 +1,182 @@
+import { useEffect, useRef, useState } from "react";
+import { ApiError } from "../../api/client";
+import type { Comment } from "../../types";
+import { Avatar } from "./Avatar";
+import { EditBox } from "./EditBox";
+import { EditedMark } from "./EditedMark";
+import { useAuth } from "../../context/AuthContext";
+
+const MAX_COMMENT = 1000;
+
+interface Props {
+  /** Changes when this is a different thread (another post, another piece): the comments are loaded again. */
+  threadKey: string;
+  /** One page of the comments: the first, or the ones after `after`. */
+  load: (after?: string) => Promise<{ comments: Comment[]; hasMore?: boolean }>;
+  add: (text: string) => Promise<{ comment: Comment }>;
+  update: (id: string, text: string) => Promise<{ comment: Comment }>;
+  /** Taking a comment down. Without it there is no Delete button. */
+  remove?: (id: string) => Promise<unknown>;
+  /** Whether the viewer may take down other people's comments here (the owner of the page). Their own they may always take down. */
+  canModerate?: boolean;
+  /** Reporting someone else's comment. Without it there is no Report button. */
+  onReport?: (comment: Comment) => void;
+  /** Told when a comment is added or removed, as a change to the count (the list may hold only some of the comments). */
+  onCountChange: (update: (count: number) => number) => void;
+  /** A comment to scroll to and highlight once the list has loaded. */
+  highlightId?: string | null;
+}
+
+/** A list of comments with a box to add one, a page at a time; the same for a post and for a portfolio piece. */
+export function CommentThread({ threadKey, load, add, update, remove, canModerate = false, onReport, onCountChange, highlightId = null }: Props) {
+  const { user } = useAuth();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // The latest functions from the parent, without loading again every time it draws.
+  const latest = useRef({ load, add, update, remove });
+  useEffect(() => {
+    latest.current = { load, add, update, remove };
+  });
+
+  useEffect(() => {
+    latest.current
+      .load()
+      .then(({ comments, hasMore }) => {
+        setComments(comments);
+        setHasMore(Boolean(hasMore));
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Couldn't load the comments."))
+      .finally(() => setLoading(false));
+  }, [threadKey]);
+
+  // Bring the comment a notification was about into view.
+  useEffect(() => {
+    if (!highlightId || loading) return;
+    document.getElementById(`comment-${highlightId}`)?.scrollIntoView?.({ block: "center" });
+  }, [highlightId, loading, comments]);
+
+  async function showMore() {
+    const last = comments[comments.length - 1];
+    if (!last) return;
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const next = await latest.current.load(last.id);
+      setComments((old) => [...old, ...next.comments.filter((c) => !old.some((o) => o.id === c.id))]);
+      setHasMore(Boolean(next.hasMore));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't load more comments.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!draft.trim()) return;
+    setError(null);
+    try {
+      const { comment } = await latest.current.add(draft.trim());
+      setComments((old) => [...old, comment]);
+      onCountChange((n) => n + 1);
+      setDraft("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't post that comment.");
+    }
+  }
+
+  async function saveEdit(id: string, text: string): Promise<string | null> {
+    try {
+      const { comment } = await latest.current.update(id, text);
+      setComments((old) => old.map((c) => (c.id === id ? comment : c)));
+      setEditing(null);
+      return null;
+    } catch (err) {
+      return err instanceof ApiError ? err.message : "Couldn't save that change.";
+    }
+  }
+
+  async function handleRemove(comment: Comment) {
+    if (!latest.current.remove || !window.confirm("Delete this comment?")) return;
+    setError(null);
+    try {
+      await latest.current.remove(comment.id);
+      setComments((old) => old.filter((c) => c.id !== comment.id));
+      onCountChange((n) => Math.max(0, n - 1));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't delete that comment.");
+    }
+  }
+
+  const action = "text-xs text-white/60 hover:text-white hover:underline";
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
+      {loading && <div className="text-xs text-white/60">Loading comments…</div>}
+      {!loading && comments.length === 0 && !error && <div className="text-xs text-white/60">No comments yet.</div>}
+      {comments.map((c) => {
+        const mine = user?.id === c.author.id;
+        return (
+          <div
+            key={c.id}
+            id={`comment-${c.id}`}
+            aria-current={c.id === highlightId ? "true" : undefined}
+            className={`flex gap-2 rounded-md text-sm ${c.id === highlightId ? "bg-violet-500/15 p-1.5 ring-1 ring-violet-400/50" : ""}`}
+          >
+            <Avatar username={c.author.username} displayName={c.author.displayName} avatarUrl={c.author.avatarUrl} size={24} />
+            <div className="min-w-0 flex-1">
+              {editing === c.id ? (
+                <EditBox text={c.content} maxText={MAX_COMMENT} label="Edit comment" rows={2} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
+              ) : (
+                <>
+                  <span className="font-medium text-white/90">{c.author.displayName}</span> <span className="whitespace-pre-line break-words text-white/70">{c.content}</span> <EditedMark editedAt={c.editedAt} />
+                  {mine && (
+                    <button type="button" onClick={() => setEditing(c.id)} aria-label={`Edit your comment: ${c.content.slice(0, 30)}`} className={`ml-2 ${action}`}>
+                      Edit
+                    </button>
+                  )}
+                  {remove && (mine || canModerate) && (
+                    <button type="button" onClick={() => handleRemove(c)} aria-label={`Delete comment by ${mine ? "you" : c.author.displayName}`} className={`ml-2 ${action} hover:text-red-400`}>
+                      Delete
+                    </button>
+                  )}
+                  {onReport && user && !mine && (
+                    <button type="button" onClick={() => onReport(c)} aria-label={`Report comment by ${c.author.displayName}`} className={`ml-2 ${action}`}>
+                      Report
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      {hasMore && (
+        <button type="button" onClick={showMore} disabled={loadingMore} className="text-xs text-[var(--profile-accent-text,#c4b5fd)] hover:underline disabled:opacity-50">
+          {loadingMore ? "Loading…" : "Show more comments"}
+        </button>
+      )}
+      {user && (
+        <form onSubmit={handleSubmit} className="flex gap-2 pt-1">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={MAX_COMMENT}
+            placeholder="Write a comment…"
+            className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent,#8b5cf6)] focus:outline-none"
+          />
+          <button type="submit" className="rounded-md bg-[var(--profile-accent-fill,#7c3aed)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent,#ffffff)] hover:opacity-90">
+            Post
+          </button>
+        </form>
+      )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
+    </div>
+  );
+}

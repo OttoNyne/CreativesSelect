@@ -35,6 +35,13 @@ describe("notificationTarget", () => {
     expect(notificationTarget(n("profile_comment"), undefined)).toBeNull();
   });
 
+  it("a comment on a portfolio piece opens that piece and comment on your own profile", () => {
+    expect(notificationTarget(n("media_comment", { mediaId: "m1", commentId: "c1" }), "ada")).toEqual({ to: "/u/ada?piece=m1&comment=c1#portfolio", label: "View comment" });
+    expect(notificationTarget(n("media_comment", { mediaId: "m1" }), "ada")?.to).toBe("/u/ada?piece=m1#portfolio");
+    expect(notificationTarget(n("media_comment", {}), "ada")).toEqual({ to: "/u/ada#portfolio", label: "View portfolio" });
+    expect(notificationTarget(n("media_comment", { mediaId: "m1" }), null)).toBeNull();
+  });
+
   it("friend requests go to Friends; an accepted request goes to the new friend's profile", () => {
     expect(notificationTarget(n("friend_request"), "me")?.to).toBe("/friends");
     expect(notificationTarget(n("friend_accept"), "me")).toEqual({ to: "/u/zoe", label: "View profile" });

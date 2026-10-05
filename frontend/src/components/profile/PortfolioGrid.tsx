@@ -6,13 +6,14 @@ import { checkVideoFile, MAX_VIDEO_SECONDS } from "../../lib/video";
 import { GenerateImageButton } from "../ai/GenerateImageButton";
 import { ImageSearchPicker } from "../ai/ImageSearchPicker";
 import { PortfolioTile } from "./PortfolioTile";
+import { PieceComments } from "./PieceComments";
 import { AlbumBar, ALL } from "./AlbumBar";
 import { albumsApi } from "../../api/albums.api";
 import type { Album, MediaItem } from "../../types";
 
 const MAX_CAPTION_LENGTH = 200;
 
-export function PortfolioGrid({ username, isOwner }: { username: string; isOwner: boolean }) {
+export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComment = null }: { username: string; isOwner: boolean; /** A piece, and one of its comments, to open and scroll to (from a notification). */ focusPiece?: string | null; focusComment?: string | null }) {
   const { user: viewer } = useAuth();
   const [items, setItems] = useState<MediaItem[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -24,6 +25,8 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
   const [linkUrl, setLinkUrl] = useState("");
   const [linkStart, setLinkStart] = useState("");
   const [linkBusy, setLinkBusy] = useState(false);
+  const [commentsOpenFor, setCommentsOpenFor] = useState<string | null>(focusPiece);
+  const focusedFor = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,6 +36,14 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
       // e.g. a private profile: show the empty state instead of an unhandled rejection
       .catch(() => setItems([]));
   }, [username]);
+
+  // Bring the piece a notification was about into view.
+  useEffect(() => {
+    if (!focusPiece || focusedFor.current === focusPiece || !items.some((i) => i.id === focusPiece)) return;
+    focusedFor.current = focusPiece;
+    setCommentsOpenFor(focusPiece);
+    document.getElementById(`piece-${focusPiece}`)?.scrollIntoView?.({ block: "center" });
+  }, [focusPiece, items]);
 
   useEffect(() => {
     albumsApi
@@ -174,11 +185,16 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
     }
   }
 
+  // The count on a piece follows what happens in its comments (the list there may hold only some of them).
+  function changeCommentCount(id: string, update: (count: number) => number) {
+    setItems((list) => list.map((item) => (item.id === id ? { ...item, commentCount: update(item.commentCount ?? 0) } : item)));
+  }
+
   const field =
     "min-w-0 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none";
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+    <div id="portfolio" className="scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Portfolio</h2>
         {isOwner && (
@@ -270,6 +286,13 @@ export function PortfolioGrid({ username, isOwner }: { username: string; isOwner
             onReact={handleReact}
             albums={albums}
             onMove={moveItem}
+            commentsOpen={commentsOpenFor === item.id}
+            onToggleComments={(id) => setCommentsOpenFor((open) => (open === id ? null : id))}
+            comments={
+              commentsOpenFor === item.id && (
+                <PieceComments mediaId={item.id} isOwner={isOwner} onCountChange={(update) => changeCommentCount(item.id, update)} highlightId={item.id === focusPiece ? focusComment : null} />
+              )
+            }
           />
         ))}
       </div>

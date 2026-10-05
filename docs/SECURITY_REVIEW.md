@@ -1016,6 +1016,20 @@ Two ordinary conveniences open real risks: long lists (a request that returns ev
 
 Covered by 29 backend tests (including the moderator's view), 27 frontend tests across the editing box, every list and every kind of edit, and 4 browser flows (a post, a comment and a message changed and still marked after a reload and for the other person, and the feed paging past twenty posts) on all three browsers.
 
+### 5.52 Comments on pictures: letting strangers write on someone's page
+
+A comment box on a portfolio piece lets people the owner may not know put words on the owner's page. The risks were: reaching a piece you shouldn't see, filling someone's page with abuse they couldn't remove, flooding, and comments left behind when things were deleted.
+
+- **A piece can be commented on only by people who can see it.** Reading and writing both go through the same visibility check as the portfolio itself, so a private profile, a block in either direction or a suspended account makes the piece "not found", the same 404 as a piece that never existed, and says nothing about whether it does (tested for strangers, signed-out visitors, blocks both ways and suspension). Comments by people you have blocked, or who blocked you, are left out of what you see.
+- **The owner is in charge of their own page.** The owner of a piece can take down any comment on it; the author can take down, or change, their own. Nobody else can: not another visitor, and not even the owner can reword a visitor's words (they can only delete them), so a comment is never put in someone's mouth. Editing marks the comment "(edited)".
+- **The same checks as every other piece of writing.** Hidden characters removed, empty and over-long (1000 characters) refused, nothing silently cut, and the author, date and piece come from the session and the address, never the request. Commenting is limited to 40 per 10 minutes per person and changing to the shared 60 an hour.
+- **Abuse can be reported and reviewed.** A comment can be reported like any other content: it appears in the moderation queue with the text, who wrote it and a link that opens the piece with that comment marked, and a moderator can remove it (the author is told what kind of thing was removed) or suspend the account, as for other content.
+- **Only the owner is told.** One notification per comment, to the owner, naming who and which piece, and none for your own comments on your own piece. The notification opens the owner's portfolio on that piece with the comment highlighted; the screen draws the comment as text.
+- **Nothing is left behind.** Deleting a piece deletes its comments; deleting an account deletes the comments it wrote and everyone's comments on its pieces, and the reports about them (tested, including the reports).
+- **Not covered:** no replies in a thread (a comment is not notified to the people who commented before), no pictures or links in comments, no way to switch comments off for a piece, and the moderator sees only the current text.
+
+Covered by 18 backend tests, 19 frontend tests for the shared thread, the portfolio, the notification and the requests, and 2 browser flows (a visitor comments and changes a comment, the owner is told, lands on it and takes it down, and a stranger refused on a private profile) on all three browsers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

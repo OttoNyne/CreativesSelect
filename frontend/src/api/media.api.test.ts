@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { uploadFile } from "./media.api";
+import { mediaApi, uploadFile } from "./media.api";
 import { ApiError } from "./client";
 
 function mockFetch(status: number, body?: unknown) {
@@ -44,5 +44,19 @@ describe("uploadFile", () => {
     const err = (await uploadFile(file, "portfolio").catch((e) => e)) as ApiError;
     expect(err).toBeInstanceOf(ApiError);
     expect(err.message).toBe("Upload failed");
+  });
+});
+
+describe("comments on a piece", () => {
+  it("asks for a page after a comment, writes, changes and removes by the right addresses", async () => {
+    const fetchFn = mockFetch(200, { comments: [] });
+    await mediaApi.comments("m1");
+    await mediaApi.comments("m1", "c5");
+    await mediaApi.addComment("m1", "Nice");
+    await mediaApi.updateComment("c5", "Nicer");
+    await mediaApi.removeComment("c5");
+    const calls = fetchFn.mock.calls.map(([url, init]) => `${init?.method ?? "GET"} ${String(url).replace(/^.*\/api/, "")}`);
+    expect(calls).toEqual(["GET /media/m1/comments", "GET /media/m1/comments?after=c5", "POST /media/m1/comments", "PATCH /media/comments/c5", "DELETE /media/comments/c5"]);
+    expect(JSON.parse(fetchFn.mock.calls[2][1].body)).toEqual({ content: "Nice" });
   });
 });

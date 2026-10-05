@@ -1,5 +1,5 @@
 import { api, ApiError } from "./client";
-import type { MediaItem } from "../types";
+import type { Comment, MediaItem } from "../types";
 
 import { API_BASE } from "./base";
 
@@ -44,4 +44,9 @@ export const mediaApi = {
   setAlbum: (id: string, album: string | null) => api.patch<{ item: MediaItem }>(`/media/${id}`, { album }),
   react: (id: string, value: 1 | -1 | 0) =>
     api.put<{ likes: number; dislikes: number; myReaction: 1 | -1 | 0 }>(`/media/${id}/reaction`, { value }),
+  /** Comments on a piece, oldest first, a page at a time (`after` is the last comment you have). */
+  comments: (id: string, after?: string) => api.get<{ comments: Comment[]; hasMore?: boolean }>(`/media/${id}/comments${after ? `?after=${encodeURIComponent(after)}` : ""}`),
+  addComment: (id: string, content: string) => api.post<{ comment: Comment }>(`/media/${id}/comments`, { content }),
+  updateComment: (commentId: string, content: string) => api.patch<{ comment: Comment }>(`/media/comments/${encodeURIComponent(commentId)}`, { content }),
+  removeComment: (commentId: string) => api.delete<void>(`/media/comments/${encodeURIComponent(commentId)}`),
 };
