@@ -40,15 +40,16 @@ export function NavBar() {
 
   return (
     <nav className="sticky top-0 z-20 border-b border-white/10 bg-[#0e0e12]/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link to="/" className="text-lg font-bold tracking-tight text-violet-400" onClick={() => setMenuOpen(false)}>
           CreativesSelect
         </Link>
 
         {user ? (
           <>
-            {/* Full row on wide viewports -- everything fits comfortably above this breakpoint. */}
-            <div className="hidden items-center gap-4 text-sm md:flex">
+            {/* The full row is for wide viewports (1280px and up): with every link, the messages link and the person's own name it
+                needs about 1050px, so anything narrower gets the dropdown below rather than links that wrap or crowd each other. */}
+            <div className="hidden items-center gap-3 whitespace-nowrap text-sm xl:flex">
               {NAV_LINKS.map((link) => (
                 <Link key={link.to} to={link.to} className="text-white/70 hover:text-white">
                   {link.label}
@@ -63,7 +64,7 @@ export function NavBar() {
               <NotificationBell />
               <Link to={`/u/${user.username}`} className="flex items-center gap-2 text-white/90 hover:text-white">
                 <Avatar username={user.username} displayName={user.displayName} avatarUrl={user.avatarUrl} size={28} />
-                {user.displayName}
+                <span className="max-w-[9rem] truncate">{user.displayName}</span>
               </Link>
               <button
                 onClick={handleLogout}
@@ -76,7 +77,7 @@ export function NavBar() {
             {/* Compact controls on narrow viewports -- the full row above
                 doesn't fit, so links move into a toggled dropdown instead
                 of silently overflowing off-screen. */}
-            <div className="flex items-center gap-2 md:hidden">
+            <div className="flex items-center gap-2 xl:hidden">
               <NotificationBell />
               <button
                 onClick={() => setMenuOpen((o) => !o)}
@@ -101,7 +102,7 @@ export function NavBar() {
       </div>
 
       {user && menuOpen && (
-        <div className="space-y-1 border-t border-white/10 px-4 py-3 text-sm md:hidden">
+        <div className="space-y-1 border-t border-white/10 px-4 py-3 text-sm xl:hidden">
           <Link
             to={`/u/${user.username}`}
             onClick={() => setMenuOpen(false)}

@@ -54,6 +54,8 @@ test.describe("adjusting a picture before posting", () => {
     await page.getByLabel("Move left or right").fill("60");
 
     const frame = page.getByTestId("adjust-preview");
+    // bring the whole picture clear of the page's sticky top bar, so the mouse really is over it
+    await frame.evaluate((el) => el.scrollIntoView({ block: "center" }));
     const box = (await frame.boundingBox())!;
     const slider = page.getByLabel("Move left or right");
     const before = Number(await slider.inputValue());
