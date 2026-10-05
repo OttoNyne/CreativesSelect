@@ -53,55 +53,46 @@ export function NowPlayingBar() {
     ? ytError ?? (needsTap ? "Tap play to start" : "Playing via YouTube")
     : error ?? (isPlaying ? "Playing" : "Paused");
 
-  // A YouTube video has to be visible, at least 200 pixels high, to be embedded (and a phone only lets a person start it by tapping it),
-  // so it can't shrink into the bar. It lives instead in a small window in the corner at the bottom of the page, with its controls under it,
-  // rather than a full-width bar and a separate video above it.
-  if (isYouTube) {
-    return (
-      <div className="fixed bottom-2 right-2 z-40 w-[min(224px,calc(100vw-1rem))] overflow-hidden rounded-xl border border-white/15 bg-[#0e0e12] shadow-2xl">
-        <iframe
-          key={current.id}
-          id={YT_ELEMENT_ID}
-          src={`https://www.youtube.com/embed/${current.url}?enablejsapi=1&autoplay=1&playsinline=1&rel=0&origin=${encodeURIComponent(window.location.origin)}`}
-          title={current.title}
-          className="block h-[200px] w-full bg-black"
-          allow="autoplay; encrypted-media; picture-in-picture"
-          allowFullScreen
-        />
-        {ytError && (
-          <a href={`https://www.youtube.com/watch?v=${current.url}`} target="_blank" rel="noreferrer" className="block bg-black/80 px-2 py-1 text-center text-xs text-violet-300 hover:underline">
-            Open on YouTube
-          </a>
-        )}
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-medium text-white">{current.title}</p>
-            <p role="status" className={`truncate text-[11px] ${ytError ? "text-amber-300" : "text-white/60"}`}>
-              {status}
-            </p>
-          </div>
-          <button onClick={playNext} className={barButton}>
-            Skip ⏭
-          </button>
-          <button onClick={stop} aria-label="Stop" className={barButton}>
-            ✕
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
+      {isYouTube && (
+        // YouTube requires an embedded player to be visible and at least 200 pixels high, and a phone only lets a person start it by
+        // tapping it, so it can't shrink into the bar. It is a small window in the corner just above the bar (the smallest size YouTube
+        // allows, 224 x 200), with the controls in the bar across the bottom of the page.
+        <div className="fixed bottom-14 right-2 z-40 w-[min(224px,calc(100vw-1rem))]">
+          <iframe
+            key={current.id}
+            id={YT_ELEMENT_ID}
+            src={`https://www.youtube.com/embed/${current.url}?enablejsapi=1&autoplay=1&playsinline=1&rel=0&origin=${encodeURIComponent(window.location.origin)}`}
+            title={current.title}
+            className="block h-[200px] w-full rounded-lg border border-white/10 bg-black"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+          />
+          {ytError && (
+            <a
+              href={`https://www.youtube.com/watch?v=${current.url}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 block rounded-md bg-black/80 px-2 py-1 text-center text-xs text-violet-300 hover:underline"
+            >
+              Open on YouTube
+            </a>
+          )}
+        </div>
+      )}
+
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0e0e12]/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2">
-          <button
-            onClick={toggle}
-            aria-label={isPlaying ? "Pause" : "Play"}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white hover:bg-violet-500"
-          >
-            {isPlaying ? "⏸" : "▶"}
-          </button>
+          {!isYouTube && (
+            <button
+              onClick={toggle}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white hover:bg-violet-500"
+            >
+              {isPlaying ? "⏸" : "▶"}
+            </button>
+          )}
 
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-white">{current.title}</p>

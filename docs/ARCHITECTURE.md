@@ -577,7 +577,7 @@ App
 │       │   │   ├── PortfolioGrid           (a piece's comments open beside it: PieceComments → the shared CommentThread, also used by posts)
 │       │   │   └── ProfileComments
 │       │   └── *            → redirect to /
-│       └── NowPlayingBar    (renders when PlaybackContext.current is set: a bar across the bottom for an uploaded song; for a YouTube video a small window in the bottom corner, 224 x 200 plus its controls, because YouTube needs the video visible and at least 200px high)
+│       └── NowPlayingBar    (renders when PlaybackContext.current is set: a bar across the bottom with the title and the Skip and Stop buttons; for a YouTube video the bar is the same and the video is a small 224 x 200 window in the bottom corner just above it, because YouTube needs the video visible and at least 200px high)
 ```
 
 **Where API calls live**: each page owns its own data-fetching in a
