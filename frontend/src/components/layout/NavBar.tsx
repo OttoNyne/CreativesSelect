@@ -49,26 +49,26 @@ export function NavBar() {
           <>
             {/* The full row is for wide viewports (1280px and up): with every link, the messages link and the person's own name it
                 needs about 1050px, so anything narrower gets the dropdown below rather than links that wrap or crowd each other. */}
-            <div className="hidden items-center gap-3 whitespace-nowrap text-sm xl:flex">
+            <div className="hidden items-center gap-3 text-sm xl:flex">
               {NAV_LINKS.map((link) => (
-                <Link key={link.to} to={link.to} className="text-white/70 hover:text-white">
+                <Link key={link.to} to={link.to} className="whitespace-nowrap text-white/70 hover:text-white">
                   {link.label}
                 </Link>
               ))}
-              <MessagesLink className="text-white/70 hover:text-white" />
+              <MessagesLink className="whitespace-nowrap text-white/70 hover:text-white" />
               {user.isAdmin && (
-                <Link to="/admin/moderation" className="text-amber-300 hover:text-amber-200">
+                <Link to="/admin/moderation" className="whitespace-nowrap text-amber-300 hover:text-amber-200">
                   Moderation
                 </Link>
               )}
               <NotificationBell />
-              <Link to={`/u/${user.username}`} className="flex items-center gap-2 text-white/90 hover:text-white">
+              <Link to={`/u/${user.username}`} className="flex items-center gap-2 whitespace-nowrap text-white/90 hover:text-white">
                 <Avatar username={user.username} displayName={user.displayName} avatarUrl={user.avatarUrl} size={28} />
                 <span className="max-w-[9rem] truncate">{user.displayName}</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="rounded-md border border-white/15 px-3 py-1 text-white/70 hover:bg-white/10 hover:text-white"
+                className="whitespace-nowrap rounded-md border border-white/15 px-3 py-1 text-white/70 hover:bg-white/10 hover:text-white"
               >
                 Log out
               </button>
