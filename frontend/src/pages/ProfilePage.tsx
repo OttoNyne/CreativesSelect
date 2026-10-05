@@ -21,6 +21,7 @@ import { ImagePositioner } from "../components/common/ImagePositioner";
 import { ThemeEditor } from "../components/profile/ThemeEditor";
 import { TopFriendsList } from "../components/profile/TopFriendsList";
 import { AboutMe } from "../components/profile/AboutMe";
+import { MutualFriends } from "../components/profile/MutualFriends";
 import { ProfileComments } from "../components/profile/ProfileComments";
 import { PortfolioGrid } from "../components/profile/PortfolioGrid";
 import { MusicPlayer } from "../components/profile/MusicPlayer";
@@ -364,6 +365,13 @@ export function ProfilePage() {
                 <input type="checkbox" checked={profile.profileViews === true} onChange={(e) => saveProfile({ profileViews: e.target.checked })} />
                 Profile views
               </label>
+              <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+                <input type="checkbox" checked={profile.showConnections !== false} onChange={(e) => saveProfile({ showConnections: e.target.checked })} />
+                Show who I know to friends of friends
+              </label>
+              <p className="w-full text-xs text-[var(--profile-muted)]">
+                On: you can be named as a mutual friend and suggested as someone people may know. Off: neither, and your friends aren&apos;t suggested through you.
+              </p>
               <p className="w-full text-xs text-[var(--profile-muted)]">
                 Off by default. Turn on to see who visits your profile; you then show up to other people who have it on when you visit theirs. Turning it off deletes
                 every visit.
@@ -446,6 +454,8 @@ export function ProfilePage() {
             <ProfileTags tags={profile.tags} />
           </>
         )}
+
+        {viewer && !isOwner && <MutualFriends username={profile.username} />}
 
         {isOwner && viewer?.profileViews && <ProfileVisitors />}
 

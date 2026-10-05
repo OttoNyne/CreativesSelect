@@ -22,6 +22,7 @@ vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("../components/profile/TopFriendsList", () => ({ TopFriendsList: () => <div>top friends</div> }));
 vi.mock("../components/profile/MusicPlayer", () => ({ MusicPlayer: () => <div>music</div> }));
 vi.mock("../components/profile/AboutMe", () => ({ AboutMe: () => <div>about me section</div> }));
+vi.mock("../components/profile/MutualFriends", () => ({ MutualFriends: ({ username }: { username: string }) => <div>mutual friends with {username}</div> }));
 vi.mock("../components/profile/PortfolioGrid", () => ({ PortfolioGrid: () => <div>portfolio</div> }));
 vi.mock("../api/profileViews.api", () => ({ profileViewsApi: { record: vi.fn(), list: vi.fn() } }));
 vi.mock("../components/profile/ProfileVisitors", () => ({ ProfileVisitors: () => <div>recent visitors</div> }));
@@ -393,6 +394,25 @@ describe("ProfilePage: the order of the sections", () => {
     const group = screen.getByRole("group", { name: "Portfolio section" });
     expect(group).toHaveTextContent("Hidden from visitors");
     expect(group).toHaveTextContent("portfolio");
+  });
+
+  it("shows someone's mutual friends to a signed-in visitor, but not on your own profile", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    expect(await screen.findByText("mutual friends with zoe")).toBeInTheDocument();
+  });
+
+  it("lets the owner choose whether friends of friends may see who they know", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, showConnections: true } });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, showConnections: false } });
+    renderAs(me, "me");
+    expect(screen.queryByText(/mutual friends with/)).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const box = screen.getByLabelText("Show who I know to friends of friends");
+    expect(box).toBeChecked();
+    await userEvent.click(box);
+    expect(profiles.updateMe).toHaveBeenCalledWith({ showConnections: false });
+    await waitFor(() => expect(screen.getByLabelText("Show who I know to friends of friends")).not.toBeChecked());
   });
 
   it("lets the owner move a section, saving the new order straight away", async () => {

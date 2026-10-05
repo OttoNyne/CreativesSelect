@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { TopFriendsList } from "./TopFriendsList";
@@ -35,6 +35,34 @@ describe("TopFriendsList", () => {
   it("shows the current top friends", async () => {
     renderList();
     expect(await screen.findByText("Zoe")).toBeInTheDocument();
+  });
+
+  it("puts the friends in the order you choose, with buttons, and saves that order", async () => {
+    profiles.getTopFriends.mockResolvedValue({ topFriends: [zoe, kai] });
+    profiles.setTopFriends.mockResolvedValue({ topFriends: [kai, zoe] });
+    renderList();
+    await userEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const order = () => screen.getAllByRole("listitem").map((li) => li.textContent?.replace(/[⠿▲▼]/g, "").replace(/s+/g, " ").trim());
+    expect(order()).toEqual(["1.Zoe", "2.Kai"]);
+    expect(screen.getByRole("button", { name: "Move Zoe up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Kai down" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Move Kai up" }));
+    expect(order()).toEqual(["1.Kai", "2.Zoe"]);
+    await userEvent.click(screen.getByRole("button", { name: /^Save/ }));
+    expect(profiles.setTopFriends).toHaveBeenCalledWith(["kai", "zoe"]);
+  });
+
+  it("can also put a friend in a new place by dragging", async () => {
+    profiles.getTopFriends.mockResolvedValue({ topFriends: [zoe, kai] });
+    renderList();
+    await userEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const rows = () => screen.getAllByRole("listitem");
+    const data = new Map<string, string>();
+    const dataTransfer = { effectAllowed: "", setData: (k: string, v: string) => data.set(k, v), getData: (k: string) => data.get(k) ?? "" };
+    fireEvent.dragStart(rows()[0], { dataTransfer });
+    fireEvent.dragOver(rows()[1], { dataTransfer });
+    fireEvent.drop(rows()[1], { dataTransfer });
+    expect(rows().map((li) => li.textContent?.replace(/[⠿▲▼]/g, "").replace(/s+/g, " ").trim())).toEqual(["1.Kai", "2.Zoe"]);
   });
 
   it("saves the new selection and shows the list the server returns (regression: this used to fail with 'Couldn't save your top friends')", async () => {

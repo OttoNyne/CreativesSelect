@@ -12,6 +12,8 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
   const [allFriends, setAllFriends] = useState<User[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     profilesApi
@@ -40,6 +42,17 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
       if (prev.length >= 8) return prev;
       return [...prev, u];
     });
+  }
+
+  // The order is the order of the picked list: put the friend at place `from` at place `to` (by the buttons, or by dragging).
+  function moveSelected(from: number, to: number) {
+    if (from === to || to < 0 || to >= selected.length) return;
+    const next = [...selected];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setSelected(next);
+    const person = allFriends.find((f) => f.username === moved);
+    setAnnouncement(`Moved ${person?.displayName ?? moved} to position ${to + 1} of ${next.length}.`);
   }
 
   async function save() {
@@ -80,7 +93,49 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
 
       {editing && (
         <div className="mt-3">
-          <p className="text-xs text-white/60">Pick up to 8 friends ({selected.length}/8)</p>
+          <p className="text-xs text-white/60">Pick up to 8 friends ({selected.length}/8), then put them in the order you like</p>
+          {selected.length > 0 && (
+            <ol aria-label="Your top friends, in order" className="mt-2 space-y-1">
+              {selected.map((u, i) => {
+                const person = allFriends.find((f) => f.username === u);
+                const name = person?.displayName ?? u;
+                return (
+                  <li
+                    key={u}
+                    draggable
+                    onDragStart={(e) => {
+                      setDragging(i);
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", u); // Firefox won't start a drag without some data
+                    }}
+                    onDragOver={(e) => dragging !== null && e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (dragging !== null) moveSelected(dragging, i);
+                      setDragging(null);
+                    }}
+                    onDragEnd={() => setDragging(null)}
+                    className={`flex items-center gap-2 rounded-md border border-white/10 bg-black/20 px-2 py-1 text-xs ${dragging === i ? "opacity-50" : ""}`}
+                  >
+                    <span aria-hidden="true" title="Drag to rearrange" className="cursor-grab select-none text-white/60">
+                      ⠿
+                    </span>
+                    <span className="w-4 text-white/60">{i + 1}.</span>
+                    <span className="min-w-0 flex-1 truncate text-white/80">{name}</span>
+                    <button type="button" onClick={() => moveSelected(i, i - 1)} disabled={i === 0} aria-label={`Move ${name} up`} className="px-1.5 text-white/70 hover:text-white disabled:opacity-30">
+                      ▲
+                    </button>
+                    <button type="button" onClick={() => moveSelected(i, i + 1)} disabled={i === selected.length - 1} aria-label={`Move ${name} down`} className="px-1.5 text-white/70 hover:text-white disabled:opacity-30">
+                      ▼
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+          <p aria-live="polite" className="sr-only">
+            {announcement}
+          </p>
           <div className="mt-2 grid grid-cols-4 gap-2">
             {allFriends.map((f) => (
               <button

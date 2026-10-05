@@ -92,7 +92,7 @@ flowchart LR
 
 ## 3. Data Model
 
-MongoDB via Mongoose. 40 collections. `ObjectId` refs are named `ref` below;
+MongoDB via Mongoose. 41 collections. `ObjectId` refs are named `ref` below;
 `unique` compound indexes are noted where they exist.
 
 | Model | Fields | Relationships |
@@ -100,6 +100,7 @@ MongoDB via Mongoose. 40 collections. `ObjectId` refs are named `ref` below;
 | **User** | `email` (unique, lowercased), `username` (unique, lowercased), `passwordHash`, `displayName`, `bio`, `avatarUrl`, `wallpaperUrl`, `wallpaperType` (image/video), `wallpaperPosition`, `wallpaperMotion` (none/zoom/drift/pan/pulse — how a picture wallpaper moves), `mood` (≤60), `listeningTo` (≤80), `tags` (≤8 lower-case tags of 2–24 characters, indexed; returned only on profiles the viewer may see), `sectionOrder` (the order of the profile's sections: about, friends, music, portfolio, blog, testimonials — always returned complete; a section added later follows the ones already placed), `about` {interests, music, movies, books, meet — each ≤300}, `location` (≤60) with `locationAudience` (friends/everyone), `birthday` {month, day} (no year; setting it shares it with friends and has them reminded) and `lastBirthdayYear` (never returned; read through `/api/about`, not with the user) and `hiddenSections` (sections hidden from visitors), `isPrivate`, `theme` {bgColor, textColor, accentColor, fontFamily, layoutStyle}, `passwordChangedAt` (sessions issued before it are rejected), `bulletinsSeenAt` (when they last looked at the bulletin board; never returned to anyone), `onboardingDismissedAt` (when they hid the getting-started checklist; never returned to anyone), `suspendedAt` and `suspensionNote` (a moderator has suspended the account; the note is seen only by moderators), `lastActiveAt` (when their open page last checked in; never returned as a time) and `showActivity` (default on: whether friends may see "online now" / "active today"; returned only to the owner) and `profileViews` (default **off**: opt-in to see who visits your profile and to be seen when you visit others'; returned only to the owner), timestamps | Referenced by nearly every other model as author/owner/participant |
 | **Task** | `owner` → User, `title`, `description`, `isPublic` (default false), `done` (= resolved), `priority` (low/medium/high), `dueDate`, timestamps | Belongs to one User; shown in the UI as a "Help wanted" request — private by default, listed on the public board when `isPublic` |
 | **Post** | `author` → User, `content`, `imageUrl`, `imageAspect` (original/1:1/4:3/16:9), `imageZoom` (1–3), `imagePosition` ("x% y%"), `isAiText`, `isAiImage`, timestamps | Has many Comments. The three framing fields are how the author shaped, zoomed and placed the picture; they are absent on posts made before framing existed, which are shown as they always were |
+| **DismissedSuggestion** | `owner` → User, `target` → User, unique on (owner, target) | Someone a person said "Not interested" to under People you may know (at most 500 kept per person); removed with either account |
 | **BlogComment** | `entry` → BlogEntry, `author` → User, `content` (≤1000, may be empty with a picture), `imageUrl`, `editedAt`, timestamps, indexed on (entry, _id) | A comment on a blog entry; removed with the entry or either account |
 | **BlogEntry** | `author` → User, `title` (≤120), `body` (≤10,000, plain text; blank lines separate paragraphs), timestamps, indexed on (author, createdAt) | A longer journal / blog entry on a profile, kept apart from the short feed posts. Visible exactly when its author's profile is |
 | **ProfileView** | `owner` → User, `viewer` → User, `lastViewedAt`, `expireAt` (TTL, 30 days after the visit), unique on (owner, viewer) | The last time one person looked at another's profile. Exists only when **both** have profile views on; one row per pair; deleted when either turns it off or deletes their account |
@@ -207,7 +208,10 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/` | Accepted friends |
-| GET | `/requests` | Incoming pending requests |
+| GET | `/requests` | Incoming pending requests, each with `mutualCount` (how many friends the person asking has in common with you; 0 if they keep connections private) |
+| GET | `/mutual/:username` | The friends you and this person share: `{count, friends}` with up to 8 of them. Same visibility gate as the profile (`403` private or blocked, `404` missing or suspended); empty for yourself, and empty if they have switched connections off; people who have switched it off, and suspended accounts, are never named |
+| GET | `/suggestions` | People you may know: up to 12 friends of your friends you have no friendship, request or block with, whose profiles are public, who have not switched connections off and whom you haven't dismissed; most friends in common first, each with `mutualCount` and up to 3 of the friends you share. Friends who have switched connections off aren't used to find anyone |
+| POST | `/suggestions/dismiss/:username` | "Not interested" → `204` (again changes nothing); `404` unknown, `400` yourself or once 500 are remembered |
 | POST | `/request/:username` | 400 self, 403 blocked, 409 duplicate |
 | POST | `/accept/:requestId` | Only the addressee can accept |
 | POST | `/decline/:requestId` | Only the addressee can decline |
@@ -465,7 +469,7 @@ Reminders go out once, an hour before the start, as `event_reminder` to everyone
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (171 tests × 3 browsers, 513 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (173 tests × 3 browsers, 519 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -566,13 +570,14 @@ App
 │       │   │   └── /help-wanted → TasksPage: public board + my requests (/tasks redirects here)
 │       │   ├── /u/:username → ProfilePage (attachUserIfPresent server-side, not client-gated)
 │       │   │   ├── ThemeEditor (warns when a text colour can't be read), ImagePositioner
+│       │   │   ├── MutualFriends          (under the introduction of someone else's profile: the friends you share)
 │       │   │   ├── AboutMe                (interests, favourite music, films and books, who to meet; optional place and birthday; empty is hidden from visitors)
 │       │   │   ├── TopFriendsList
 │       │   │   ├── MusicPlayer            (uses usePlayback(); artists, play counts, profile song, 20 tracks / 5 uploads)
 │       │   │   ├── PortfolioGrid           (a piece's comments open beside it: PieceComments → the shared CommentThread, also used by posts)
 │       │   │   └── ProfileComments
 │       │   └── *            → redirect to /
-│       └── NowPlayingBar    (renders when PlaybackContext.current is set)
+│       └── NowPlayingBar    (renders when PlaybackContext.current is set: a bar across the bottom for an uploaded song; for a YouTube video a small window in the bottom corner, 224 x 200 plus its controls, because YouTube needs the video visible and at least 200px high)
 ```
 
 **Where API calls live**: each page owns its own data-fetching in a
@@ -677,11 +682,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 710 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 729 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 1158 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 1175 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,

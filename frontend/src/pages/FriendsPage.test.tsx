@@ -11,6 +11,7 @@ vi.mock("../api/friends.api", () => ({
   friendsApi: { list: vi.fn(), requests: vi.fn(), accept: vi.fn(), decline: vi.fn(), remove: vi.fn(), request: vi.fn() },
 }));
 vi.mock("../components/friends/InviteFriends", () => ({ InviteFriends: () => <div>invite friends panel</div> }));
+vi.mock("../components/friends/PeopleYouMayKnow", () => ({ PeopleYouMayKnow: () => <div>people you may know section</div> }));
 const api = vi.mocked(friendsApi);
 
 const zoe = { id: "u2", username: "zoe", displayName: "Zoe" } as User;
@@ -39,6 +40,15 @@ describe("FriendsPage", () => {
     expect(screen.getByRole("link", { name: "Message" })).toHaveAttribute("href", "/messages/zoe");
     expect(screen.getByText("Friend Requests")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Kai" })).toBeInTheDocument();
+  });
+
+  it("shows how many friends each person asking has in common with you, and the people you may know", async () => {
+    api.requests.mockResolvedValue({ requests: [{ ...pending, mutualCount: 3 }, { id: "r2", createdAt: "", requester: { id: "u5", username: "lee", displayName: "Lee" } as User, mutualCount: 1 }, { id: "r3", createdAt: "", requester: { id: "u6", username: "sam", displayName: "Sam" } as User, mutualCount: 0 }] });
+    renderPage();
+    expect(await screen.findByText("3 mutual friends")).toBeInTheDocument();
+    expect(screen.getByText("1 mutual friend")).toBeInTheDocument();
+    expect(screen.getAllByText(/mutual friend/)).toHaveLength(2); // none said for nobody in common
+    expect(screen.getByText("people you may know section")).toBeInTheDocument();
   });
 
   it("shows how recently each friend was around, when they allow it", async () => {

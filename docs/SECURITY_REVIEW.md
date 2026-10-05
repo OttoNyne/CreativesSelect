@@ -1105,6 +1105,20 @@ Blog entries are long, public writing, so they draw comments. Comments there are
 
 Covered by 19 backend tests, 12 frontend tests for the comments, the entry page, the notification and the requests, and 2 browser flows (a reader comments with a link and changes it, the author is told, lands on it and takes it down; and a private profile's entries refused to a stranger) on all three browsers.
 
+### 5.58 Mutual friends and people you may know: what the friendship graph gives away
+
+Showing "friends you share" and suggesting friends of friends makes the web of who knows whom visible. That is useful, and it is also exactly the information people are careful with, so the design is to show only what each person could already see, and to let people opt out.
+
+- **Only what you could already see.** A mutual friend is someone who is a friend of both of you, so the list only ever contains your own friends: it tells you which of your friends also know this person, and nothing about anyone you aren't already connected to. A suggestion is a friend of one of your friends, shown with the friends you share (up to three).
+- **People can opt out, and it is complete.** A person who switches off "Show who I know to friends of friends" is never named as a mutual friend, never suggested to anyone, and their friends are never suggested through them, and their own mutual-friends list is empty (tested for each of those, both as the connector and as the person looked at). It is on by default and only the owner can see or change it (other people's views of a profile don't carry it).
+- **Profiles keep their own rules.** The mutual-friends list follows the profile's visibility (a private profile or a block gives a stranger a 403, a suspended account a 404, signed-out visitors nothing). Suggestions leave out private profiles, suspended accounts, anyone blocked either way, and anyone you already have any friendship with (accepted, pending either way, or declined), so a suggestion can never be used to find someone who blocked you or to re-ask someone who declined.
+- **Dismissing is permanent and private.** "Not interested" is remembered per person (at most 500, so it can't be used to store data), is not visible to the person dismissed, and is removed with either account (tested).
+- **Bounded work.** Suggestions look through at most 300 of a person's friends and 6000 friendships among them and return at most 12; mutual lists show at most 8 names with the full count, so a very connected account can't make the server do unlimited work.
+- **Friend requests carry context, not a list.** A request shows how many friends the person asking shares with you, not who, and nothing at all if they keep connections private.
+- **Not covered:** a person's friends are still visible to those friends through their own lists and Top Friends, and "friends of friends" can't be narrowed (it is one switch, not a list of people). Friend groups and an official first friend are not part of this.
+
+Covered by 19 backend tests, 15 frontend tests for the mutual friends, the suggestions, the friend requests, the profile switch and the top-friends order, and 2 browser flows (mutual friends, suggestions, dismissing and the switch; and putting top friends in order) on all three browsers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

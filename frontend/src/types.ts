@@ -42,6 +42,8 @@ export interface User {
   showActivity?: boolean;
   /** On your own profile: whether profile views are on (off by default). */
   profileViews?: boolean;
+  /** Only in your own: whether you may be named as a mutual friend and suggested to friends of friends. */
+  showConnections?: boolean;
   /** On your own profile: whether you are a moderator of the site. */
   isAdmin?: boolean;
   isPrivate: boolean;
@@ -90,6 +92,21 @@ export interface FriendRequest {
   id: string;
   createdAt: string;
   requester: User;
+  /** How many friends the person asking has in common with you. */
+  mutualCount?: number;
+}
+
+/** The friends you share with someone: how many, and up to eight of them. */
+export interface ProfileMutual {
+  count: number;
+  friends: User[];
+}
+
+/** A person you may know: how many friends you share, and who (up to three). */
+export interface FriendSuggestion {
+  user: User;
+  mutualCount: number;
+  mutual: User[];
 }
 
 export interface Group {

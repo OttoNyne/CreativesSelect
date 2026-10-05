@@ -6,6 +6,7 @@ import type { FriendRequest, User } from "../types";
 import { Avatar } from "../components/common/Avatar";
 import { ActivityBadge } from "../components/common/ActivityBadge";
 import { InviteFriends } from "../components/friends/InviteFriends";
+import { PeopleYouMayKnow } from "../components/friends/PeopleYouMayKnow";
 
 export function FriendsPage() {
   const [friends, setFriends] = useState<User[]>([]);
@@ -75,9 +76,16 @@ export function FriendsPage() {
             {requests.map((r) => (
               <div key={r.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
                 <Avatar username={r.requester.username} displayName={r.requester.displayName} avatarUrl={r.requester.avatarUrl} size={36} />
-                <Link to={`/u/${r.requester.username}`} className="flex-1 font-medium text-white hover:underline">
-                  {r.requester.displayName}
-                </Link>
+                <span className="min-w-0 flex-1">
+                  <Link to={`/u/${r.requester.username}`} className="block font-medium text-white hover:underline">
+                    {r.requester.displayName}
+                  </Link>
+                  {r.mutualCount ? (
+                    <span className="block text-xs text-white/60">
+                      {r.mutualCount} mutual {r.mutualCount === 1 ? "friend" : "friends"}
+                    </span>
+                  ) : null}
+                </span>
                 <button onClick={() => handleAccept(r.id)} className="rounded-md bg-violet-600 px-3 py-1 text-xs font-medium text-white">
                   Accept
                 </button>
@@ -89,6 +97,8 @@ export function FriendsPage() {
           </div>
         </section>
       )}
+
+      <PeopleYouMayKnow />
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Friends ({friends.length})</h2>
