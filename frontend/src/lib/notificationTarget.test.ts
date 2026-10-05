@@ -55,6 +55,11 @@ describe("notificationTarget", () => {
     expect(notificationTarget(n("friend_birthday", {}, null), "me")).toBeNull();
   });
 
+  it("being CSverified opens your own profile, and has nothing to open without one", () => {
+    expect(notificationTarget(n("cs_verified", { reason: "admin" }, null), "ada")).toEqual({ to: "/u/ada", label: "View your profile" });
+    expect(notificationTarget(n("cs_verified", {}, null), undefined)).toBeNull();
+  });
+
   it("a comment on your blog entry opens the entry at that comment", () => {
     expect(notificationTarget(n("blog_comment", { entryId: "e1", commentId: "c1" }), "ada")).toEqual({ to: "/blog/e1?comment=c1", label: "View comment" });
     expect(notificationTarget(n("blog_comment", { entryId: "e1" }), "ada")?.to).toBe("/blog/e1");

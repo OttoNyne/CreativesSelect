@@ -10,7 +10,7 @@ import type { ModerationCase, SuspendedAccount, AdminAction, User } from "../typ
 
 vi.mock("../api/admin.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/admin.api")>()),
-  adminApi: { reports: vi.fn(), resolve: vi.fn(), actions: vi.fn(), suspended: vi.fn(), unsuspend: vi.fn() },
+  adminApi: { reports: vi.fn(), resolve: vi.fn(), actions: vi.fn(), suspended: vi.fn(), unsuspend: vi.fn(), verified: vi.fn(), giveBadge: vi.fn(), removeBadge: vi.fn() },
 }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 const api = vi.mocked(adminApi);
@@ -42,6 +42,7 @@ beforeEach(() => {
   api.reports.mockResolvedValue({ cases: [postCase()], page: 1, hasMore: false });
   api.actions.mockResolvedValue({ actions: [], page: 1, hasMore: false });
   api.suspended.mockResolvedValue({ users: [], page: 1, hasMore: false });
+  api.verified.mockResolvedValue({ users: [], page: 1, hasMore: false });
 });
 
 describe("ModerationPage: who can see it", () => {
@@ -231,5 +232,79 @@ describe("ModerationPage: the record and suspended accounts", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Suspended accounts" }));
     await userEvent.click(await screen.findByRole("button", { name: "Lift suspension" }));
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("That account isn't suspended"));
+  });
+});
+
+describe("ModerationPage: CSverified badges", () => {
+  const given = { user: { ...author, id: "u9", username: "vee", displayName: "Vee Verified" } as User, givenAt: "2026-10-04T12:00:00.000Z" };
+  const openTab = async () => {
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "CSverified" }));
+    return screen.findByRole("region", { name: "CSverified badges" });
+  };
+
+  it("explains the two ways to get the badge, and lists the people an administrator has given it to", async () => {
+    api.verified.mockResolvedValue({ users: [given], page: 1, hasMore: false });
+    const panel = await openTab();
+    expect(within(panel).getByText(/earned automatically by anyone with 1,000 active friends/)).toBeInTheDocument();
+    const row = (await within(panel).findByRole("link", { name: "Vee Verified" })).closest("li") as HTMLElement;
+    expect(within(row).getByText("@vee")).toBeInTheDocument();
+    expect(within(row).getByText(/Given October 4, 2026/)).toBeInTheDocument();
+    expect(within(row).getByRole("img", { name: "CSverified" })).toBeInTheDocument();
+  });
+
+  it("says so when no one has been given it", async () => {
+    const panel = await openTab();
+    expect(await within(panel).findByText("You haven't given the badge to anyone yet.")).toBeInTheDocument();
+  });
+
+  it("gives the badge by username (ignoring an @), says so, and refreshes the list", async () => {
+    api.giveBadge.mockResolvedValue({ user: given.user, given: true });
+    const panel = await openTab();
+    const give = within(panel).getByRole("button", { name: "Give badge" });
+    expect(give).toBeDisabled();
+    await userEvent.type(within(panel).getByLabelText("Username to give the badge to"), "  @vee ");
+    api.verified.mockResolvedValue({ users: [given], page: 1, hasMore: false });
+    await userEvent.click(give);
+    expect(api.giveBadge).toHaveBeenCalledWith("vee");
+    expect(await within(panel).findByRole("status")).toHaveTextContent("Vee Verified now has the CSverified badge.");
+    expect(await within(panel).findByRole("link", { name: "Vee Verified" })).toBeInTheDocument();
+    expect(within(panel).getByLabelText("Username to give the badge to")).toHaveValue("");
+  });
+
+  it("says when they already had it, and why a badge couldn't be given", async () => {
+    api.giveBadge.mockResolvedValueOnce({ user: given.user, given: false });
+    const panel = await openTab();
+    await userEvent.type(within(panel).getByLabelText("Username to give the badge to"), "vee{enter}");
+    expect(await within(panel).findByRole("status")).toHaveTextContent("already has the badge from an administrator");
+    api.giveBadge.mockRejectedValueOnce(new ApiError(404, "No one has that username"));
+    await userEvent.type(within(panel).getByLabelText("Username to give the badge to"), "nobody{enter}");
+    expect(await within(panel).findByRole("alert")).toHaveTextContent("No one has that username");
+  });
+
+  it("takes a badge away only after asking", async () => {
+    api.verified.mockResolvedValue({ users: [given], page: 1, hasMore: false });
+    api.removeBadge.mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValue(true);
+    const panel = await openTab();
+    await userEvent.click(await within(panel).findByRole("button", { name: "Remove badge" }));
+    expect(api.removeBadge).not.toHaveBeenCalled();
+    await userEvent.click(within(panel).getByRole("button", { name: "Remove badge" }));
+    expect(confirm).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(api.removeBadge).toHaveBeenCalledWith("vee"));
+    expect(await within(panel).findByText("You haven't given the badge to anyone yet.")).toBeInTheDocument();
+  });
+
+  it("records giving and taking away in the handled list, without a report count", async () => {
+    api.actions.mockResolvedValue({
+      actions: [{ id: "a1", targetType: "user", targetId: "u9", action: "verified", note: "", reportCount: 0, createdAt: "2026-10-04T12:00:00.000Z", admin: { id: "me", username: "boss", displayName: "Boss" } as User, subject: given.user }],
+      page: 1,
+      hasMore: false,
+    });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Handled" }));
+    const item = (await screen.findByText("CSverified badge given")).closest("li") as HTMLElement;
+    expect(item).toHaveTextContent("About Vee Verified");
+    expect(item).not.toHaveTextContent("report");
   });
 });

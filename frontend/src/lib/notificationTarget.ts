@@ -64,6 +64,8 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const entryId = str(n.payload.entryId);
       return entryId ? { to: `/blog/${entryId}`, label: "Read entry" } : actorProfile;
     }
+    case "cs_verified":
+      return viewerUsername ? { to: `/u/${viewerUsername}`, label: "View your profile" } : null;
     case "live_scheduled":
       return { to: "/live", label: "See upcoming lives" };
     case "live_reminder":

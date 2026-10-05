@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../../api/client";
 import type { Comment } from "../../types";
 import { Avatar } from "./Avatar";
+import { CSBadge } from "./CSBadge";
 import { EditBox } from "./EditBox";
 import { EditedMark } from "./EditedMark";
 import { Linkified } from "./Linkified";
@@ -154,7 +155,8 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
                 <EditBox text={c.content} maxText={MAX_COMMENT} label="Edit comment" rows={2} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
               ) : (
                 <>
-                  <span className="font-medium text-white/90">{c.author.displayName}</span>{" "}
+                  <span className="font-medium text-white/90">{c.author.displayName}</span>
+                  <CSBadge verified={c.author.csVerified} size={12} className="ml-0.5" />{" "}
                   {c.content && (
                     <span className="whitespace-pre-line break-words text-white/70">
                       <Linkified text={c.content} />

@@ -42,9 +42,19 @@ async function moderator(browser: Browser, baseURL: string, project: string): Pr
     const res = await context.request.post("/api/auth/verify-email", { data: { token: await confirmationToken(email) } });
     expect(res.status()).toBeLessThan(300);
   } else {
-    expect(reg.status()).toBe(409); // an earlier run in this database made it; sign in instead
-    const login = await context.request.post("/api/auth/login", { data: { email, password: PASSWORD } });
-    expect(login.status()).toBe(200);
+    // an earlier run in this database made it, or another test in this browser is making it right now (two of these tests share
+    // one address per browser): sign in, and wait until it is confirmed
+    expect([409, 500]).toContain(reg.status());
+    await expect
+      .poll(
+        async () => {
+          const login = await context.request.post("/api/auth/login", { data: { email, password: PASSWORD } });
+          if (login.status() !== 200) return false;
+          return (await (await context.request.get("/api/auth/me")).json()).user.isAdmin;
+        },
+        { timeout: 30_000 }
+      )
+      .toBe(true);
   }
   const me = await (await context.request.get("/api/auth/me")).json();
   expect(me.user.isAdmin).toBe(true);
@@ -133,12 +143,63 @@ test.describe("the moderation review queue", () => {
     await reporter.context.close();
   });
 
+  test("a moderator gives and takes away the CSverified badge, and it shows on the profile and in search", async ({ browser, baseURL }, testInfo) => {
+    const person = await apiUser(browser, baseURL!, "badged");
+    const mod = await moderator(browser, baseURL!, testInfo.project.name);
+    const shows = async (path: string) => {
+      await mod.page.goto(path);
+      await expect(mod.page.getByRole("heading", { name: person.user.displayName }).or(mod.page.getByRole("link", { name: new RegExp(person.user.displayName) })).first()).toBeVisible();
+    };
+
+    // no badge to start with
+    await shows(`/u/${person.user.username}`);
+    await expect(mod.page.getByRole("img", { name: "CSverified" })).toHaveCount(0);
+
+    await mod.page.goto("/admin/moderation");
+    await mod.page.getByRole("button", { name: "CSverified" }).click();
+    const panel = mod.page.getByRole("region", { name: "CSverified badges" });
+    await expect(panel.getByText(/earned automatically by anyone with 1,000 active friends/)).toBeVisible();
+    await panel.getByLabel("Username to give the badge to").fill(`@${person.user.username}`);
+    await panel.getByRole("button", { name: "Give badge" }).click();
+    await expect(panel.getByRole("status")).toHaveText(`${person.user.displayName} now has the CSverified badge.`);
+    await expect(panel.getByRole("link", { name: person.user.displayName })).toBeVisible();
+
+    // it shows beside their name on their profile, and in search
+    await shows(`/u/${person.user.username}`);
+    await expect(mod.page.getByRole("img", { name: "CSverified" })).toBeVisible();
+    await expect(mod.page.getByText("CSverified", { exact: true })).toBeVisible();
+    await mod.page.goto(`/search?q=${person.user.username}`);
+    const card = mod.page.getByRole("listitem").filter({ has: mod.page.getByRole("link", { name: new RegExp(person.user.displayName) }) });
+    await expect(card.getByRole("img", { name: "CSverified" })).toBeVisible();
+
+    // and they are told
+    const notes = (await (await person.request.get("/api/notifications")).json()).notifications.filter((n: { type: string }) => n.type === "cs_verified");
+    expect(notes).toHaveLength(1);
+    await person.context.close();
+
+    // taking it away asks first, and it is recorded
+    await mod.page.goto("/admin/moderation");
+    await mod.page.getByRole("button", { name: "CSverified" }).click();
+    mod.page.once("dialog", (d) => d.accept());
+    const row = mod.page.getByRole("listitem").filter({ has: mod.page.getByRole("link", { name: person.user.displayName }) });
+    await row.getByRole("button", { name: "Remove badge" }).click();
+    await expect(row).toHaveCount(0);
+    await shows(`/u/${person.user.username}`);
+    await expect(mod.page.getByRole("img", { name: "CSverified" })).toHaveCount(0);
+    await mod.page.goto("/admin/moderation");
+    await mod.page.getByRole("button", { name: "Handled" }).click();
+    await expect(mod.page.getByText("CSverified badge given").first()).toBeVisible();
+    await expect(mod.page.getByText("CSverified badge removed").first()).toBeVisible();
+    await mod.context.close();
+  });
+
   test("an ordinary member sees no Moderation link, and the screen and its data are not there for them", async ({ page }) => {
     await signUpViaUi(page, newUser("ordinary"));
     await expect(page.getByRole("link", { name: "Moderation" })).toHaveCount(0);
     await page.goto("/admin/moderation");
     await expect(page.getByText("There's nothing here.")).toBeVisible();
-    for (const p of ["/api/admin/reports", "/api/admin/actions", "/api/admin/suspended"]) expect((await page.request.get(p)).status(), p).toBe(404);
+    for (const p of ["/api/admin/reports", "/api/admin/actions", "/api/admin/suspended", "/api/admin/verified"]) expect((await page.request.get(p)).status(), p).toBe(404);
+    expect((await page.request.put("/api/admin/verified/somebody")).status()).toBe(404);
     expect((await page.request.post("/api/admin/reports/resolve", { data: { targetType: "post", targetId: "5f1d7f3b8f1d7f3b8f1d7f3b", action: "dismiss" } })).status()).toBe(404);
   });
 

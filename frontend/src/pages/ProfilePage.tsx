@@ -7,12 +7,10 @@ import { moderationApi } from "../api/moderation.api";
 import { uploadFile } from "../api/media.api";
 import { assetUrl, ApiError } from "../api/client";
 import type { User, ProfileTheme } from "../types";
-import { profileThemeStyle, readableTheme } from "../theme/applyProfileTheme";
-import { PANEL_STYLE, WALLPAPER_SCRIM } from "../theme/contrast";
 import { ShareButton } from "../components/share/ShareButton";
-import { MovingWallpaper } from "../components/profile/MovingWallpaper";
-import { WallpaperStudio } from "../components/profile/WallpaperStudio";
+import { ThemedPage } from "../components/layout/ThemedPage";
 import { motionOf } from "../lib/wallpaperMotion";
+import { WallpaperStudio } from "../components/profile/WallpaperStudio";
 import { ProfileMood, ProfileTags } from "../components/profile/ProfileStatus";
 import { StatusEditor, TagEditor } from "../components/profile/StatusEditor";
 import { profileUrl } from "../lib/share";
@@ -37,6 +35,7 @@ import { DeleteAccount } from "../components/profile/DeleteAccount";
 import { ChangePassword } from "../components/profile/ChangePassword";
 import { EmailStatus } from "../components/profile/EmailStatus";
 import { ProfileNames } from "../components/profile/ProfileNames";
+import { CSBadge } from "../components/common/CSBadge";
 
 export function ProfilePage() {
   const { username = "" } = useParams();
@@ -211,278 +210,244 @@ export function ProfilePage() {
   };
 
   const wallpaperUrl = assetUrl(profile.wallpaperUrl);
-  const isVideoWallpaper = profile.wallpaperType === "video" && Boolean(wallpaperUrl);
-  // A picture that moves is drawn as its own layer behind the page; a still one is the page's background.
   const motion = motionOf(profile.wallpaperMotion);
-  const isMovingWallpaper = Boolean(wallpaperUrl) && !isVideoWallpaper && motion !== "none";
-
-  // data-scheme="light" flips the page's white-on-dark styling for a bright background (see index.css), so text stays readable.
-  const { scheme, panel } = readableTheme(profile.theme, Boolean(wallpaperUrl));
 
   return (
-    <div
-      data-scheme={scheme}
-      data-wallpaper={wallpaperUrl ? "true" : undefined}
-      style={profileThemeStyle(
-        profile.theme,
-        isVideoWallpaper || isMovingWallpaper ? undefined : wallpaperUrl,
-        profile.wallpaperPosition,
-        Boolean(wallpaperUrl),
-      )}
-      className="isolate min-h-[calc(100vh-56px)]"
-    >
-      {isMovingWallpaper && <MovingWallpaper url={wallpaperUrl!} position={profile.wallpaperPosition} motion={motion} />}
-      {isVideoWallpaper && (
-        <>
-          <video
-            src={wallpaperUrl}
-            style={{ objectPosition: profile.wallpaperPosition }}
-            className="fixed inset-0 -z-10 h-full w-full object-cover"
-            autoPlay
-            loop
-            muted
-            playsInline
+    <ThemedPage look={profile} contentClassName="mx-auto max-w-3xl px-4 pt-8" panelClassName="min-h-[calc(100vh-56px)] pb-6 sm:rounded-b-2xl">
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+        <div className="relative">
+          <Avatar
+            username={profile.username}
+            displayName={profile.displayName}
+            avatarUrl={profile.avatarUrl}
+            size={88}
+            className="border-4 border-[var(--profile-bg)]"
           />
-          <div className="fixed inset-0 -z-10" style={{ background: `rgba(0,0,0,${WALLPAPER_SCRIM})` }} />
+          {isOwner && (
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white"
+            >
+              Edit
+            </button>
+          )}
+          <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
+        </div>
+
+        <div className="min-w-0 pb-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="break-words text-2xl font-bold">{profile.displayName}</h1>
+            <CSBadge verified={profile.csVerified} size={22} withLabel />
+          </div>
+          <p className="text-sm text-[var(--profile-muted)]">@{profile.username}</p>
+          <ActivityBadge activity={profile.activity} className="text-[var(--profile-muted)]" />
+          <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
+        </div>
+
+        <div className="ml-auto flex flex-wrap gap-2 pb-2">
+          <ShareButton
+            url={() => profileUrl(profile.username)}
+            title={isOwner ? "Share your profile" : `Share ${profile.displayName}'s profile`}
+            description="Scan the code, or send the link, to open this profile."
+            className="rounded-md border border-white/20 px-3 py-1.5 text-sm"
+          >
+            Share
+          </ShareButton>
+          {isOwner ? (
+            <button
+              onClick={() => setEditing((e) => !e)}
+              className="rounded-md border px-3 py-1.5 text-sm"
+              style={{ borderColor: "var(--profile-accent)" }}
+            >
+              {editing ? "Done editing" : "Edit profile"}
+            </button>
+          ) : viewer ? (
+            <>
+              {isFriend ? (
+                <>
+                  <span className="rounded-md bg-white/10 px-3 py-1.5 text-sm">✓ Friends</span>
+                  <Link to={`/messages/${username}`} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
+                    Message
+                  </Link>
+                </>
+              ) : (
+                <button
+                  onClick={handleFriendRequest}
+                  disabled={requestSent}
+                  className="rounded-md px-3 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
+                  style={{ background: "var(--profile-accent-fill)" }}
+                >
+                  {requestSent ? "Request sent" : "Add Friend"}
+                </button>
+              )}
+              <button onClick={handleReport} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
+                Report
+              </button>
+              <button onClick={handleBlock} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
+                Block
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      {editing && isOwner ? (
+        <div className="mt-4 space-y-3">
+          <ProfileNames
+            key={profile.username}
+            profile={profile}
+            onChanged={(updated) => {
+              setProfile(updated);
+              if (isOwner) setViewer(updated);
+              // A new username is a new address: move to it.
+              if (updated.username !== username) navigate(`/u/${updated.username}`, { replace: true });
+            }}
+          />
+          <ThemeEditor theme={theme} onChange={setTheme} hasWallpaper={Boolean(wallpaperUrl)} />
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            rows={3}
+            placeholder="Tell people what you make…"
+            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm placeholder:text-white/55 focus:outline-none"
+          />
+          <StatusEditor mood={mood} listeningTo={listeningTo} onMood={setMood} onListeningTo={setListeningTo} />
+          <TagEditor tags={tags} onChange={setTags} />
+          <div className="flex flex-wrap items-center gap-2">
+            <GenerateTextButton kind="bio" getPrompt={() => bio || profile.displayName} onGenerated={setBio} />
+            <label className="ml-auto flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+              <input
+                type="checkbox"
+                checked={profile.isPrivate}
+                onChange={(e) => saveProfile({ isPrivate: e.target.checked })}
+              />
+              Private profile
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+              <input type="checkbox" checked={profile.showActivity !== false} onChange={(e) => saveProfile({ showActivity: e.target.checked })} />
+              Show my friends when I&apos;m online
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+              <input type="checkbox" checked={profile.profileViews === true} onChange={(e) => saveProfile({ profileViews: e.target.checked })} />
+              Profile views
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+              <input type="checkbox" checked={profile.showConnections !== false} onChange={(e) => saveProfile({ showConnections: e.target.checked })} />
+              Show who I know to friends of friends
+            </label>
+            <p className="w-full text-xs text-[var(--profile-muted)]">
+              On: you can be named as a mutual friend and suggested as someone people may know. Off: neither, and your friends aren&apos;t suggested through you.
+            </p>
+            <p className="w-full text-xs text-[var(--profile-muted)]">
+              Off by default. Turn on to see who visits your profile; you then show up to other people who have it on when you visit theirs. Turning it off deletes
+              every visit.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-white/60">Avatar:</span>
+            <ImageSearchPicker
+              label="🔍 Search photos for avatar"
+              onSelect={(url) => saveProfile({ avatarUrl: url })}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => wallpaperInputRef.current?.click()}
+              className="rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10"
+            >
+              🖼️ Change wallpaper
+            </button>
+            <input
+              ref={wallpaperInputRef}
+              type="file"
+              accept="image/*,video/mp4,video/webm"
+              className="hidden"
+              onChange={handleWallpaperFile}
+            />
+            {profile.wallpaperUrl && (
+              <button
+                type="button"
+                onClick={() => saveProfile({ wallpaperUrl: null })}
+                className="text-xs text-white/60 hover:text-red-400"
+              >
+                Remove wallpaper
+              </button>
+            )}
+          </div>
+          <WallpaperStudio
+            hasWallpaper={Boolean(profile.wallpaperUrl)}
+            isPicture={profile.wallpaperType !== "video"}
+            motion={motion}
+            onMotionChange={(next) => void saveProfile({ wallpaperMotion: next })}
+            onUse={async (url, next) => {
+              const saved = await saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%", wallpaperMotion: next });
+              if (!saved) throw new Error("not saved");
+            }}
+          />
+          <ImageSearchPicker
+            label="🔍 Search photos for wallpaper"
+            onSelect={(url) =>
+              saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
+            }
+          />
+          {profile.wallpaperUrl && (
+            <ImagePositioner
+              src={wallpaperUrl!}
+              mediaType={profile.wallpaperType}
+              position={profile.wallpaperPosition}
+              onCommit={(wallpaperPosition) => saveProfile({ wallpaperPosition })}
+              heightClass="h-32"
+            />
+          )}
+          <button
+            onClick={() => saveProfile({ bio, theme, mood, listeningTo, tags })}
+            disabled={saving}
+            className="rounded-md px-4 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
+            style={{ background: "var(--profile-accent-fill)" }}
+          >
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          <div className="space-y-3 border-t border-white/10 pt-3">
+            <EmailStatus />
+            <ChangePassword />
+            <DeleteAccount />
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="mt-4 text-sm">{profile.bio || "No bio yet."}</p>
+          <ProfileTags tags={profile.tags} />
         </>
       )}
 
-      <div
-        className={`mx-auto max-w-3xl px-4 pt-8 ${panel ? "min-h-[calc(100vh-56px)] pb-6 sm:rounded-b-2xl" : ""}`}
-        style={panel ? { background: PANEL_STYLE[panel] } : undefined}
-      >
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-          <div className="relative">
-            <Avatar
-              username={profile.username}
-              displayName={profile.displayName}
-              avatarUrl={profile.avatarUrl}
-              size={88}
-              className="border-4 border-[var(--profile-bg)]"
-            />
-            {isOwner && (
-              <button
-                onClick={() => avatarInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white"
+      {viewer && !isOwner && <MutualFriends username={profile.username} />}
+
+      {isOwner && viewer?.profileViews && <ProfileVisitors />}
+
+      <div className="mt-6 flex flex-col gap-4 pb-10">
+        {order
+          .filter((key) => rearranging || !hidden.includes(key))
+          .map((key, i, shown) => {
+            const section = sectionBody(key);
+            return rearranging ? (
+              <SectionFrame
+                key={key}
+                section={key}
+                position={i + 1}
+                total={shown.length}
+                hidden={hidden.includes(key)}
+                disabled={saving}
+                onMove={(direction) => saveProfile({ sectionOrder: moveSection(order, key, direction) })}
+                onToggleHidden={() => saveProfile({ hiddenSections: hidden.includes(key) ? hidden.filter((h) => h !== key) : [...hidden, key] })}
               >
-                Edit
-              </button>
-            )}
-            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
-          </div>
-
-          <div className="min-w-0 pb-2">
-            <h1 className="break-words text-2xl font-bold">{profile.displayName}</h1>
-            <p className="text-sm text-[var(--profile-muted)]">@{profile.username}</p>
-            <ActivityBadge activity={profile.activity} className="text-[var(--profile-muted)]" />
-            <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
-          </div>
-
-          <div className="ml-auto flex flex-wrap gap-2 pb-2">
-            <ShareButton
-              url={() => profileUrl(profile.username)}
-              title={isOwner ? "Share your profile" : `Share ${profile.displayName}'s profile`}
-              description="Scan the code, or send the link, to open this profile."
-              className="rounded-md border border-white/20 px-3 py-1.5 text-sm"
-            >
-              Share
-            </ShareButton>
-            {isOwner ? (
-              <button
-                onClick={() => setEditing((e) => !e)}
-                className="rounded-md border px-3 py-1.5 text-sm"
-                style={{ borderColor: "var(--profile-accent)" }}
-              >
-                {editing ? "Done editing" : "Edit profile"}
-              </button>
-            ) : viewer ? (
-              <>
-                {isFriend ? (
-                  <>
-                    <span className="rounded-md bg-white/10 px-3 py-1.5 text-sm">✓ Friends</span>
-                    <Link to={`/messages/${username}`} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
-                      Message
-                    </Link>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleFriendRequest}
-                    disabled={requestSent}
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
-                    style={{ background: "var(--profile-accent-fill)" }}
-                  >
-                    {requestSent ? "Request sent" : "Add Friend"}
-                  </button>
-                )}
-                <button onClick={handleReport} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
-                  Report
-                </button>
-                <button onClick={handleBlock} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
-                  Block
-                </button>
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        {editing && isOwner ? (
-          <div className="mt-4 space-y-3">
-            <ProfileNames
-              key={profile.username}
-              profile={profile}
-              onChanged={(updated) => {
-                setProfile(updated);
-                if (isOwner) setViewer(updated);
-                // A new username is a new address: move to it.
-                if (updated.username !== username) navigate(`/u/${updated.username}`, { replace: true });
-              }}
-            />
-            <ThemeEditor theme={theme} onChange={setTheme} hasWallpaper={Boolean(wallpaperUrl)} />
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={3}
-              placeholder="Tell people what you make…"
-              className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm placeholder:text-white/55 focus:outline-none"
-            />
-            <StatusEditor mood={mood} listeningTo={listeningTo} onMood={setMood} onListeningTo={setListeningTo} />
-            <TagEditor tags={tags} onChange={setTags} />
-            <div className="flex flex-wrap items-center gap-2">
-              <GenerateTextButton kind="bio" getPrompt={() => bio || profile.displayName} onGenerated={setBio} />
-              <label className="ml-auto flex items-center gap-2 text-sm text-[var(--profile-muted)]">
-                <input
-                  type="checkbox"
-                  checked={profile.isPrivate}
-                  onChange={(e) => saveProfile({ isPrivate: e.target.checked })}
-                />
-                Private profile
-              </label>
-              <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
-                <input type="checkbox" checked={profile.showActivity !== false} onChange={(e) => saveProfile({ showActivity: e.target.checked })} />
-                Show my friends when I&apos;m online
-              </label>
-              <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
-                <input type="checkbox" checked={profile.profileViews === true} onChange={(e) => saveProfile({ profileViews: e.target.checked })} />
-                Profile views
-              </label>
-              <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
-                <input type="checkbox" checked={profile.showConnections !== false} onChange={(e) => saveProfile({ showConnections: e.target.checked })} />
-                Show who I know to friends of friends
-              </label>
-              <p className="w-full text-xs text-[var(--profile-muted)]">
-                On: you can be named as a mutual friend and suggested as someone people may know. Off: neither, and your friends aren&apos;t suggested through you.
-              </p>
-              <p className="w-full text-xs text-[var(--profile-muted)]">
-                Off by default. Turn on to see who visits your profile; you then show up to other people who have it on when you visit theirs. Turning it off deletes
-                every visit.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-white/60">Avatar:</span>
-              <ImageSearchPicker
-                label="🔍 Search photos for avatar"
-                onSelect={(url) => saveProfile({ avatarUrl: url })}
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => wallpaperInputRef.current?.click()}
-                className="rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10"
-              >
-                🖼️ Change wallpaper
-              </button>
-              <input
-                ref={wallpaperInputRef}
-                type="file"
-                accept="image/*,video/mp4,video/webm"
-                className="hidden"
-                onChange={handleWallpaperFile}
-              />
-              {profile.wallpaperUrl && (
-                <button
-                  type="button"
-                  onClick={() => saveProfile({ wallpaperUrl: null })}
-                  className="text-xs text-white/60 hover:text-red-400"
-                >
-                  Remove wallpaper
-                </button>
-              )}
-            </div>
-            <WallpaperStudio
-              hasWallpaper={Boolean(profile.wallpaperUrl)}
-              isPicture={profile.wallpaperType !== "video"}
-              motion={motion}
-              onMotionChange={(next) => void saveProfile({ wallpaperMotion: next })}
-              onUse={async (url, next) => {
-                const saved = await saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%", wallpaperMotion: next });
-                if (!saved) throw new Error("not saved");
-              }}
-            />
-            <ImageSearchPicker
-              label="🔍 Search photos for wallpaper"
-              onSelect={(url) =>
-                saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
-              }
-            />
-            {profile.wallpaperUrl && (
-              <ImagePositioner
-                src={wallpaperUrl!}
-                mediaType={profile.wallpaperType}
-                position={profile.wallpaperPosition}
-                onCommit={(wallpaperPosition) => saveProfile({ wallpaperPosition })}
-                heightClass="h-32"
-              />
-            )}
-            <button
-              onClick={() => saveProfile({ bio, theme, mood, listeningTo, tags })}
-              disabled={saving}
-              className="rounded-md px-4 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
-              style={{ background: "var(--profile-accent-fill)" }}
-            >
-              {saving ? "Saving…" : "Save changes"}
-            </button>
-            <div className="space-y-3 border-t border-white/10 pt-3">
-              <EmailStatus />
-              <ChangePassword />
-              <DeleteAccount />
-            </div>
-          </div>
-        ) : (
-          <>
-            <p className="mt-4 text-sm">{profile.bio || "No bio yet."}</p>
-            <ProfileTags tags={profile.tags} />
-          </>
-        )}
-
-        {viewer && !isOwner && <MutualFriends username={profile.username} />}
-
-        {isOwner && viewer?.profileViews && <ProfileVisitors />}
-
-        <div className="mt-6 flex flex-col gap-4 pb-10">
-          {order
-            .filter((key) => rearranging || !hidden.includes(key))
-            .map((key, i, shown) => {
-              const section = sectionBody(key);
-              return rearranging ? (
-                <SectionFrame
-                  key={key}
-                  section={key}
-                  position={i + 1}
-                  total={shown.length}
-                  hidden={hidden.includes(key)}
-                  disabled={saving}
-                  onMove={(direction) => saveProfile({ sectionOrder: moveSection(order, key, direction) })}
-                  onToggleHidden={() => saveProfile({ hiddenSections: hidden.includes(key) ? hidden.filter((h) => h !== key) : [...hidden, key] })}
-                >
-                  {section}
-                </SectionFrame>
-              ) : (
-                <div key={key}>{section}</div>
-              );
-            })}
-        </div>
+                {section}
+              </SectionFrame>
+            ) : (
+              <div key={key}>{section}</div>
+            );
+          })}
       </div>
-    </div>
+    </ThemedPage>
   );
 }

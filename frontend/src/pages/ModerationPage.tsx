@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { adminApi, MAX_NOTE, type ModerationDecision } from "../api/admin.api";
+import { adminApi, MAX_NOTE, type ModerationDecision, type VerifiedPerson } from "../api/admin.api";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
 import { useAuth } from "../context/AuthContext";
 import { formatDay } from "../lib/when";
+import { CSBadge } from "../components/common/CSBadge";
 import type { AdminAction, ModerationCase, SuspendedAccount } from "../types";
 
-type Tab = "open" | "handled" | "suspended";
+type Tab = "open" | "handled" | "suspended" | "verified";
 
 const TYPE_LABEL: Record<string, string> = {
   user: "Account",
@@ -28,6 +29,8 @@ const ACTION_LABEL: Record<string, string> = {
   suspended: "Account suspended",
   removed_and_suspended: "Content removed, account suspended",
   unsuspended: "Suspension lifted",
+  verified: "CSverified badge given",
+  unverified: "CSverified badge removed",
 };
 
 const button = "rounded-md border border-white/20 px-3 py-1.5 text-xs text-white hover:bg-white/10 disabled:opacity-50";
@@ -137,6 +140,9 @@ export function ModerationPage() {
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [actions, setActions] = useState<AdminAction[]>([]);
   const [suspended, setSuspended] = useState<SuspendedAccount[]>([]);
+  const [verified, setVerified] = useState<VerifiedPerson[]>([]);
+  const [badgeName, setBadgeName] = useState("");
+  const [badgeMessage, setBadgeMessage] = useState<{ text: string; error: boolean } | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
@@ -152,6 +158,10 @@ export function ModerationPage() {
       } else if (which === "handled") {
         const res = await adminApi.actions(p);
         setActions((old) => (p === 1 ? res.actions : [...old, ...res.actions]));
+        setHasMore(res.hasMore);
+      } else if (which === "verified") {
+        const res = await adminApi.verified(p);
+        setVerified((old) => (p === 1 ? res.users : [...old, ...res.users]));
         setHasMore(res.hasMore);
       } else {
         const res = await adminApi.suspended(p);
@@ -188,6 +198,31 @@ export function ModerationPage() {
     }
   }
 
+  async function giveBadge(e: React.FormEvent) {
+    e.preventDefault();
+    const username = badgeName.trim().replace(/^@/, "");
+    if (!username) return;
+    setBadgeMessage(null);
+    try {
+      const { given, user: person } = await adminApi.giveBadge(username);
+      setBadgeMessage({ text: given ? `${person.displayName} now has the CSverified badge.` : `${person.displayName} already has the badge from an administrator.`, error: false });
+      setBadgeName("");
+      load("verified", 1);
+    } catch (err) {
+      setBadgeMessage({ text: err instanceof ApiError ? err.message : "Couldn't give the badge.", error: true });
+    }
+  }
+
+  async function removeBadge(person: VerifiedPerson) {
+    if (!window.confirm(`Take the CSverified badge away from ${person.user.displayName}?`)) return;
+    try {
+      await adminApi.removeBadge(person.user.username);
+      setVerified((old) => old.filter((v) => v.user.id !== person.user.id));
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Couldn't take the badge away.");
+    }
+  }
+
   const tabButton = (t: Tab, label: string) => (
     <button type="button" onClick={() => setTab(t)} aria-pressed={tab === t} className={`rounded-full border px-3 py-1 text-sm ${tab === t ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}>
       {label}
@@ -204,6 +239,7 @@ export function ModerationPage() {
         {tabButton("open", "Open reports")}
         {tabButton("handled", "Handled")}
         {tabButton("suspended", "Suspended accounts")}
+        {tabButton("verified", "CSverified")}
       </div>
 
       {state === "loading" && page === 1 && <p className="p-6 text-center text-white/60">Loading…</p>}
@@ -227,7 +263,8 @@ export function ModerationPage() {
         <ul className="space-y-2">
           {actions.map((a) => (
             <li key={a.id} className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm text-white/80">
-              <span className="font-medium text-white">{ACTION_LABEL[a.action] ?? a.action}</span> · {TYPE_LABEL[a.targetType] ?? a.targetType} · {a.reportCount} {a.reportCount === 1 ? "report" : "reports"}
+              <span className="font-medium text-white">{ACTION_LABEL[a.action] ?? a.action}</span> · {TYPE_LABEL[a.targetType] ?? a.targetType}
+              {a.reportCount > 0 && ` · ${a.reportCount} ${a.reportCount === 1 ? "report" : "reports"}`}
               <div className="mt-0.5 text-xs text-white/60">
                 {a.subject ? `About ${a.subject.displayName} · ` : ""}by {a.admin?.displayName ?? "a moderator"} · {formatDay(a.createdAt)}
               </div>
@@ -235,6 +272,45 @@ export function ModerationPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {tab === "verified" && (
+        <section aria-label="CSverified badges" className="space-y-3">
+          <p className="text-sm text-white/60">
+            The badge is also earned automatically by anyone with 1,000 active friends (confirmed, not suspended, seen in the last 30 days). Here you give it to someone else, or take away one you gave. A badge someone earned with friends is not touched.
+          </p>
+          <form onSubmit={giveBadge} className="flex gap-2">
+            <input value={badgeName} onChange={(e) => setBadgeName(e.target.value)} placeholder="Username" aria-label="Username to give the badge to" className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none" />
+            <button type="submit" disabled={!badgeName.trim()} className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
+              Give badge
+            </button>
+          </form>
+          {badgeMessage && (
+            <p role={badgeMessage.error ? "alert" : "status"} className={`text-sm ${badgeMessage.error ? "text-red-400" : "text-emerald-300"}`}>
+              {badgeMessage.text}
+            </p>
+          )}
+          {state === "ready" && verified.length === 0 && <p className="text-sm text-white/60">You haven&apos;t given the badge to anyone yet.</p>}
+          <ul className="space-y-2">
+            {verified.map((v) => (
+              <li key={v.user.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+                <Avatar username={v.user.username} displayName={v.user.displayName} avatarUrl={v.user.avatarUrl} size={32} />
+                <div className="min-w-0 flex-1 text-sm">
+                  <p className="font-medium text-white">
+                    <Link to={`/u/${v.user.username}`} className="hover:underline">
+                      {v.user.displayName}
+                    </Link>
+                    <CSBadge verified size={14} className="ml-1" /> <span className="font-normal text-white/60">@{v.user.username}</span>
+                  </p>
+                  <p className="text-xs text-white/60">Given {formatDay(v.givenAt)}</p>
+                </div>
+                <button type="button" onClick={() => removeBadge(v)} className={button}>
+                  Remove badge
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {tab === "suspended" && state === "ready" && suspended.length === 0 && <p className="text-sm text-white/60">No accounts are suspended.</p>}

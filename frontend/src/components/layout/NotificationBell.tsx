@@ -39,6 +39,8 @@ function describe(n: Notification): string {
       return typeof n.payload.title === "string" ? `commented on your blog entry "${n.payload.title}"` : "commented on your blog entry";
     case "friend_birthday":
       return "has a birthday today 🎂";
+    case "cs_verified":
+      return n.payload.reason === "friends" ? "— you're now CSverified: you have 1,000 active friends." : "— you're now CSverified: an administrator gave you the badge.";
     case "event_created":
       return typeof n.payload.title === "string" && typeof n.payload.startsAt === "string" ? `is planning an event: "${n.payload.title}", ${formatWhen(n.payload.startsAt)}` : "is planning an event";
     case "event_updated": {

@@ -23,7 +23,6 @@ export interface UpdateProfileInput {
 }
 
 export const profilesApi = {
-  search: (query: string) => api.get<{ users: User[] }>(`/profiles?search=${encodeURIComponent(query)}`),
   /** New public profiles, newest first, optionally only those with a tag. */
   discover: ({ tag, page }: { tag?: string; page?: number } = {}) => {
     const query = new URLSearchParams();

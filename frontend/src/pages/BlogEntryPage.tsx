@@ -4,6 +4,7 @@ import { blogApi } from "../api/blog.api";
 import { moderationApi } from "../api/moderation.api";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
+import { CSBadge } from "../components/common/CSBadge";
 import { BlogComments } from "../components/blog/BlogComments";
 import { formatDay } from "../lib/when";
 import type { BlogEntry } from "../types";
@@ -92,6 +93,7 @@ export function BlogEntryPage() {
             <Avatar username={entry.author.username} displayName={entry.author.displayName} avatarUrl={entry.author.avatarUrl} size={28} />
             <Link to={`/u/${entry.author.username}`} className="hover:underline">
               {entry.author.displayName}
+              <CSBadge verified={entry.author.csVerified} size={14} className="ml-1" />
             </Link>
             <span aria-hidden="true">·</span>
             <time dateTime={entry.createdAt}>{formatDay(entry.createdAt)}</time>

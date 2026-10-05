@@ -71,6 +71,21 @@ describe("ProfilePage", () => {
     expect(screen.getByText("guestbook")).toBeInTheDocument();
   });
 
+  it("shows the CSverified badge beside the name of someone who has it", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, csVerified: true } });
+    renderAs(me, "zoe");
+    expect(await screen.findByRole("heading", { name: "Zoe" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "CSverified" })).toBeInTheDocument();
+    expect(screen.getByText("CSverified")).toBeInTheDocument();
+  });
+
+  it("shows no badge on an ordinary profile", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    expect(await screen.findByRole("heading", { name: "Zoe" })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "CSverified" })).not.toBeInTheDocument();
+  });
+
   it("sends a friend request once", async () => {
     profiles.get.mockResolvedValue({ user: zoe });
     friends.request.mockResolvedValue({ friendship: {} as never });

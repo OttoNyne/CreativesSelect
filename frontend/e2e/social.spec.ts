@@ -10,7 +10,7 @@ test.describe("finding people and making friends", () => {
     const them = await apiUser(browser, baseURL!, "findable");
 
     await page.goto("/search");
-    await page.getByPlaceholder("Search creatives…").fill(them.user.username.slice(0, 12));
+    await page.getByPlaceholder("Search people, writing, groups…").fill(them.user.username.slice(0, 12));
     await page.getByRole("button", { name: "Search", exact: true }).click();
     await page.getByRole("link", { name: new RegExp(them.user.displayName) }).click();
     await expect(page).toHaveURL(new RegExp(`/u/${them.user.username}$`));

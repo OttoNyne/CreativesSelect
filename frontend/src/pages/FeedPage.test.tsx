@@ -151,3 +151,59 @@ describe("FeedPage", () => {
     expect(screen.getByText("Newer one")).toBeInTheDocument();
   });
 });
+
+describe("FeedPage: the background", () => {
+  const signedInAs = (over: Record<string, unknown>) =>
+    vi.mocked(useAuth).mockReturnValue({ user: { id: "me", username: "me", displayName: "Me", theme: {}, wallpaperType: "image", wallpaperPosition: "50% 50%", ...over } as never, isLoading: false, setUser: () => {}, refresh: async () => {} });
+  const frame = () => document.querySelector("[data-scheme]") as HTMLElement | null;
+
+  it("is the usual page for someone who hasn't chosen a background", async () => {
+    api.feed.mockResolvedValue({ posts: [] });
+    renderPage();
+    await screen.findByText(/No posts yet/);
+    expect(frame()).toBeNull();
+  });
+
+  it("is the same colour they chose for their profile", async () => {
+    signedInAs({ theme: { bgColor: "#102040" } });
+    api.feed.mockResolvedValue({ posts: [post()] });
+    renderPage();
+    expect(await screen.findByText("First post")).toBeInTheDocument();
+    expect(frame()).not.toBeNull();
+    expect(frame()!.style.getPropertyValue("--profile-bg")).toBe("#102040");
+    expect(frame()!).toContainElement(screen.getByText("First post"));
+    expect(frame()!).toContainElement(screen.getByText("welcome checklist"));
+  });
+
+  it("is the same wallpaper they chose for their profile, and keeps the text readable on it", async () => {
+    signedInAs({ wallpaperUrl: "https://cdn.example.com/w.jpg" });
+    api.feed.mockResolvedValue({ posts: [] });
+    renderPage();
+    await screen.findByText(/No posts yet/);
+    expect(frame()).toHaveAttribute("data-wallpaper", "true");
+    expect(frame()!.style.backgroundImage).toContain("https://cdn.example.com/w.jpg");
+  });
+
+  it("flips for a bright colour, as the profile does", async () => {
+    signedInAs({ theme: { bgColor: "#ffffff" } });
+    api.feed.mockResolvedValue({ posts: [] });
+    renderPage();
+    await screen.findByText(/No posts yet/);
+    expect(frame()).toHaveAttribute("data-scheme", "light");
+  });
+
+  it("keeps the feed's own font, taking only the background from the profile", async () => {
+    signedInAs({ theme: { bgColor: "#102040", fontFamily: "Georgia, serif" } });
+    api.feed.mockResolvedValue({ posts: [] });
+    renderPage();
+    await screen.findByText(/No posts yet/);
+    expect(frame()!.style.fontFamily).toBe("");
+  });
+
+  it("shows the problem plainly if the feed can't load, whatever the background", async () => {
+    signedInAs({ theme: { bgColor: "#102040" } });
+    api.feed.mockRejectedValue(new ApiError(500, "boom"));
+    renderPage();
+    expect(await screen.findByText("boom")).toBeInTheDocument();
+  });
+});

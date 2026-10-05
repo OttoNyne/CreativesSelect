@@ -4,6 +4,7 @@ import { profilesApi } from "../../api/profiles.api";
 import { ApiError } from "../../api/client";
 import type { Comment } from "../../types";
 import { Avatar } from "../common/Avatar";
+import { CSBadge } from "../common/CSBadge";
 import { useAuth } from "../../context/AuthContext";
 import { EditBox } from "../common/EditBox";
 import { EditedMark } from "../common/EditedMark";
@@ -137,6 +138,7 @@ export function ProfileComments({ username }: { username: string }) {
             <div className="flex-1">
               <Link to={`/u/${c.author.username}`} className="font-medium text-white/90 hover:underline">
                 {c.author.displayName}
+                <CSBadge verified={c.author.csVerified} size={12} className="ml-1" />
               </Link>
               {editing === c.id ? (
                 <EditBox text={c.content} maxText={MAX_COMMENT} label="Edit testimonial" rows={3} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Post } from "../../types";
 import { Avatar } from "../common/Avatar";
+import { CSBadge } from "../common/CSBadge";
 import { assetUrl } from "../../api/client";
 import { FramedImage } from "../common/FramedImage";
 import { PostCommentList } from "./PostCommentList";
@@ -66,6 +67,7 @@ export function PostCard({
           <Link to={`/u/${post.author.username}`} className="font-medium text-white hover:underline">
             {post.author.displayName}
           </Link>
+          <CSBadge verified={post.author.csVerified} size={14} className="ml-1" />
           <div className="text-xs text-white/60">
             @{post.author.username} · {timeAgo(post.createdAt)}
           </div>

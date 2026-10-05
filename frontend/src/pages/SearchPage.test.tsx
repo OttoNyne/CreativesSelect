@@ -4,10 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { SearchPage } from "./SearchPage";
 import { profilesApi } from "../api/profiles.api";
+import { searchApi } from "../api/search.api";
 import { ApiError } from "../api/client";
 
-vi.mock("../api/profiles.api", () => ({ profilesApi: { search: vi.fn(), discover: vi.fn(), tags: vi.fn() } }));
-const search = vi.mocked(profilesApi.search);
+vi.mock("../api/profiles.api", () => ({ profilesApi: { discover: vi.fn(), tags: vi.fn() } }));
+vi.mock("../api/search.api", async (importOriginal) => ({ ...(await importOriginal<typeof import("../api/search.api")>()), searchApi: { search: vi.fn() } }));
+// the real one is generic in what it returns; the tests hand it whatever shape the page under test expects
+const search = vi.mocked(searchApi.search) as unknown as ReturnType<typeof vi.fn>;
 const discover = vi.mocked(profilesApi.discover);
 const tags = vi.mocked(profilesApi.tags);
 
@@ -28,43 +31,109 @@ beforeEach(() => {
   discover.mockResolvedValue({ users: [zoe, ana], page: 1, hasMore: false });
 });
 
-describe("SearchPage: searching by name", () => {
-  it("searches by the trimmed query and links each result to its profile", async () => {
-    search.mockResolvedValue({ users: [{ id: "1", username: "zoe", displayName: "Zoe" } as never] });
-    renderPage();
-    await userEvent.type(screen.getByPlaceholderText("Search creatives…"), "  zo  {enter}");
+describe("SearchPage: searching", () => {
+  const box = () => screen.getByPlaceholderText("Search people, writing, groups…");
+  const none = (words: string[], type = "people") => ({ type, words, results: [], page: 1, hasMore: false });
 
-    expect(search).toHaveBeenCalledWith("zo");
+  it("searches people by the trimmed question and links each result to its profile, marking what matched", async () => {
+    search.mockResolvedValue({ type: "people", words: ["zo"], results: [{ id: "1", username: "zoe", displayName: "Zoe", mutualCount: 2, isFriend: false }], page: 1, hasMore: false });
+    renderPage();
+    await userEvent.type(box(), "  zo  {enter}");
+
+    expect(search).toHaveBeenCalledWith({ q: "zo", type: "people", tag: "", connection: "any" });
     const results = await screen.findByRole("region", { name: "Search results" });
     expect(within(results).getByRole("link", { name: /Zoe/ })).toHaveAttribute("href", "/u/zoe");
+    expect(within(results).getAllByText("Zo", { selector: "mark" }).length).toBeGreaterThan(0);
+    expect(within(results).getByText("2 friends in common")).toBeInTheDocument();
   });
 
   it("says so when nothing matches", async () => {
-    search.mockResolvedValue({ users: [] });
+    search.mockResolvedValue(none(["nobody"]));
     renderPage();
-    await userEvent.type(screen.getByPlaceholderText("Search creatives…"), "nobody{enter}");
+    await userEvent.type(box(), "nobody{enter}");
     expect(await screen.findByText("No creatives found.")).toBeInTheDocument();
   });
 
-  it("ignores a blank query", async () => {
+  it("ignores a blank question", async () => {
     renderPage();
-    await userEvent.type(screen.getByPlaceholderText("Search creatives…"), "   {enter}");
+    await userEvent.type(box(), "   {enter}");
     expect(search).not.toHaveBeenCalled();
+    expect(screen.getByRole("region", { name: "New creatives" })).toBeInTheDocument();
   });
 
   it("shows an error when the search fails", async () => {
-    search.mockRejectedValue(new ApiError(500, "Internal server error"));
+    search.mockRejectedValue(new ApiError(429, "You are searching very quickly."));
     renderPage();
-    await userEvent.type(screen.getByPlaceholderText("Search creatives…"), "zoe{enter}");
-    expect(await screen.findByText("Internal server error")).toBeInTheDocument();
+    await userEvent.type(box(), "zoe{enter}");
+    expect(await screen.findByText("You are searching very quickly.")).toBeInTheDocument();
   });
 
   it("goes back to browsing from the results", async () => {
-    search.mockResolvedValue({ users: [] });
+    search.mockResolvedValue(none(["nobody"]));
     renderPage();
-    await userEvent.type(screen.getByPlaceholderText("Search creatives…"), "nobody{enter}");
+    await userEvent.type(box(), "nobody{enter}");
     await userEvent.click(await screen.findByRole("button", { name: "Back to browsing" }));
     expect(await screen.findByRole("region", { name: "New creatives" })).toBeInTheDocument();
+    expect(box()).toHaveValue("");
+  });
+
+  it("opens already searching when the address has a question, kind and filters (so a search can be shared)", async () => {
+    search.mockResolvedValue(none(["kiln"]));
+    renderPage("/search?q=kiln&type=people&tag=potter&connection=friends");
+    expect(box()).toHaveValue("kiln");
+    await screen.findByText("No creatives found.");
+    expect(search).toHaveBeenCalledWith({ q: "kiln", type: "people", tag: "potter", connection: "friends" });
+    expect(screen.getByLabelText("Show")).toHaveValue("friends");
+    expect(screen.getByRole("button", { name: "Stop filtering by potter" })).toBeInTheDocument();
+  });
+
+  it("ignores a kind or filter in the address that isn't one", async () => {
+    search.mockResolvedValue(none(["kiln"]));
+    renderPage("/search?q=kiln&type=everything&connection=strangers");
+    await screen.findByText("No creatives found.");
+    expect(search).toHaveBeenCalledWith({ q: "kiln", type: "people", tag: "", connection: "any" });
+  });
+
+  it("offers every kind, and searching another kind keeps the question", async () => {
+    search.mockResolvedValue(none(["kiln"]));
+    renderPage("/search?q=kiln");
+    const tabs = await screen.findByRole("tablist", { name: "What to search" });
+    expect(within(tabs).getAllByRole("tab").map((t) => t.textContent)).toEqual(["People", "Blog entries", "Groups", "Group topics", "Help wanted"]);
+    expect(within(tabs).getByRole("tab", { name: "People" })).toHaveAttribute("aria-selected", "true");
+
+    search.mockResolvedValue({ type: "blog", words: ["kiln"], results: [{ id: "b1", title: "Firing the kiln", snippet: "a long day at the kiln", createdAt: "2026-01-02T00:00:00Z", commentCount: 3, author: { id: "9", username: "wren", displayName: "Wren" } }], page: 1, hasMore: false });
+    await userEvent.click(within(tabs).getByRole("tab", { name: "Blog entries" }));
+    expect(search).toHaveBeenLastCalledWith({ q: "kiln", type: "blog", tag: "", connection: "any" });
+    const results = await screen.findByRole("region", { name: "Search results" });
+    expect(await within(results).findByRole("link", { name: /Firing the/ })).toHaveAttribute("href", "/blog/b1");
+    expect(within(results).getByText(/3 comments/)).toBeInTheDocument();
+    expect(within(tabs).getByRole("tab", { name: "Blog entries" })).toHaveAttribute("aria-selected", "true");
+    // the filters for people are gone
+    expect(screen.queryByLabelText("Show")).not.toBeInTheDocument();
+  });
+
+  it("changes who is shown, and picks a tag from someone's card to filter by", async () => {
+    search.mockResolvedValue({ type: "people", words: ["zo"], results: [{ ...(zoe as object), mutualCount: 0, isFriend: false }], page: 1, hasMore: false });
+    renderPage("/search?q=zo");
+    await screen.findByRole("link", { name: /Zoe/ });
+    await userEvent.selectOptions(screen.getByLabelText("Show"), "mutual");
+    expect(search).toHaveBeenLastCalledWith({ q: "zo", type: "people", tag: "", connection: "mutual" });
+    await userEvent.click(await screen.findByRole("button", { name: "Browse everyone tagged potter" }));
+    expect(search).toHaveBeenLastCalledWith({ q: "zo", type: "people", tag: "potter", connection: "mutual" });
+    await userEvent.click(await screen.findByRole("button", { name: "Stop filtering by potter" }));
+    expect(search).toHaveBeenLastCalledWith({ q: "zo", type: "people", tag: "", connection: "mutual" });
+  });
+
+  it("shows more, without repeating anyone", async () => {
+    search.mockResolvedValueOnce({ type: "people", words: ["zo"], results: [{ id: "1", username: "zoe", displayName: "Zoe" }], page: 1, hasMore: true });
+    renderPage("/search?q=zo");
+    await screen.findByRole("link", { name: /Zoe/ });
+    search.mockResolvedValueOnce({ type: "people", words: ["zo"], results: [{ id: "1", username: "zoe", displayName: "Zoe" }, { id: "2", username: "zora", displayName: "Zora" }], page: 2, hasMore: false });
+    await userEvent.click(screen.getByRole("button", { name: "Show more" }));
+    expect(search).toHaveBeenLastCalledWith({ q: "zo", type: "people", tag: "", connection: "any", page: 2 });
+    expect(await screen.findByRole("link", { name: /Zora/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Zoe/ })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
   });
 });
 
@@ -139,6 +208,6 @@ describe("SearchPage: discovering by tag", () => {
     renderPage();
     expect(await screen.findByText("Couldn't load creatives right now.")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Browse by tag" })).not.toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Search creatives…")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search people, writing, groups…")).toBeInTheDocument();
   });
 });

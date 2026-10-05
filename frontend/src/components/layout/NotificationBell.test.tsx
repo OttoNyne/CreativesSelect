@@ -257,6 +257,15 @@ describe("NotificationBell: moderation", () => {
   });
 });
 
+describe("NotificationBell: CSverified", () => {
+  it("says which way the badge was given, and opens your own profile", async () => {
+    await openWith([note({ id: "a", type: "cs_verified", payload: { reason: "admin" }, actor: null }), note({ id: "b", type: "cs_verified", payload: { reason: "friends" }, actor: null })]);
+    expect(await screen.findByText(/an administrator gave you the badge/)).toBeInTheDocument();
+    expect(screen.getByText(/you have 1,000 active friends/)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "View your profile" })[0]).toHaveAttribute("href", "/u/me");
+  });
+});
+
 describe("NotificationBell: invite links", () => {
   it("says someone joined through your link, and links to them", async () => {
     await openWith([note({ type: "invite_joined", payload: { inviteId: "i1" } })]);

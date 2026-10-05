@@ -84,7 +84,7 @@ test.describe("text can be read on light and dark backgrounds", () => {
     await expectReadable(page, "the friends page with a request waiting");
 
     await page.goto("/search");
-    await page.getByPlaceholder("Search creatives…").fill(other.user.username);
+    await page.getByPlaceholder("Search people, writing, groups…").fill(other.user.username);
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page.getByText(other.user.displayName).first()).toBeVisible();
     await expectReadable(page, "search results");
@@ -144,6 +144,24 @@ test.describe("text can be read on light and dark backgrounds", () => {
     await expect(page.getByRole("status")).toContainText("too close to the background");
     await expectReadable(page, "the theme editor with its warning");
   });
+
+  // the feed is drawn on the background chosen for the profile, so it has to stay readable on every one of them too
+  for (const { name, theme } of THEMES) {
+    test(`the feed with ${name}`, async ({ page, browser, baseURL }) => {
+      const me = newUser("feeder");
+      await signUpViaUi(page, me);
+      expect((await page.request.patch("/api/profiles/me", { data: { theme } })).status()).toBe(200);
+      const friend = await apiUser(browser, baseURL!, "poster");
+      await befriend(page.request, friend.request, me.username);
+      await friend.request.post("/api/posts", { data: { content: "A friend's post to read" } });
+      await page.request.post("/api/posts", { data: { content: "My own post to read" } });
+      await page.goto("/");
+      await expect(page.getByText("A friend's post to read")).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByText("My own post to read")).toBeVisible();
+      await expectReadable(page, `the feed (${name})`);
+      await friend.context.close();
+    });
+  }
 
   for (const { name, theme } of THEMES) {
     test(`a profile with ${name}`, async ({ page, browser, baseURL }) => {

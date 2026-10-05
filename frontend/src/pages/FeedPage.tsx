@@ -5,9 +5,12 @@ import { BulletinsStrip } from "../components/bulletins/BulletinsStrip";
 import { WelcomeChecklist } from "../components/onboarding/WelcomeChecklist";
 import { PostCard } from "../components/post/PostCard";
 import { ApiError } from "../api/client";
+import { useAuth } from "../context/AuthContext";
+import { ThemedPage, hasChosenBackground } from "../components/layout/ThemedPage";
 import type { Post } from "../types";
 
 export function FeedPage() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +63,8 @@ export function FeedPage() {
     return <div className="p-8 text-center text-red-400">{error}</div>;
   }
 
-  return (
-    <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+  const content = (
+    <>
       {actionError && <p className="text-sm text-red-400">{actionError}</p>}
       <WelcomeChecklist />
       <BulletinsStrip />
@@ -81,6 +84,16 @@ export function FeedPage() {
           {loadingMore ? "Loading…" : "Show older posts"}
         </button>
       )}
-    </div>
+    </>
   );
+
+  // On the background they chose for their profile (a colour or a wallpaper); anyone who hasn't chosen one sees the usual page.
+  if (user && hasChosenBackground(user)) {
+    return (
+      <ThemedPage look={user} backgroundOnly contentClassName="mx-auto max-w-2xl space-y-4 px-4 py-6">
+        {content}
+      </ThemedPage>
+    );
+  }
+  return <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">{content}</div>;
 }

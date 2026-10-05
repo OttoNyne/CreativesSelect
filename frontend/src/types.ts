@@ -29,6 +29,8 @@ export interface User {
   wallpaperPosition: string;
   /** How a picture wallpaper moves; absent on profiles saved before wallpapers could move (treated as "none"). */
   wallpaperMotion?: WallpaperMotion;
+  /** Shows the CSverified badge: given by an administrator, or earned with 1,000 active friends. */
+  csVerified?: boolean;
   /** A short status line, what they are listening to, and what they do (lower-case tags). Absent on a private profile you can't see. */
   mood?: string;
   listeningTo?: string;
@@ -315,7 +317,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

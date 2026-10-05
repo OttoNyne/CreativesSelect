@@ -1,48 +1,30 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { profilesApi } from "../api/profiles.api";
-import { ApiError } from "../api/client";
+import { SEARCH_TYPES, isSearchType } from "../api/search.api";
+import type { SearchConnection, SearchType } from "../api/search.api";
 import type { User } from "../types";
-import { Avatar } from "../components/common/Avatar";
+import { PersonCard } from "../components/search/PersonCard";
+import { SearchResults } from "../components/search/SearchResults";
 import { isValidTag, normalizeTag } from "../lib/tags";
 
-function PersonCard({ user, onTag }: { user: User; onTag?: (tag: string) => void }) {
-  return (
-    <li className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-      <Link to={`/u/${user.username}`} className="flex items-center gap-3 hover:underline">
-        <Avatar username={user.username} displayName={user.displayName} avatarUrl={user.avatarUrl} size={40} />
-        <span className="min-w-0">
-          <span className="block truncate font-medium text-white">{user.displayName}</span>
-          <span className="block truncate text-xs text-white/60">@{user.username}</span>
-        </span>
-      </Link>
-      {user.mood && <p className="mt-1.5 truncate text-xs text-white/70">{user.mood}</p>}
-      {user.bio && <p className="mt-1 line-clamp-2 text-sm text-white/70">{user.bio}</p>}
-      {onTag && user.tags && user.tags.length > 0 && (
-        <ul aria-label={`${user.displayName}'s tags`} className="mt-2 flex flex-wrap gap-1.5">
-          {user.tags.map((t) => (
-            <li key={t}>
-              <button type="button" onClick={() => onTag(t)} aria-label={`Browse everyone tagged ${t}`} className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-white/80 hover:bg-white/10">
-                #{t}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </li>
-  );
-}
+const CONNECTION_LABELS: Record<SearchConnection, string> = { any: "Anyone", friends: "My friends", mutual: "Friends of friends" };
+const isConnection = (value: string | null): value is SearchConnection => value === "any" || value === "friends" || value === "mutual";
 
-/** Find creatives: by name, or by browsing the tags people use and the newest to join. */
+/** Search people, blog entries, groups, group topics and Help wanted, or browse the tags people use and the newest to join. */
 export function SearchPage() {
   const [params, setParams] = useSearchParams();
   const rawTag = params.get("tag") ?? "";
   const tag = isValidTag(normalizeTag(rawTag)) ? normalizeTag(rawTag) : "";
 
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<User[]>([]);
-  const [searched, setSearched] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // what is being searched for lives in the address, so a search can be shared, reloaded and gone back to
+  const q = (params.get("q") ?? "").trim();
+  const rawType = params.get("type");
+  const type: SearchType = isSearchType(rawType) ? rawType : "people";
+  const rawConnection = params.get("connection");
+  const connection: SearchConnection = isConnection(rawConnection) ? rawConnection : "any";
+  const [query, setQuery] = useState(q);
+  useEffect(() => setQuery(q), [q]); // going back or forward changes the search in the address
 
   const [popular, setPopular] = useState<{ tag: string; count: number }[]>([]);
   const [people, setPeople] = useState<User[] | null>(null);
@@ -96,26 +78,26 @@ export function SearchPage() {
     }
   }
 
-  async function handleSearch(e: React.FormEvent) {
+  function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!query.trim()) {
-      setSearched(false);
-      return;
-    }
-    setError(null);
-    try {
-      const { users } = await profilesApi.search(query.trim());
-      setResults(users);
-      setSearched(true);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't search right now.");
-    }
+    const text = query.trim();
+    const next = new URLSearchParams(params);
+    if (!text) next.delete("q");
+    else next.set("q", text);
+    setParams(next);
   }
 
-  const chooseTag = (t: string) => {
-    setSearched(false);
-    setParams(t ? { tag: t } : {});
-  };
+  /** Change one part of the search (or the browsing) and keep the rest. */
+  function change(changes: Record<string, string>) {
+    const next = new URLSearchParams(params);
+    for (const [key, value] of Object.entries(changes)) {
+      if (value && !(key === "connection" && value === "any") && !(key === "type" && value === "people")) next.set(key, value);
+      else next.delete(key);
+    }
+    setParams(next);
+  }
+
+  const chooseTag = (t: string) => change({ tag: t });
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
@@ -123,30 +105,56 @@ export function SearchPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search creatives…"
-          aria-label="Search creatives"
+          placeholder="Search people, writing, groups…"
+          aria-label="Search"
           className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <button type="submit" className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
           Search
         </button>
       </form>
-      {error && <p className="text-sm text-red-400">{error}</p>}
 
-      {searched ? (
-        <section aria-label="Search results" className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Results</h2>
-            <button type="button" onClick={() => setSearched(false)} className="text-xs text-violet-300 hover:underline">
+      {q ? (
+        <section aria-label="Search results" className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div role="tablist" aria-label="What to search" className="flex flex-wrap gap-1.5">
+              {SEARCH_TYPES.map((t) => (
+                <button
+                  key={t.type}
+                  type="button"
+                  role="tab"
+                  aria-selected={type === t.type}
+                  onClick={() => change({ type: t.type, tag: t.type === "people" ? tag : "", connection: t.type === "people" ? connection : "" })}
+                  className={`rounded-full border px-3 py-1 text-sm ${type === t.type ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={() => { setQuery(""); setParams(tag ? { tag } : {}); }} className="shrink-0 text-xs text-violet-300 hover:underline">
               Back to browsing
             </button>
           </div>
-          {results.length === 0 && <p className="text-sm text-white/60">No creatives found.</p>}
-          <ul className="space-y-2">
-            {results.map((u) => (
-              <PersonCard key={u.id} user={u} />
-            ))}
-          </ul>
+          {type === "people" && (
+            <div className="flex flex-wrap items-center gap-3 text-sm text-white/80">
+              <label className="flex items-center gap-2">
+                Show
+                <select value={connection} onChange={(e) => change({ connection: e.target.value })} className="rounded-md border border-white/10 bg-black/30 px-2 py-1 text-sm text-white focus:border-violet-500 focus:outline-none">
+                  {(Object.keys(CONNECTION_LABELS) as SearchConnection[]).map((c) => (
+                    <option key={c} value={c}>
+                      {CONNECTION_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {tag && (
+                <button type="button" onClick={() => chooseTag("")} aria-label={`Stop filtering by ${tag}`} className="rounded-full border border-violet-400 bg-violet-500/20 px-2.5 py-1 text-xs text-white">
+                  #{tag} ✕
+                </button>
+              )}
+            </div>
+          )}
+          <SearchResults q={q} type={type} tag={type === "people" ? tag : ""} connection={type === "people" ? connection : "any"} onTag={chooseTag} />
         </section>
       ) : (
         <>
