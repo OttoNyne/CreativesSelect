@@ -43,6 +43,7 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
     case "friend_request":
       return { to: "/friends", label: "View request" };
     case "friend_accept":
+    case "friend_birthday":
       return actorProfile;
     case "help_offer":
     case "help_accepted":

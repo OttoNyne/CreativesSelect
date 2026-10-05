@@ -2,10 +2,11 @@ import type { User } from "../types";
 
 // The parts of a profile below the introduction. The owner can put them in any order and hide any of them; the server
 // keeps the same list (utils/profileSections.js).
-export const SECTION_KEYS = ["friends", "music", "portfolio", "blog", "testimonials"] as const;
+export const SECTION_KEYS = ["about", "friends", "music", "portfolio", "blog", "testimonials"] as const;
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
 export const SECTION_LABELS: Record<SectionKey, string> = {
+  about: "About me",
   friends: "Top friends",
   music: "Music",
   portfolio: "Portfolio",

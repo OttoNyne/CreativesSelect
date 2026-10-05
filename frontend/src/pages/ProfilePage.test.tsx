@@ -21,6 +21,7 @@ vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 // The profile's sections have their own data loading and are tested on their own.
 vi.mock("../components/profile/TopFriendsList", () => ({ TopFriendsList: () => <div>top friends</div> }));
 vi.mock("../components/profile/MusicPlayer", () => ({ MusicPlayer: () => <div>music</div> }));
+vi.mock("../components/profile/AboutMe", () => ({ AboutMe: () => <div>about me section</div> }));
 vi.mock("../components/profile/PortfolioGrid", () => ({ PortfolioGrid: () => <div>portfolio</div> }));
 vi.mock("../api/profileViews.api", () => ({ profileViewsApi: { record: vi.fn(), list: vi.fn() } }));
 vi.mock("../components/profile/ProfileVisitors", () => ({ ProfileVisitors: () => <div>recent visitors</div> }));
@@ -360,7 +361,7 @@ describe("ProfilePage", () => {
 });
 
 describe("ProfilePage: the order of the sections", () => {
-  const SECTION_TEXT = ["top friends", "music", "portfolio", "blog visitor", "guestbook"];
+  const SECTION_TEXT = ["about me section", "top friends", "music", "portfolio", "blog visitor", "guestbook"];
   const shownOrder = () =>
     SECTION_TEXT.map((text) => ({ text, el: screen.queryByText(new RegExp(`^${text}`)) }))
       .filter((s) => s.el)
@@ -375,10 +376,10 @@ describe("ProfilePage: the order of the sections", () => {
   });
 
   it("shows them in the owner's order, and leaves out the ones they hid", async () => {
-    profiles.get.mockResolvedValue({ user: { ...zoe, sectionOrder: ["blog", "portfolio", "testimonials", "music", "friends"], hiddenSections: ["music"] } });
+    profiles.get.mockResolvedValue({ user: { ...zoe, sectionOrder: ["blog", "portfolio", "testimonials", "music", "friends", "about"], hiddenSections: ["music"] } });
     renderAs(me, "zoe");
     await screen.findByRole("heading", { name: "Zoe" });
-    expect(shownOrder()).toEqual(["blog visitor", "portfolio", "guestbook", "top friends"]);
+    expect(shownOrder()).toEqual(["blog visitor", "portfolio", "guestbook", "top friends", "about me section"]);
     expect(screen.queryByRole("group", { name: /section$/ })).not.toBeInTheDocument(); // no controls for a visitor
   });
 
@@ -396,13 +397,13 @@ describe("ProfilePage: the order of the sections", () => {
 
   it("lets the owner move a section, saving the new order straight away", async () => {
     profiles.get.mockResolvedValue({ user: me });
-    profiles.updateMe.mockResolvedValue({ user: { ...me, sectionOrder: ["music", "friends", "portfolio", "blog", "testimonials"] } });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, sectionOrder: ["about", "music", "friends", "portfolio", "blog", "testimonials"] } });
     renderAs(me, "me");
     await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
-    expect(screen.getByRole("button", { name: "Move Top friends up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move About me up" })).toBeDisabled();
     await userEvent.click(screen.getByRole("button", { name: "Move Music up" }));
-    expect(profiles.updateMe).toHaveBeenCalledWith({ sectionOrder: ["music", "friends", "portfolio", "blog", "testimonials"] });
-    await waitFor(() => expect(shownOrder().slice(0, 2)).toEqual(["music", "top friends"]));
+    expect(profiles.updateMe).toHaveBeenCalledWith({ sectionOrder: ["about", "music", "friends", "portfolio", "blog", "testimonials"] });
+    await waitFor(() => expect(shownOrder().slice(0, 3)).toEqual(["about me section", "music", "top friends"]));
   });
 
   it("lets the owner hide a section and show it again", async () => {
@@ -425,7 +426,7 @@ describe("ProfilePage: the order of the sections", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
     await userEvent.click(screen.getByRole("button", { name: "Move Music up" }));
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("boom"));
-    expect(shownOrder().slice(0, 2)).toEqual(["top friends", "music"]);
+    expect(shownOrder().slice(0, 3)).toEqual(["about me section", "top friends", "music"]);
     alertSpy.mockRestore();
   });
 });

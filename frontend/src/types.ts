@@ -291,7 +291,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's
@@ -402,6 +402,17 @@ export interface ScheduledLive {
   /** Whether the viewer asked to be reminded. */
   reminding: boolean;
   reminderCount: number;
+}
+
+/** Someone's About me, as much of it as the viewer may see. */
+export interface ProfileAbout {
+  about: { interests: string; music: string; movies: string; books: string; meet: string };
+  /** Empty when there is none or the viewer may not see it. */
+  location: string;
+  /** Month and day only, shown to the owner and their friends. */
+  birthday: { month: number; day: number } | null;
+  /** Only in your own: who may see your location. */
+  locationAudience?: "friends" | "everyone";
 }
 
 export type EventAnswer = "going" | "maybe";

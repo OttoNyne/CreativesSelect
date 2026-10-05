@@ -1060,6 +1060,22 @@ The playlist grew from five tracks to twenty, gained artists, a profile song and
 
 Covered by 17 backend tests, 17 frontend tests for the player, the play counter and the requests, and 2 browser flows (naming a song, picking the profile song, a visitor playing it and being counted, the owner's own listening not counting; and a full 20-track playlist) on all three browsers.
 
+### 5.55 About me: personal details that people share on purpose, and only with the people they choose
+
+An About me section asks for the kind of thing people are rightly careful with: where they live and when they were born. The risks were: details shown to people who were never meant to see them, an age or a full birthday that identifies a person (and a child), notes that could be used to pester, and long text that could carry anything.
+
+- **Sharing is a choice, and the default shares nothing.** Every field starts empty. A place is shown to friends only unless the owner picks everyone (tested for friends, strangers and signed-out visitors, and the setting is only sent to the owner). A birthday exists only if the owner turns it on; turning it off deletes it rather than hiding it (tested).
+- **No year, no age.** A birthday is a month and a day and nothing else: a year sent with it is ignored and isn't stored (tested), and nothing on the site shows an age. Only the owner and the owner's friends can see the day, and unfriending takes it away (tested). Impossible days (30 February, 31 April, month 13, text, lists) are refused, and 29 February is allowed.
+- **Reading follows the profile.** The answers are shown to anyone who can see the profile; a private profile, a block either way and a suspended account give a stranger nothing (tested, signed in and not). They are served from their own address, not with every user in a list, so searching or listing people never carries anyone's answers, place or birthday.
+- **Birthday notes can't be used to pester.** One note per friend, once a year, only to accepted friends, never to anyone blocked either way or from a suspended account, and not again when the birthday is cleared and set again the same year (tested, including 29 February). A person can't make friends get more than one a year, and the owner is never sent one for themselves.
+- **Everything is plain text, checked like other writing.** Hidden characters removed, over-long (300 characters, 60 for the place) refused rather than cut, non-text refused, and the profile owner, not the request, decides whose answers are changed (tested by sending someone else's name). It is drawn as text, never markup (unit tested with a tag in the text). Changing it counts against the 60 edits an hour.
+- **Moderators see it.** A report about an account shows the bio, the answers and the place, so what is reported is what is on the page.
+- **It goes with the account.** The answers are part of the account record, so deleting the account deletes them, and the birthday notes it sent are removed (tested).
+- **A section like the others.** About me is one of the profile's sections and can be moved or hidden; it is first for new profiles and last for people who had already arranged theirs. To visitors an empty one doesn't show at all.
+- **Not covered:** the day of a birthday is the UTC day, so it can be a few hours off for people far from UTC; the place is free text and isn't checked against anything; and people who can see the birthday (friends) can of course remember it.
+
+Covered by 19 backend tests, 15 frontend tests for the section, its form, the requests and the notification, and 2 browser flows (filling it in and what a friend and a stranger see, taking the birthday back, and a private profile) on all three browsers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

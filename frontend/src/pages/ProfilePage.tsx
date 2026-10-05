@@ -20,6 +20,7 @@ import { Avatar } from "../components/common/Avatar";
 import { ImagePositioner } from "../components/common/ImagePositioner";
 import { ThemeEditor } from "../components/profile/ThemeEditor";
 import { TopFriendsList } from "../components/profile/TopFriendsList";
+import { AboutMe } from "../components/profile/AboutMe";
 import { ProfileComments } from "../components/profile/ProfileComments";
 import { PortfolioGrid } from "../components/profile/PortfolioGrid";
 import { MusicPlayer } from "../components/profile/MusicPlayer";
@@ -193,6 +194,8 @@ export function ProfilePage() {
   const rearranging = isOwner && editing;
   const sectionBody = (key: SectionKey) => {
     switch (key) {
+      case "about":
+        return <AboutMe username={profile.username} isOwner={isOwner} />;
       case "friends":
         return <TopFriendsList username={profile.username} isOwner={isOwner} />;
       case "music":

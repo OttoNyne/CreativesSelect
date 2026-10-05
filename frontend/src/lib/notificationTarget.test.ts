@@ -50,6 +50,11 @@ describe("notificationTarget", () => {
     expect(notificationTarget(n("event_cancelled", { title: "x" }), "ada")).toEqual({ to: "/events", label: "See events" });
   });
 
+  it("a friend's birthday opens their profile", () => {
+    expect(notificationTarget(n("friend_birthday"), "me")).toEqual({ to: "/u/zoe", label: "View profile" });
+    expect(notificationTarget(n("friend_birthday", {}, null), "me")).toBeNull();
+  });
+
   it("friend requests go to Friends; an accepted request goes to the new friend's profile", () => {
     expect(notificationTarget(n("friend_request"), "me")?.to).toBe("/friends");
     expect(notificationTarget(n("friend_accept"), "me")).toEqual({ to: "/u/zoe", label: "View profile" });

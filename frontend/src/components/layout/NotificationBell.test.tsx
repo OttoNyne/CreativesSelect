@@ -177,6 +177,13 @@ describe("NotificationBell: where clicking goes", () => {
     expect(screen.getByText(/your event "My show" starts soon/)).toBeInTheDocument();
   });
 
+  it("a friend's birthday: says so and opens their profile", async () => {
+    await openAndRender([note({ type: "friend_birthday" })]);
+    expect(screen.getByText(/has a birthday today/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText(/has a birthday today/));
+    expect(where()).toBe("/u/zoe");
+  });
+
   it("someone accepting your friend request: opens their profile", async () => {
     await openAndRender([note({ type: "friend_accept" })]);
     await userEvent.click(screen.getByText(/accepted your friend request/));

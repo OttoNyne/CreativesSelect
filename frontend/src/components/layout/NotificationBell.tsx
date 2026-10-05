@@ -35,6 +35,8 @@ function describe(n: Notification): string {
       return "left a comment on your profile";
     case "media_comment":
       return "commented on your portfolio";
+    case "friend_birthday":
+      return "has a birthday today 🎂";
     case "event_created":
       return typeof n.payload.title === "string" && typeof n.payload.startsAt === "string" ? `is planning an event: "${n.payload.title}", ${formatWhen(n.payload.startsAt)}` : "is planning an event";
     case "event_updated": {

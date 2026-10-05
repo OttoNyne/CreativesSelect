@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await page.context().setExtraHTTPHeaders(fakeIpHeaders());
 });
 
-const TITLES = ["Top Friends", "Music", "Portfolio", "Blog", "Testimonials"];
+const TITLES = ["About me", "Top Friends", "Music", "Portfolio", "Blog", "Testimonials"];
 /** The sections on the page, top to bottom. */
 const sectionsOf = async (page: Page) => (await page.getByRole("heading", { level: 2 }).allTextContents()).map((t) => t.trim()).filter((t) => TITLES.includes(t));
 
@@ -18,9 +18,9 @@ test.describe("arranging a profile's sections", () => {
     await expect.poll(() => sectionsOf(page)).toEqual(TITLES);
 
     await page.getByRole("button", { name: "Edit profile" }).click();
-    // bring the blog to the top (three moves up), then hide the music
-    for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Move Blog up" }).click();
-    await expect.poll(() => sectionsOf(page)).toEqual(["Blog", "Top Friends", "Music", "Portfolio", "Testimonials"]);
+    // bring the blog to the top (four moves up), then hide the music
+    for (let i = 0; i < 4; i++) await page.getByRole("button", { name: "Move Blog up" }).click();
+    await expect.poll(() => sectionsOf(page)).toEqual(["Blog", "About me", "Top Friends", "Music", "Portfolio", "Testimonials"]);
     await page.getByRole("button", { name: "Hide Music" }).click();
     await expect(page.getByRole("group", { name: "Music section" })).toContainText("Hidden from visitors");
     await expect(page.getByRole("button", { name: "Move Blog up" })).toBeDisabled(); // already first
@@ -28,16 +28,16 @@ test.describe("arranging a profile's sections", () => {
 
     // outside editing the owner sees what visitors see
     await page.getByRole("button", { name: "Done editing" }).click();
-    await expect.poll(() => sectionsOf(page)).toEqual(["Blog", "Top Friends", "Portfolio", "Testimonials"]);
+    await expect.poll(() => sectionsOf(page)).toEqual(["Blog", "About me", "Top Friends", "Portfolio", "Testimonials"]);
 
     // it is saved: a reload shows the same
     await page.reload();
-    await expect.poll(() => sectionsOf(page)).toEqual(["Blog", "Top Friends", "Portfolio", "Testimonials"]);
+    await expect.poll(() => sectionsOf(page)).toEqual(["Blog", "About me", "Top Friends", "Portfolio", "Testimonials"]);
 
     // a visitor sees the same order, without the hidden section, and no controls
     const visitor = await secondBrowserUser(browser, baseURL!, "visitor");
     await visitor.page.goto(`/u/${me.username}`);
-    await expect.poll(() => sectionsOf(visitor.page)).toEqual(["Top Friends", "Portfolio", "Testimonials"]); // an empty blog isn't shown to a visitor
+    await expect.poll(() => sectionsOf(visitor.page)).toEqual(["Top Friends", "Portfolio", "Testimonials"]); // an empty blog and an empty About me aren't shown to a visitor
     await expect(visitor.page.getByRole("button", { name: /^Move / })).toHaveCount(0);
     await expect(visitor.page.getByRole("button", { name: /^(Hide|Show) / })).toHaveCount(0);
     await visitor.context.close();
@@ -46,7 +46,7 @@ test.describe("arranging a profile's sections", () => {
     await page.getByRole("button", { name: "Edit profile" }).click();
     await page.getByRole("button", { name: "Show Music" }).click();
     await page.getByRole("button", { name: "Done editing" }).click();
-    await expect.poll(() => sectionsOf(page)).toEqual(["Blog", "Top Friends", "Music", "Portfolio", "Testimonials"]);
+    await expect.poll(() => sectionsOf(page)).toEqual(["Blog", "About me", "Top Friends", "Music", "Portfolio", "Testimonials"]);
   });
 
   test("the sections can be arranged on a phone-sized screen without the page growing sideways", async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe("arranging a profile's sections", () => {
     await page.goto(`/u/${me.username}`);
     await page.getByRole("button", { name: "Edit profile" }).click();
     await page.getByRole("button", { name: "Move Music up" }).click();
-    await expect.poll(() => sectionsOf(page)).toEqual(["Music", "Top Friends", "Portfolio", "Blog", "Testimonials"]);
+    await expect.poll(() => sectionsOf(page)).toEqual(["About me", "Music", "Top Friends", "Portfolio", "Blog", "Testimonials"]);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });

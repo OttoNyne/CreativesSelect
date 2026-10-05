@@ -7,8 +7,8 @@ describe("orderOf", () => {
     expect(orderOf({ sectionOrder: [] })).toEqual([...SECTION_KEYS]);
   });
   it("follows the saved order, with every section once", () => {
-    expect(orderOf({ sectionOrder: ["blog", "music"] })).toEqual(["blog", "music", "friends", "portfolio", "testimonials"]);
-    expect(orderOf({ sectionOrder: ["music", "nope", "music", "friends"] as SectionKey[] })).toEqual(["music", "friends", "portfolio", "blog", "testimonials"]);
+    expect(orderOf({ sectionOrder: ["blog", "music"] })).toEqual(["blog", "music", "about", "friends", "portfolio", "testimonials"]);
+    expect(orderOf({ sectionOrder: ["music", "nope", "music", "friends"] as SectionKey[] })).toEqual(["music", "friends", "about", "portfolio", "blog", "testimonials"]);
   });
 });
 
@@ -20,13 +20,13 @@ describe("hiddenOf", () => {
 });
 
 describe("moveSection", () => {
-  const order: SectionKey[] = ["friends", "music", "portfolio", "blog", "testimonials"];
+  const order: SectionKey[] = ["about", "friends", "music", "portfolio", "blog", "testimonials"];
   it("moves a section up or down a place", () => {
-    expect(moveSection(order, "music", -1)).toEqual(["music", "friends", "portfolio", "blog", "testimonials"]);
-    expect(moveSection(order, "music", 1)).toEqual(["friends", "portfolio", "music", "blog", "testimonials"]);
+    expect(moveSection(order, "music", -1)).toEqual(["about", "music", "friends", "portfolio", "blog", "testimonials"]);
+    expect(moveSection(order, "music", 1)).toEqual(["about", "friends", "portfolio", "music", "blog", "testimonials"]);
   });
   it("leaves the order alone at either end, and doesn't change the list it was given", () => {
-    expect(moveSection(order, "friends", -1)).toEqual(order);
+    expect(moveSection(order, "about", -1)).toEqual(order);
     expect(moveSection(order, "testimonials", 1)).toEqual(order);
     const copy = [...order];
     moveSection(order, "blog", -1);
