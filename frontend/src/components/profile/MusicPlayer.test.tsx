@@ -8,7 +8,11 @@ import { ApiError } from "../../api/client";
 import { usePlayback } from "../../context/PlaybackContext";
 import type { Track } from "../../types";
 
-vi.mock("../../api/tracks.api", () => ({ tracksApi: { byUser: vi.fn(), add: vi.fn(), remove: vi.fn(), reorder: vi.fn() } }));
+// (the real limits come through, so the tests say the same numbers as the screen)
+vi.mock("../../api/tracks.api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../api/tracks.api")>()),
+  tracksApi: { byUser: vi.fn(), add: vi.fn(), remove: vi.fn(), reorder: vi.fn(), update: vi.fn() },
+}));
 vi.mock("../../api/media.api", () => ({ uploadFile: vi.fn() }));
 vi.mock("../../context/PlaybackContext", () => ({ usePlayback: vi.fn() }));
 const api = vi.mocked(tracksApi);
@@ -33,13 +37,13 @@ beforeEach(() => {
 });
 
 describe("MusicPlayer", () => {
-  it("lists tracks with their source and the count out of 5", async () => {
+  it("lists tracks with their source and the count out of 20", async () => {
     renderPlayer(false);
     expect(await screen.findByText("Song one")).toBeInTheDocument();
     expect(screen.getByText("Upload two")).toBeInTheDocument();
     expect(screen.getByText("YouTube")).toBeInTheDocument();
     expect(screen.getByText("Uploaded")).toBeInTheDocument();
-    expect(screen.getByText("2/5")).toBeInTheDocument();
+    expect(screen.getByText("2/20")).toBeInTheDocument();
   });
 
   it("says so when there are no tracks", async () => {
@@ -122,8 +126,8 @@ describe("MusicPlayer", () => {
     await waitFor(() => expect(screen.queryByText("Song one")).not.toBeInTheDocument());
   });
 
-  it("stops offering to add once the 5-track limit is reached", async () => {
-    api.byUser.mockResolvedValue({ tracks: [1, 2, 3, 4, 5].map((n) => track({ id: `t${n}`, title: `Song ${n}` })) });
+  it("stops offering to add once the 20-track limit is reached", async () => {
+    api.byUser.mockResolvedValue({ tracks: Array.from({ length: 20 }, (_, i) => track({ id: `t${i}`, title: `Song ${i}` })) });
     renderPlayer(true);
     expect(await screen.findByText("Remove a track to add another.")).toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Paste a YouTube link…")).not.toBeInTheDocument();
@@ -236,5 +240,136 @@ describe("MusicPlayer: rearranging the playlist", () => {
     await userEvent.click(screen.getByRole("button", { name: "Remove Two" }));
     await waitFor(() => expect(screen.queryByText("Two")).not.toBeInTheDocument());
     expect(api.remove).toHaveBeenCalledWith("t2");
+  });
+});
+
+describe("MusicPlayer: artists, plays, the profile song and the upload limit", () => {
+  const withMore = () =>
+    api.byUser.mockResolvedValue({
+      tracks: [
+        track({ id: "t1", title: "One", artist: "The Band", plays: 12 }),
+        track({ id: "t2", title: "Two", plays: 1, profileSong: true }),
+        track({ id: "t3", title: "Three", sourceType: "upload" }),
+      ],
+    });
+
+  it("shows who made a song and how often it was played, and marks the profile song, for everyone", async () => {
+    withMore();
+    renderPlayer(false);
+    expect(await screen.findByText("The Band · YouTube · 12 plays")).toBeInTheDocument();
+    expect(screen.getByText("YouTube · 1 play")).toBeInTheDocument();
+    expect(screen.getByText("Uploaded")).toBeInTheDocument(); // no plays yet: nothing said
+    expect(screen.getByText("Profile song")).toBeInTheDocument();
+  });
+
+  it("offers a button for the profile song that plays it with the whole queue, and never starts it by itself", async () => {
+    withMore();
+    renderPlayer(false);
+    await screen.findByText("One");
+    expect(play).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "▶ Play profile song: Two" }));
+    expect(play).toHaveBeenCalledWith(expect.objectContaining({ id: "t2" }), expect.arrayContaining([expect.objectContaining({ id: "t1" })]));
+  });
+
+  it("has no such button when there is no profile song", async () => {
+    renderPlayer(false);
+    await screen.findByText("Song one");
+    expect(screen.queryByRole("button", { name: /Play profile song/ })).not.toBeInTheDocument();
+  });
+
+  it("lets the owner choose the profile song, moves the mark to another, and takes it away", async () => {
+    withMore();
+    api.update.mockResolvedValue({ track: track() });
+    renderPlayer(true);
+    await screen.findByText("One");
+    expect(screen.getByRole("button", { name: "Stop Two being the profile song" })).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(screen.getByRole("button", { name: "Make One the profile song" }));
+    expect(api.update).toHaveBeenLastCalledWith("t1", { profileSong: true });
+    expect(await screen.findByRole("button", { name: "Stop One being the profile song" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Make Two the profile song" })).toBeInTheDocument(); // only one at a time
+    expect(screen.getAllByText("Profile song")).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "Stop One being the profile song" }));
+    expect(api.update).toHaveBeenLastCalledWith("t1", { profileSong: false });
+    await waitFor(() => expect(screen.queryByText("Profile song")).not.toBeInTheDocument());
+  });
+
+  it("shows the server's message if the profile song can't be changed", async () => {
+    withMore();
+    api.update.mockRejectedValue(new ApiError(500, "Internal server error"));
+    renderPlayer(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Make One the profile song" }));
+    expect(await screen.findByText("Internal server error")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stop Two being the profile song" })).toBeInTheDocument();
+  });
+
+  it("gives visitors no way to change anything", async () => {
+    withMore();
+    renderPlayer(false);
+    await screen.findByText("One");
+    expect(screen.queryByRole("button", { name: /profile song$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Edit / })).not.toBeInTheDocument();
+  });
+
+  it("lets the owner change a song's title and artist", async () => {
+    withMore();
+    api.update.mockResolvedValue({ track: track({ id: "t1", title: "One, remastered", artist: "New Band" }) });
+    renderPlayer(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Edit One" }));
+    const title = screen.getByLabelText("Track title");
+    expect(title).toHaveValue("One");
+    expect(screen.getByLabelText("Artist")).toHaveValue("The Band");
+    await userEvent.clear(title);
+    await userEvent.type(title, "One, remastered");
+    await userEvent.clear(screen.getByLabelText("Artist"));
+    await userEvent.type(screen.getByLabelText("Artist"), "New Band");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(api.update).toHaveBeenCalledWith("t1", { title: "One, remastered", artist: "New Band" });
+    expect(await screen.findByText(/One, remastered/)).toBeInTheDocument();
+    expect(screen.getByText(/New Band/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Track title")).not.toBeInTheDocument();
+  });
+
+  it("needs a title, shows the server's reason, and can be cancelled", async () => {
+    withMore();
+    api.update.mockRejectedValue(new ApiError(429, "You've changed a lot of things — try again later."));
+    renderPlayer(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Edit One" }));
+    await userEvent.clear(screen.getByLabelText("Track title"));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByText("A track needs a title")).toBeInTheDocument();
+    expect(api.update).not.toHaveBeenCalled();
+    await userEvent.type(screen.getByLabelText("Track title"), "Back");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText(/try again later/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText("Track title")).not.toBeInTheDocument();
+    expect(screen.getByText("One")).toBeInTheDocument();
+  });
+
+  it("adds a song with its artist when one is typed", async () => {
+    api.add.mockResolvedValue({ track: track({ id: "t9", title: "New", artist: "Them" }) });
+    renderPlayer(true);
+    await userEvent.type(await screen.findByLabelText("Artist (optional)"), " Them ");
+    await userEvent.type(screen.getByPlaceholderText("Track title"), "New");
+    await userEvent.type(screen.getByPlaceholderText("Paste a YouTube link…"), "https://youtu.be/dQw4w9WgXcQ");
+    await userEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(api.add).toHaveBeenCalledWith({ title: "New", sourceType: "youtube", url: "https://youtu.be/dQw4w9WgXcQ", artist: "Them" });
+    expect(screen.getByLabelText("Artist (optional)")).toHaveValue("");
+  });
+
+  it("stops offering uploads at five uploaded songs but still takes YouTube links", async () => {
+    api.byUser.mockResolvedValue({ tracks: Array.from({ length: 5 }, (_, i) => track({ id: `u${i}`, title: `Upload ${i}`, sourceType: "upload" })) });
+    renderPlayer(true);
+    expect(await screen.findByText(/5\/5 used/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Upload a song/ })).toBeDisabled();
+    expect(screen.getByPlaceholderText("Paste a YouTube link…")).toBeInTheDocument();
+  });
+
+  it("says how many uploads are left", async () => {
+    renderPlayer(true);
+    expect(await screen.findByText(/1\/5 used/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Upload a song/ })).toBeEnabled();
   });
 });

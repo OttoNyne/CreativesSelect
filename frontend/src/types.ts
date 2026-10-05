@@ -141,9 +141,15 @@ export interface Track {
   id: string;
   ownerId: string;
   title: string;
+  /** Who made it (may be empty). */
+  artist?: string;
   sourceType: "upload" | "youtube";
   url: string;
   position: number;
+  /** The one song that stands for the profile. It never plays by itself. */
+  profileSong?: boolean;
+  /** How many listeners have played it. */
+  plays?: number;
   createdAt: string;
 }
 

@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { PlaybackProvider } from "./context/PlaybackContext";
 import { NavBar } from "./components/layout/NavBar";
 import { ActivityPing } from "./components/layout/ActivityPing";
+import { PlayCounter } from "./components/layout/PlayCounter";
 import { InstallBanner } from "./components/layout/InstallBanner";
 import { VerifyEmailBanner } from "./components/layout/VerifyEmailBanner";
 import { SiteFooter } from "./components/layout/SiteFooter";
@@ -42,6 +43,7 @@ export default function App() {
       <PlaybackProvider>
         <NavBar />
         <ActivityPing />
+        <PlayCounter />
         <InstallBanner />
         <VerifyEmailBanner />
         <Routes>

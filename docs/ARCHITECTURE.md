@@ -92,7 +92,7 @@ flowchart LR
 
 ## 3. Data Model
 
-MongoDB via Mongoose. 38 collections. `ObjectId` refs are named `ref` below;
+MongoDB via Mongoose. 39 collections. `ObjectId` refs are named `ref` below;
 `unique` compound indexes are noted where they exist.
 
 | Model | Fields | Relationships |
@@ -114,7 +114,8 @@ MongoDB via Mongoose. 38 collections. `ObjectId` refs are named `ref` below;
 | **Album** | `owner` → User, `title` (≤60), timestamps, indexed on (owner, createdAt) | A named group of a person's portfolio pieces (max 12 per person, names unique per person ignoring case). It holds no pictures itself: each piece names its album. Deleting an album keeps its pieces |
 | **MediaReaction** | `item` → MediaItem, `user` → User, `value` (+1 like / −1 dislike), unique on (item, user) | One reaction per person per portfolio piece; removed with the piece or the account |
 | **UsernameHistory** | `username`, `user` → User, `expireAt` (TTL) | A username someone gave up, reserved for them for 30 days so it can't be instantly taken over |
-| **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
+| **Track** | `owner` → User, `title` (≤100), `artist` (≤80, optional), `sourceType` (upload/youtube), `url`, `position`, `profileSong` (at most one per owner), `plays`, timestamps | Max 20 per user, of which at most 5 uploaded, enforced in the route, not the schema |
+| **TrackPlay** | `track` → Track, `listener` → User, `createdAt` (TTL, one day), unique on (track, listener) | The day's record that makes a listener's plays of one song count once; only the total on the track is kept for good |
 | **StoredAsset** | `owner` → User, `url`, `publicId`, `resourceType` (image/video/raw), `kind` (ai/upload), timestamps | Ledger of every file the server itself stored on Cloudinary (AI images and uploads) and whose it is — the only thing that lets the app delete an asset safely |
 | **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted/live_started/message/live_scheduled/live_reminder/blog_post/invite_joined/media_comment/event_created/event_updated/event_cancelled/event_reminder), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
 | **Message** | `sender` → User, `recipient` → User, `pair` ("smaller id:larger id" — one key per two people, indexed with `createdAt`), `body` (≤2000 chars), `readAt`, timestamps | A direct message between two friends; one document is both people's copy, so a delete or account deletion removes it for both |
@@ -415,9 +416,11 @@ Reminders go out once, an hour before the start, as `event_reminder` to everyone
 ### Tracks — `/api/tracks` (auth)
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/` | Max 5 per user; extracts a YouTube video id from a full URL |
+| POST | `/` | `{title? (≤100, default "Untitled track"), artist? (≤80), sourceType, url}` → `201`. At most 20 tracks and 5 uploaded songs (`400` names which limit); YouTube links extract the video id from a full URL; an uploaded song's `url` must be a file recorded as uploaded by the same person (`400` "Upload the song first" for any other address, someone else's file or a picture) |
+| PATCH | `/:id` | Owner only (`404` otherwise): `{title?, artist?, profileSong?}`. A title can't be emptied; changing the words counts against the 60 edits an hour. `profileSong: true` makes it the one profile song and clears the mark from the owner's other tracks |
+| POST | `/:id/play` | A listener played it. Counts once a day per listener per track and never for the owner's own plays; `404` unless the listener may see the owner's profile (private, blocked and suspended are the same `404`); 300 an hour (`429`). Returns `{counted, plays}` and never says who listened |
 | PUT | `/order` | `{ids}` → `{tracks}`. Puts the owner's playlist in a new order. The list must be exactly the owner's own tracks, each once (`400` for a missing, extra, repeated or foreign id, or anything that isn't a list of strings), so a request can neither add, drop nor touch someone else's track. Positions are rewritten in one bulk write |
-| DELETE | `/:id` | Owner only; re-numbers remaining positions (so a rearranged order is kept) |
+| DELETE | `/:id` | Owner only; deletes its play records and the stored file if nothing else uses it, and re-numbers remaining positions (so a rearranged order is kept) |
 
 ### Help wanted (tasks) — `/api/tasks` (auth) — the full-CRUD user-owned resource plus a public board
 | Method | Path | Notes |
@@ -444,7 +447,7 @@ Reminders go out once, an hour before the start, as `event_reminder` to everyone
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (162 tests × 3 browsers, 486 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (164 tests × 3 browsers, 492 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -546,7 +549,7 @@ App
 │       │   ├── /u/:username → ProfilePage (attachUserIfPresent server-side, not client-gated)
 │       │   │   ├── ThemeEditor (warns when a text colour can't be read), ImagePositioner
 │       │   │   ├── TopFriendsList
-│       │   │   ├── MusicPlayer            (uses usePlayback())
+│       │   │   ├── MusicPlayer            (uses usePlayback(); artists, play counts, profile song, 20 tracks / 5 uploads)
 │       │   │   ├── PortfolioGrid           (a piece's comments open beside it: PieceComments → the shared CommentThread, also used by posts)
 │       │   │   └── ProfileComments
 │       │   └── *            → redirect to /
@@ -655,11 +658,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 631 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 648 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 1081 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 1098 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,

@@ -1046,6 +1046,20 @@ An event lets a person ask others to turn up somewhere, tells their friends, and
 
 Covered by 30 backend tests, 38 frontend tests for the form, answering, the list, the event page and the notifications, and 2 browser flows (plan, be told, answer, change the place, cancel; and a friends-only event hidden from a stranger with its calendar file) on all three browsers.
 
+### 5.54 Richer music: bigger playlists without bigger bills, play counts that can't be inflated, and a profile song that never ambushes anyone
+
+The playlist grew from five tracks to twenty, gained artists, a profile song and play counts. The risks were: storage cost (uploaded songs are files we pay for), a counter that anyone could inflate or use to watch people, unchecked input (the track route had accepted any title and any address as an "uploaded" song), and the old MySpace problem of music that starts by itself.
+
+- **A storage plan, not just a bigger number.** The 20-track list holds at most 5 uploaded songs; the other 15 can only be YouTube links, which cost nothing to keep. The two limits are checked separately and the error says which one was hit (tested at both).
+- **An uploaded song has to be one we stored for you.** Adding an "uploaded" track used to accept any address. It now has to be a file recorded as uploaded by the same person and as audio: an arbitrary web address, someone else's file, and a picture of your own are all refused (tested). That also means a track can no longer be used to point at someone else's stored file or at a site that tracks listeners.
+- **Text is checked like the rest.** Title (100) and artist (80) are cleaned of hidden characters and refused rather than cut; a title can't be emptied; a malformed track id is a 404 instead of a server error; the owner, address, position, play count and profile-song mark come from the stored record, never the request (tested by sending them).
+- **Plays count once a day per listener per song.** A listener's play is recorded for a day (a unique record that the database removes by itself); a second play in that day, or five at the same instant, changes nothing (tested, including the race on the unique record). The owner's own plays are never counted. The site only reports a play after the listener has stayed on a song for ten seconds, so skipping past doesn't count, and the server limits a person to 300 reports an hour.
+- **Plays follow who may see the song.** Reporting a play needs a sign-in and the same visibility as the profile, so a private profile, a block either way or a suspended account is the same 404 as a song that isn't there (tested). Only the total is kept; the response and the track never say who listened, and the day's records go when the song or the listener's account does (tested).
+- **A profile song is a mark, not an autoplay.** One song per person can be marked (setting another moves the mark, in one request, tested), and the profile shows a "Play profile song" button and a badge. Nothing plays until someone presses play, so music never starts by itself on a visit. Only the owner can mark songs, and a visitor sees no editing controls (tested).
+- **Not covered:** a play is counted from the listener's report, so a determined person with many accounts can still add to a count (the daily limit and ten-second rule make it slow, not impossible); counts include only plays by signed-in people; there is no list of who listened; and the cap checks are made just before adding, so two adds at the same instant could briefly exceed a limit by one.
+
+Covered by 17 backend tests, 17 frontend tests for the player, the play counter and the requests, and 2 browser flows (naming a song, picking the profile song, a visitor playing it and being counted, the owner's own listening not counting; and a full 20-track playlist) on all three browsers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
