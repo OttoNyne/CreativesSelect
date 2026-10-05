@@ -42,6 +42,14 @@ describe("notificationTarget", () => {
     expect(notificationTarget(n("media_comment", { mediaId: "m1" }), null)).toBeNull();
   });
 
+  it("an event opens it, and a cancelled one opens the list", () => {
+    for (const type of ["event_created", "event_updated", "event_reminder"] as const) {
+      expect(notificationTarget(n(type, { eventId: "e1" }), "ada")).toEqual({ to: "/events/e1", label: "View event" });
+      expect(notificationTarget(n(type, {}), "ada")).toEqual({ to: "/events", label: "See events" });
+    }
+    expect(notificationTarget(n("event_cancelled", { title: "x" }), "ada")).toEqual({ to: "/events", label: "See events" });
+  });
+
   it("friend requests go to Friends; an accepted request goes to the new friend's profile", () => {
     expect(notificationTarget(n("friend_request"), "me")?.to).toBe("/friends");
     expect(notificationTarget(n("friend_accept"), "me")).toEqual({ to: "/u/zoe", label: "View profile" });

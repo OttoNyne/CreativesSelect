@@ -285,7 +285,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's
@@ -396,6 +396,28 @@ export interface ScheduledLive {
   /** Whether the viewer asked to be reminded. */
   reminding: boolean;
   reminderCount: number;
+}
+
+export type EventAnswer = "going" | "maybe";
+
+/** Something a person is organising for a date. (Not called Event: that is the browser's own.) */
+export interface CommunityEvent {
+  id: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string | null;
+  kind: "in_person" | "online";
+  place: string;
+  link: string;
+  audience: "friends" | "public";
+  editedAt: string | null;
+  host: User;
+  isHost: boolean;
+  /** The viewer's own answer. */
+  myStatus: EventAnswer | null;
+  goingCount: number;
+  maybeCount: number;
 }
 
 export interface LiveComment {

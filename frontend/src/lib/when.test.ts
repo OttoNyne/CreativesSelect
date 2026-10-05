@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysLeft, earliestStart, formatCalendarDay, formatDay, formatWhen, untilText } from "./when";
+import { daysLeft, earliestStart, formatCalendarDay, formatDay, formatWhen, toLocalInput, untilText } from "./when";
 
 const NOW = new Date("2026-10-10T12:00:00Z");
 const at = (ms: number) => new Date(NOW.getTime() + ms).toISOString();
@@ -71,5 +71,14 @@ describe("earliestStart", () => {
     const value = earliestStart(new Date(2026, 9, 10, 9, 30));
     expect(value).toBe("2026-10-10T09:36");
     expect(earliestStart(new Date(2026, 11, 31, 23, 58))).toBe("2027-01-01T00:04"); // rolls over midnight and the year
+  });
+});
+
+describe("toLocalInput", () => {
+  it("writes a time the way a datetime-local box wants it, in the viewer's own time zone", () => {
+    const d = new Date(2030, 4, 4, 9, 5);
+    expect(toLocalInput(d)).toBe("2030-05-04T09:05");
+    expect(new Date(toLocalInput(d.toISOString())).getTime()).toBe(d.getTime());
+    expect(toLocalInput("nonsense")).toBe("");
   });
 });

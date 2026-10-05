@@ -19,6 +19,7 @@ const TYPE_LABEL: Record<string, string> = {
   groupTopic: "Group topic",
   groupReply: "Group reply",
   mediaComment: "Comment on a piece",
+  event: "Event",
 };
 const ACTION_LABEL: Record<string, string> = {
   dismissed: "Dismissed",

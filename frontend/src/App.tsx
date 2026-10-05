@@ -26,6 +26,8 @@ import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { AboutPage } from "./pages/AboutPage";
 import { BlogEntryPage } from "./pages/BlogEntryPage";
 import { BulletinsPage } from "./pages/BulletinsPage";
+import { EventsPage } from "./pages/EventsPage";
+import { EventDetailPage } from "./pages/EventDetailPage";
 import { ModerationPage } from "./pages/ModerationPage";
 import { BlogEditorPage } from "./pages/BlogEditorPage";
 import { PostPage } from "./pages/PostPage";
@@ -58,6 +60,8 @@ export default function App() {
             <Route path="/friends" element={<FriendsPage />} />
             <Route path="/posts/:id" element={<PostPage />} />
             <Route path="/bulletins" element={<BulletinsPage />} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route path="/events/:id" element={<EventDetailPage />} />
             <Route path="/admin/moderation" element={<ModerationPage />} />
             <Route path="/blog/new" element={<BlogEditorPage />} />
             <Route path="/blog/:id" element={<BlogEntryPage />} />

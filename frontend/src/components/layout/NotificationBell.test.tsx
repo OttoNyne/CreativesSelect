@@ -157,6 +157,26 @@ describe("NotificationBell: where clicking goes", () => {
     expect(where()).toBe("/u/me?piece=m7&comment=c9#portfolio");
   });
 
+  it("an event a friend planned: says what and when, and opens it", async () => {
+    await openAndRender([note({ type: "event_created", payload: { eventId: "e5", title: "Life drawing", startsAt: "2030-05-04T19:30:00.000Z" } })]);
+    expect(screen.getByText(/is planning an event: "Life drawing"/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText(/is planning an event/));
+    expect(where()).toBe("/events/e5");
+  });
+
+  it("a changed, cancelled or soon-starting event says so", async () => {
+    await openAndRender([
+      note({ id: "n1", type: "event_updated", payload: { eventId: "e5", title: "Life drawing", changed: ["time", "place"] } }),
+      note({ id: "n2", type: "event_cancelled", payload: { title: "Sketch along" } }),
+      note({ id: "n3", type: "event_reminder", payload: { eventId: "e6", title: "Pottery" } }),
+      note({ id: "n4", type: "event_reminder", payload: { eventId: "e7", title: "My show", own: true } }),
+    ]);
+    expect(screen.getByText(/changed an event you answered: "Life drawing" — the time and place changed/)).toBeInTheDocument();
+    expect(screen.getByText(/cancelled an event: "Sketch along"/)).toBeInTheDocument();
+    expect(screen.getByText(/has an event starting soon: "Pottery"/)).toBeInTheDocument();
+    expect(screen.getByText(/your event "My show" starts soon/)).toBeInTheDocument();
+  });
+
   it("someone accepting your friend request: opens their profile", async () => {
     await openAndRender([note({ type: "friend_accept" })]);
     await userEvent.click(screen.getByText(/accepted your friend request/));

@@ -35,6 +35,17 @@ function describe(n: Notification): string {
       return "left a comment on your profile";
     case "media_comment":
       return "commented on your portfolio";
+    case "event_created":
+      return typeof n.payload.title === "string" && typeof n.payload.startsAt === "string" ? `is planning an event: "${n.payload.title}", ${formatWhen(n.payload.startsAt)}` : "is planning an event";
+    case "event_updated": {
+      const changed = Array.isArray(n.payload.changed) ? n.payload.changed.filter((c): c is string => typeof c === "string") : [];
+      const what = changed.length ? ` — the ${changed.join(" and ")} changed` : " — it changed";
+      return typeof n.payload.title === "string" ? `changed an event you answered: "${n.payload.title}"${what}` : `changed an event you answered${what}`;
+    }
+    case "event_cancelled":
+      return typeof n.payload.title === "string" ? `cancelled an event: "${n.payload.title}"` : "cancelled an event";
+    case "event_reminder":
+      return n.payload.own === true ? `— your event "${String(n.payload.title ?? "")}" starts soon` : `has an event starting soon: "${String(n.payload.title ?? "")}"`;
     case "help_accepted":
       return typeof n.payload.title === "string"
         ? `accepted your offer to help with "${n.payload.title}"`

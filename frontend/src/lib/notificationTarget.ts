@@ -22,6 +22,14 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const commentId = str(n.payload.commentId);
       return { to: `/posts/${postId}${commentId ? `?comment=${encodeURIComponent(commentId)}` : ""}`, label: "View post" };
     }
+    case "event_created":
+    case "event_updated":
+    case "event_reminder": {
+      const eventId = str(n.payload.eventId);
+      return eventId ? { to: `/events/${eventId}`, label: "View event" } : { to: "/events", label: "See events" };
+    }
+    case "event_cancelled":
+      return { to: "/events", label: "See events" };
     case "media_comment": {
       const mediaId = str(n.payload.mediaId);
       if (!mediaId || !viewerUsername) return viewerUsername ? { to: `/u/${viewerUsername}#portfolio`, label: "View portfolio" } : null;

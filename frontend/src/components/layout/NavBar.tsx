@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { to: "/", label: "Feed" },
   { to: "/friends", label: "Friends" },
   { to: "/groups", label: "Groups" },
+  { to: "/events", label: "Events" },
   { to: "/search", label: "Search" },
   { to: "/live", label: "Live" },
   { to: "/help-wanted", label: "Help wanted" },

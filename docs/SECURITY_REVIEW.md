@@ -1030,6 +1030,22 @@ A comment box on a portfolio piece lets people the owner may not know put words 
 
 Covered by 18 backend tests, 19 frontend tests for the shared thread, the portfolio, the notification and the requests, and 2 browser flows (a visitor comments and changes a comment, the owner is told, lands on it and takes it down, and a stranger refused on a private profile) on all three browsers.
 
+### 5.53 Events: organising people, and telling them, without being a way to spam or to leak
+
+An event lets a person ask others to turn up somewhere, tells their friends, and keeps a guest list. The risks were: events (and who is going) being visible to people they weren't meant for, an event being used to message people, links that lead somewhere dangerous, and a host's changes being used to pester guests.
+
+- **Visibility is decided in one place.** Every read and write goes through one check: the host's own events, otherwise the host must not be suspended or blocked either way, a friends-only event needs a friend, and a public event needs the host's profile not to be private (or a friend). An event that can't be seen is the same 404 as one that doesn't exist, in the list, by address, for the guest list, the calendar file and answering (tested for strangers, a private profile, blocks both ways and suspension). People you have blocked, and suspended accounts, are left out of the guest list.
+- **Nobody can be messaged by an event.** A new event notifies only the host's accepted friends, once. Guests are told only about what they chose to answer: a change of time, place or link (one note that replaces an earlier unread one), a cancellation, and one reminder an hour before. A change to the words is silent. Hosts are limited to 10 events planned at once and 10 new ones an hour, and to the shared 60 edits an hour, and people the host has blocked are not reminded.
+- **Links are only web addresses.** An online link must be https, with no name or password in it, a real-looking host name, and at most 300 characters (tested with javascript:, data:, http:, embedded passwords and an address that isn't one). It is shown as plain text and opens in a new tab with noopener and nofollow, with a note that it goes to another site. An in-person event stores no link and an online one no place.
+- **Everything is text, checked like other writing.** Hidden characters removed, over-long refused rather than cut, times validated (5 minutes to 90 days ahead, an end after the start, at most 3 days long), and the host, answers, reminder state and counts come from the session and the stored record, never the request (tested by sending them). Descriptions are drawn as plain text.
+- **Answering is the guest's own choice and can be taken back.** One answer per person per event (a unique index), no answering your own event or one that is over, 120 answers an hour. The host sees who answered; guests see the others who answered, as with any guest list, and can leave the list by taking the answer back.
+- **The calendar file can't be turned against the person who opens it.** Text is escaped (backslash, semicolon, comma, line breaks), long lines are folded without splitting a character, and the file has a fixed name and type, so an event title can't add lines or fields to it (tested with each of those characters).
+- **Reports and removal.** An event can be reported like anything else; a moderator sees the title, details, place or link and a link to the event, and removing it takes the event, the answers and the notifications it sent.
+- **Nothing is left behind.** Cancelling takes back what the event sent; deleting an account deletes its events with their answers and the answers it gave elsewhere, and the reports about its events (tested).
+- **Not covered:** no repeating events, no capacity limit or waiting list, no comments on an event, no way to invite a specific person who isn't a friend, no email reminders, and the guest list shows names to everyone who can see the event.
+
+Covered by 30 backend tests, 38 frontend tests for the form, answering, the list, the event page and the notifications, and 2 browser flows (plan, be told, answer, change the place, cancel; and a friends-only event hidden from a stranger with its calendar file) on all three browsers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

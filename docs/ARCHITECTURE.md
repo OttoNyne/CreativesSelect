@@ -92,7 +92,7 @@ flowchart LR
 
 ## 3. Data Model
 
-MongoDB via Mongoose. 36 collections. `ObjectId` refs are named `ref` below;
+MongoDB via Mongoose. 38 collections. `ObjectId` refs are named `ref` below;
 `unique` compound indexes are noted where they exist.
 
 | Model | Fields | Relationships |
@@ -116,7 +116,7 @@ MongoDB via Mongoose. 36 collections. `ObjectId` refs are named `ref` below;
 | **UsernameHistory** | `username`, `user` → User, `expireAt` (TTL) | A username someone gave up, reserved for them for 30 days so it can't be instantly taken over |
 | **Track** | `owner` → User, `title`, `sourceType` (upload/youtube), `url`, `position`, timestamps | Max 5 per user, enforced in the route, not the schema |
 | **StoredAsset** | `owner` → User, `url`, `publicId`, `resourceType` (image/video/raw), `kind` (ai/upload), timestamps | Ledger of every file the server itself stored on Cloudinary (AI images and uploads) and whose it is — the only thing that lets the app delete an asset safely |
-| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted/live_started/message/live_scheduled/live_reminder/blog_post/invite_joined/media_comment), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
+| **Notification** | `recipient` → User, `type` (friend_request/friend_accept/comment/profile_comment/group_invite/help_offer/help_accepted/live_started/message/live_scheduled/live_reminder/blog_post/invite_joined/media_comment/event_created/event_updated/event_cancelled/event_reminder), `payload` (Mixed — carries related ids like `actorId`/`friendshipId`), `isRead`, timestamps | Fan-out target for actions elsewhere in the app |
 | **Message** | `sender` → User, `recipient` → User, `pair` ("smaller id:larger id" — one key per two people, indexed with `createdAt`), `body` (≤2000 chars), `readAt`, timestamps | A direct message between two friends; one document is both people's copy, so a delete or account deletion removes it for both |
 | **GroupMessage** | `group` → Group, `sender` → User, `body` (≤1000 chars), timestamps | A message in a group's chat; only members can read or write; removed with its sender's account or its group |
 | **GroupTopic** | `group` → Group, `author` → User, `title` (≤100), `body` (≤2000), `pinned`, `replyCount`, `lastActivityAt`, timestamps, indexed on (group, pinned, lastActivityAt) | A discussion topic on a group's board; members only. Rises when replied to; an admin can pin up to 3 |
@@ -125,6 +125,8 @@ MongoDB via Mongoose. 36 collections. `ObjectId` refs are named `ref` below;
 | **ModerationAction** | `admin` → User, `targetType`, `targetId`, `subject` → User (the author, or the account), `action` (dismissed/removed/suspended/removed_and_suspended/unsuspended), `note` (≤500), `reportCount`, `createdAt` | The record of what moderators decided. Holds identifiers and the moderator's note, never the removed content |
 | **PasswordReset** | `user` → User, `tokenHash` (SHA-256, unique), `expireAt` (TTL, 1 hour) | At most one outstanding "reset my password" link per user; only a hash of the token is stored, so the database never holds a usable link |
 | **LiveSession** | `host` → User, `title` (≤80), `status` (live/ended), `lastHeartbeat`, `endedAt`, `expireAt` (TTL, set when it ends) | One voice-only live broadcast. It counts as live only while its host keeps sending heartbeats |
+| **Event** | `host` → User, `title` (≤80), `description` (≤1000), `startsAt`, `endsAt` (optional, ≤3 days after the start), `kind` (in_person/online), `place` (≤120, in person), `link` (https only, online), `audience` (friends/public), `editedAt`, `remindedAt`, `expireAt` (TTL, two days after it ends) | Something a person organises: a meet-up, a show, an online session |
+| **EventRsvp** | `event` → Event, `user` → User, `status` (going/maybe), unique on (event, user) | One person's answer to one event; removed with the event or either account |
 | **ScheduledLive** | `host` → User, `title` (≤80), `startsAt`, `reminders` [User] (who asked to be reminded), `status` (scheduled/started/cancelled), `liveId`, `remindedAt` (set once, when reminders go out), `expireAt` (TTL, 2 days after the start) | A live a host plans ahead. Starting it from the plan links it to the real LiveSession; plans clean themselves up |
 | **LiveListener** | `session` → LiveSession, `user` → User, `lastSeen`, `stage` (listener/requested/invited/speaking — big lives only), `expireAt` (TTL), unique on (session, user) | Someone listening; "active" means they pinged in the last 30 s |
 | **LiveSignal** | `session`, `from` → User, `to` → User, `kind` (offer/answer/ice), `data`, `expireAt` (TTL, 5 min) | A WebRTC handshake message passed between two browsers through the API; never contains audio |
@@ -132,7 +134,7 @@ MongoDB via Mongoose. 36 collections. `ObjectId` refs are named `ref` below;
 | **EmailVerification** | `user` → User, `tokenHash` (SHA-256, unique), `expireAt` (TTL, 24 hours) | One outstanding "confirm your email" link per user; only a hash of the token is stored. Confirming sets `User.emailVerified` |
 | **RateLimitHit** | `key`, `at`, `expireAt` (TTL index) | One row per rate-limited action; stored in MongoDB so limits survive restarts and are shared by every server instance, and expired rows delete themselves |
 | **Block** | `blocker` → User, `blocked` → User, unique on (blocker, blocked), timestamps | Gates visibility everywhere (see §7) |
-| **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment/blogEntry/bulletin/groupTopic/groupReply/mediaComment), `targetId`, `reason` (≤500), `status` (open/reviewed/dismissed), `reviewedBy`, `reviewedAt`, `action`, `note`, timestamps | The moderation queue, worked through the review screen (see Moderation below) |
+| **Report** | `reporter` → User, `targetType` (user/post/comment/profileComment/blogEntry/bulletin/groupTopic/groupReply/mediaComment/event), `targetId`, `reason` (≤500), `status` (open/reviewed/dismissed), `reviewedBy`, `reviewedAt`, `action`, `note`, timestamps | The moderation queue, worked through the review screen (see Moderation below) |
 
 **User-ownership scoping**: every resource that belongs to one user carries an
 explicit `owner`/`author` ObjectId, and every route that reads or writes it
@@ -371,6 +373,21 @@ A host plans a live ahead; people who want to be there ask for a reminder. Nothi
 
 Reminders go out once, at most 10 minutes before the start, as a `live_reminder` notification to everyone who asked. A 60-second timer in the server sends them, and reading the plans or the notifications does the same check (throttled to once per 15 s), so a restarted or sleeping server still sends them on the next visit. Each plan is claimed with one atomic update (`remindedAt`) so two servers can't send twice; a plan more than 2 hours late is not reminded. Starting a live with `{scheduledId}` (`POST /api/live`) marks the plan started, removes the "scheduled"/"reminder" notifications and tells reminded people who aren't friends that the live is on.
 
+### Events — `/api/events` (auth)
+Something a person organises for a date. Who may see an event is decided in one place: its host always; otherwise the host must not be suspended or blocked either way, a friends-only event needs a friend, and a public event needs the host's profile not to be private (or a friend). An event that can't be seen is the same `404` as one that doesn't exist. It stays listed until it ends (or six hours after it began, with no end time) and is kept two days more.
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/?filter=&page=` | `upcoming` (default: what you may see), `going` (you answered) or `mine` (you host); soonest first, 20 a page (`hasMore`). Looks through up to 300 upcoming events to fill the page with ones the viewer may see, which is plenty at this size |
+| POST | `/` | Verified email only. `{title (≤80), description? (≤1000), kind, place | link, audience, startsAt, endsAt?}` → `201`. Starts 5 minutes to 90 days ahead; an end must be after the start and within 3 days; an in-person event needs a place, an online link must be `https` with no name or password in it (nothing else is kept for the other kind); 10 planned at once (`400`), 10 an hour (`429`). Tells the host's friends (`event_created`) |
+| GET | `/:id` | The event, with the viewer's answer and the counts going and maybe |
+| PATCH | `/:id` | Host only (`404` for anyone else; `409` once it is over): any of the fields, checked as a whole against the event as it is, so an event that has begun can still have its words fixed. Counts against the 60 edits an hour. Sets `editedAt`; a new start time sends the reminder again. People who answered are told when the time, place or link changed (`event_updated`, one note that replaces an earlier unread one) and not for other changes |
+| DELETE | `/:id` | Host only: tells the people who answered (`event_cancelled`), takes back its announcement, reminders and change notes, and deletes the answers |
+| PUT | `/:id/rsvp` | `{status: going | maybe | none}`; `404` unless you may see it, `400` for the host, `409` once it is over; 120 an hour (`429`). Returns your answer and the counts |
+| GET | `/:id/guests?status=&page=` | Who said going (or maybe), 50 a page, in the order they answered; people you have blocked (or who blocked you) and suspended accounts are left out |
+| GET | `/:id/calendar.ics` | An iCalendar file to add it to a calendar: title, details and place or link escaped, lines folded to 75 bytes, one hour long when there is no end |
+
+Reminders go out once, an hour before the start, as `event_reminder` to everyone who answered and to the host (people the host has blocked excluded; not at all if the start was more than two hours ago). Each event is claimed with one atomic update so two requests can't both send them. A 60-second timer sends them, and reading the events or the notifications catches up after a sleep. Scheduled lives are separate (above); the Events page points to the Live page for audio sessions.
+
 ### Notifications — `/api/notifications` (auth)
 | Method | Path | Notes |
 |---|---|---|
@@ -427,7 +444,7 @@ Reminders go out once, at most 10 minutes before the start, as a `live_reminder`
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (160 tests × 3 browsers, 480 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (162 tests × 3 browsers, 486 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -518,6 +535,8 @@ App
 │       │   │   ├── /blog/:id  → BlogEntryPage        (read an entry; author edits/deletes, others report)
 │       │   │   ├── /posts/:id → PostPage            (one post with its comments open; ?comment=<id> highlights one; where notifications about comments land)
 │       │   │   ├── /messages  → MessagesPage (conversation list + open thread; /messages/:username)
+│       │   │   ├── /events    → EventsPage          (coming up / I'm going / mine, plan an event; EventForm, EventCard, RsvpButtons)
+│       │   │   ├── /events/:id → EventDetailPage    (the event, who is going, edit, cancel, add to calendar)
 │       │   │   ├── /groups    → GroupsPage
 │       │   │   ├── /groups/:id→ GroupDetailPage      (GroupChat for members)
 │       │   │   ├── /live      → LivePage             (who's live + Go live + schedule / upcoming lives)
@@ -636,11 +655,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 601 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 631 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 1043 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 1081 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,
