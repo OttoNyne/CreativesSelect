@@ -63,6 +63,8 @@ test.describe("rearranging the music on a profile", () => {
   test("a song can be dragged to a new place", async ({ page, isMobile }) => {
     test.skip(isMobile, "dragging is for mouse users; phones use the buttons");
     const me = await openPlaylist(page, ["Alpha", "Bravo", "Charlie"]);
+    // the music sits below the About me section, so bring all three songs into the middle of the screen before dragging
+    await rows(page).nth(1).evaluate((el) => el.scrollIntoView({ block: "center" }));
     await rows(page).nth(0).dragTo(rows(page).nth(2));
     await expect.poll(() => savedOrder(page, me.username)).toEqual(["Bravo", "Charlie", "Alpha"]);
     expect(await order(page)).toEqual(["Bravo", "Charlie", "Alpha"]);
