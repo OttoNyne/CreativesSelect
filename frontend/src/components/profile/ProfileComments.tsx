@@ -7,6 +7,9 @@ import { Avatar } from "../common/Avatar";
 import { useAuth } from "../../context/AuthContext";
 import { EditBox } from "../common/EditBox";
 import { EditedMark } from "../common/EditedMark";
+import { Linkified } from "../common/Linkified";
+import { CommentPicture } from "../common/CommentPicture";
+import { CommentPicturePicker } from "../common/CommentPicturePicker";
 
 const MAX_COMMENT = 1000;
 
@@ -14,6 +17,7 @@ export function ProfileComments({ username }: { username: string }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [draft, setDraft] = useState("");
+  const [picture, setPicture] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -40,12 +44,13 @@ export function ProfileComments({ username }: { username: string }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!draft.trim()) return;
+    if (!draft.trim() && !picture) return;
     setError(null);
     try {
-      const { comment } = await profilesApi.addComment(username, draft.trim());
+      const { comment } = picture ? await profilesApi.addComment(username, draft.trim(), picture) : await profilesApi.addComment(username, draft.trim());
       setComments((c) => [comment, ...c]);
       setDraft("");
+      setPicture(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't post that comment.");
     }
@@ -78,6 +83,16 @@ export function ProfileComments({ username }: { username: string }) {
     }
   }
 
+  async function takePictureOff(commentId: string) {
+    setError(null);
+    try {
+      const { comment } = await profilesApi.removeCommentPicture(commentId);
+      setComments((list) => list.map((c) => (c.id === commentId ? comment : c)));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't take that picture off.");
+    }
+  }
+
   async function handleDelete(commentId: string) {
     setError(null);
     try {
@@ -93,16 +108,20 @@ export function ProfileComments({ username }: { username: string }) {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Testimonials</h2>
 
       {user && (
-        <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Leave a comment on this profile…"
-            className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
-          />
-          <button type="submit" className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1.5 text-xs font-medium text-[var(--profile-on-accent)]">
-            Post
-          </button>
+        <form onSubmit={handleSubmit} className="mt-3 space-y-1">
+          <div className="flex gap-2">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              maxLength={MAX_COMMENT}
+              placeholder="Leave a comment on this profile…"
+              className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
+            />
+            <button type="submit" className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1.5 text-xs font-medium text-[var(--profile-on-accent)]">
+              Post
+            </button>
+          </div>
+          <CommentPicturePicker url={picture} onChange={setPicture} />
         </form>
       )}
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
@@ -122,9 +141,12 @@ export function ProfileComments({ username }: { username: string }) {
               {editing === c.id ? (
                 <EditBox text={c.content} maxText={MAX_COMMENT} label="Edit testimonial" rows={3} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
               ) : (
-                <p className="whitespace-pre-line break-words text-white/70">
-                  {c.content} <EditedMark editedAt={c.editedAt} />
-                </p>
+                <>
+                  <p className="whitespace-pre-line break-words text-white/70">
+                    {c.content && <Linkified text={c.content} />} <EditedMark editedAt={c.editedAt} />
+                  </p>
+                  {c.imageUrl && <CommentPicture url={c.imageUrl} />}
+                </>
               )}
             </div>
             {user && editing !== c.id && (
@@ -132,6 +154,11 @@ export function ProfileComments({ username }: { username: string }) {
                 {user.id === c.author.id && (
                   <button onClick={() => setEditing(c.id)} aria-label="Edit your testimonial" className="text-white/60 hover:text-white">
                     Edit
+                  </button>
+                )}
+                {user.id === c.author.id && c.imageUrl && (
+                  <button onClick={() => takePictureOff(c.id)} aria-label="Remove the picture from your testimonial" className="text-white/60 hover:text-white">
+                    Remove picture
                   </button>
                 )}
                 {(user.id === c.author.id || user.username === username) && (

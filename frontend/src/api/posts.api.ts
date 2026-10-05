@@ -23,7 +23,9 @@ export const postsApi = {
   /** Twenty at a time, oldest first; `after` is the id of the last one you have. */
   comments: (postId: string, after?: string) => api.get<{ comments: Comment[]; hasMore?: boolean }>(`/posts/${postId}/comments${after ? `?after=${encodeURIComponent(after)}` : ""}`),
   updateComment: (commentId: string, content: string) => api.patch<{ comment: Comment }>(`/comments/${encodeURIComponent(commentId)}`, { content }),
-  addComment: (postId: string, content: string) =>
-    api.post<{ comment: Comment }>(`/posts/${postId}/comments`, { content }),
+  addComment: (postId: string, content: string, imageUrl?: string) =>
+    api.post<{ comment: Comment }>(`/posts/${postId}/comments`, { content, ...(imageUrl ? { imageUrl } : {}) }),
+  /** Take the picture off your comment (the words stay). */
+  removeCommentPicture: (commentId: string) => api.patch<{ comment: Comment }>(`/comments/${encodeURIComponent(commentId)}`, { imageUrl: null }),
   removeComment: (commentId: string) => api.delete<void>(`/comments/${commentId}`),
 };

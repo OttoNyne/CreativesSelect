@@ -1076,6 +1076,21 @@ An About me section asks for the kind of thing people are rightly careful with: 
 
 Covered by 19 backend tests, 15 frontend tests for the section, its form, the requests and the notification, and 2 browser flows (filling it in and what a friend and a stranger see, taking the birthday back, and a private profile) on all three browsers.
 
+### 5.56 Richer comments: letting strangers put pictures and links on someone's page
+
+Comments can now carry a picture or GIF and web addresses. That gives strangers a way to put an image in front of a page's owner and visitors, and a way to point them somewhere else, which is exactly how comment spam, tracking and harassment work. The design is to allow as little as makes the feature useful.
+
+- **A picture has to be a file this site stored.** A comment never takes an address the sender typed: no hot-linked images, so no tracking pixels that tell a stranger's server who looked, no pictures that change after they were reported, and nothing from a server we don't control. The picture is uploaded first, to this site's own storage, from the file the person chose; the comment names it, and the server accepts it only if it is a file recorded as uploaded by the same person and as an image (tested with another site's address, an http address, a data address, someone else's upload, a video and an AI image).
+- **What can be uploaded.** PNG, JPEG, WebP and GIF only (SVG, which can carry script, and video are refused), up to 5 MB, and 20 pictures an hour per person; a file over the limit or over the allowance is removed from storage again at once (tested). A picture is shown as an image with a fixed description and opens full size in a new tab; it is never embedded as anything else.
+- **Links are text first.** Web addresses are found in the text and drawn as links by the page itself (never as markup from the sender), at most three to a comment, only http and https, and never an address with a name and password in it (the "paypal.com@evil.example.com" trick stays as plain text; unit and browser tested). A link shows the address it goes to, shortened if long, with the whole address in its title, and opens in a new tab with noopener, noreferrer, nofollow and ugc.
+- **Taking it back.** The author can take a picture off their comment, keeping the words, but cannot swap in a different picture, because a new picture is a new thing for people to look at and that is a new comment (tested). A comment with neither words nor a picture is refused, and one can't be edited into that.
+- **Storage doesn't leak.** A picture added and then not posted is removed when the person clicks Remove; deleting the comment, the post, the piece or the account removes the picture too, including other people's pictures in what went with an account, and a picture two comments share stays until both are gone (tested for each path, and for a moderator's removal).
+- **Moderators see it.** A report shows the picture's address and words, and removing the comment removes the picture.
+- **The usual limits still apply** to the comment itself: 1000 characters, the rate limits on writing (40 per 10 minutes on posts and pieces, 20 on testimonials), the 60 edits an hour, and who may see what.
+- **Not covered:** there is no automatic check of what a picture shows (reports and moderators are the check), a link can lead anywhere on the web and nofollow only tells search engines, an abandoned upload (a person closes the page after choosing a picture) stays in their storage until they delete the account, and GIFs play without a pause control.
+
+Covered by 24 backend tests, 33 frontend tests for the link finder, the picture and the picker, the three kinds of comment and the requests, and 3 browser flows (links, the link limit, refusal of other addresses) on all three browsers. A real upload isn't exercised in the browser tests, because the test servers have no storage account (the upload path is covered by the backend tests with a fake storage service).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

@@ -16,8 +16,9 @@ export function PostCommentList({
     <CommentThread
       threadKey={postId}
       load={(after) => (after ? postsApi.comments(postId, after) : postsApi.comments(postId))}
-      add={(text) => postsApi.addComment(postId, text)}
+      add={(text, imageUrl) => (imageUrl ? postsApi.addComment(postId, text, imageUrl) : postsApi.addComment(postId, text))}
       update={(id, text) => postsApi.updateComment(id, text)}
+      removePicture={(id) => postsApi.removeCommentPicture(id)}
       onCountChange={onCountChange}
       highlightId={highlightId}
     />

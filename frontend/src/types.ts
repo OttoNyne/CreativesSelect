@@ -69,7 +69,10 @@ export interface Post {
 
 export interface Comment {
   id: string;
+  /** The words (may be empty when there is a picture). */
   content: string;
+  /** One picture or GIF the author uploaded, if any. */
+  imageUrl?: string | null;
   createdAt: string;
   editedAt?: string | null;
   author: User;

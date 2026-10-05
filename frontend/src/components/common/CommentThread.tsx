@@ -4,6 +4,9 @@ import type { Comment } from "../../types";
 import { Avatar } from "./Avatar";
 import { EditBox } from "./EditBox";
 import { EditedMark } from "./EditedMark";
+import { Linkified } from "./Linkified";
+import { CommentPicture } from "./CommentPicture";
+import { CommentPicturePicker } from "./CommentPicturePicker";
 import { useAuth } from "../../context/AuthContext";
 
 const MAX_COMMENT = 1000;
@@ -13,8 +16,11 @@ interface Props {
   threadKey: string;
   /** One page of the comments: the first, or the ones after `after`. */
   load: (after?: string) => Promise<{ comments: Comment[]; hasMore?: boolean }>;
-  add: (text: string) => Promise<{ comment: Comment }>;
+  /** Post a comment: its words, and the address of a picture uploaded for it, if any. */
+  add: (text: string, imageUrl?: string) => Promise<{ comment: Comment }>;
   update: (id: string, text: string) => Promise<{ comment: Comment }>;
+  /** Taking the picture off your own comment. Without it there is no Remove picture button. */
+  removePicture?: (id: string) => Promise<{ comment: Comment }>;
   /** Taking a comment down. Without it there is no Delete button. */
   remove?: (id: string) => Promise<unknown>;
   /** Whether the viewer may take down other people's comments here (the owner of the page). Their own they may always take down. */
@@ -28,20 +34,21 @@ interface Props {
 }
 
 /** A list of comments with a box to add one, a page at a time; the same for a post and for a portfolio piece. */
-export function CommentThread({ threadKey, load, add, update, remove, canModerate = false, onReport, onCountChange, highlightId = null }: Props) {
+export function CommentThread({ threadKey, load, add, update, removePicture, remove, canModerate = false, onReport, onCountChange, highlightId = null }: Props) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [draft, setDraft] = useState("");
+  const [picture, setPicture] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // The latest functions from the parent, without loading again every time it draws.
-  const latest = useRef({ load, add, update, remove });
+  const latest = useRef({ load, add, update, remove, removePicture });
   useEffect(() => {
-    latest.current = { load, add, update, remove };
+    latest.current = { load, add, update, remove, removePicture };
   });
 
   useEffect(() => {
@@ -79,13 +86,14 @@ export function CommentThread({ threadKey, load, add, update, remove, canModerat
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!draft.trim()) return;
+    if (!draft.trim() && !picture) return;
     setError(null);
     try {
-      const { comment } = await latest.current.add(draft.trim());
+      const { comment } = await latest.current.add(draft.trim(), picture ?? undefined);
       setComments((old) => [...old, comment]);
       onCountChange((n) => n + 1);
       setDraft("");
+      setPicture(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't post that comment.");
     }
@@ -99,6 +107,17 @@ export function CommentThread({ threadKey, load, add, update, remove, canModerat
       return null;
     } catch (err) {
       return err instanceof ApiError ? err.message : "Couldn't save that change.";
+    }
+  }
+
+  async function takePictureOff(comment: Comment) {
+    if (!latest.current.removePicture) return;
+    setError(null);
+    try {
+      const { comment: saved } = await latest.current.removePicture(comment.id);
+      setComments((old) => old.map((c) => (c.id === comment.id ? saved : c)));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't take that picture off.");
     }
   }
 
@@ -135,7 +154,13 @@ export function CommentThread({ threadKey, load, add, update, remove, canModerat
                 <EditBox text={c.content} maxText={MAX_COMMENT} label="Edit comment" rows={2} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
               ) : (
                 <>
-                  <span className="font-medium text-white/90">{c.author.displayName}</span> <span className="whitespace-pre-line break-words text-white/70">{c.content}</span> <EditedMark editedAt={c.editedAt} />
+                  <span className="font-medium text-white/90">{c.author.displayName}</span>{" "}
+                  {c.content && (
+                    <span className="whitespace-pre-line break-words text-white/70">
+                      <Linkified text={c.content} />
+                    </span>
+                  )}{" "}
+                  <EditedMark editedAt={c.editedAt} />
                   {mine && (
                     <button type="button" onClick={() => setEditing(c.id)} aria-label={`Edit your comment: ${c.content.slice(0, 30)}`} className={`ml-2 ${action}`}>
                       Edit
@@ -146,10 +171,20 @@ export function CommentThread({ threadKey, load, add, update, remove, canModerat
                       Delete
                     </button>
                   )}
+                  {mine && c.imageUrl && removePicture && (
+                    <button type="button" onClick={() => takePictureOff(c)} aria-label={`Remove the picture from your comment: ${c.content.slice(0, 30)}`} className={`ml-2 ${action}`}>
+                      Remove picture
+                    </button>
+                  )}
                   {onReport && user && !mine && (
                     <button type="button" onClick={() => onReport(c)} aria-label={`Report comment by ${c.author.displayName}`} className={`ml-2 ${action}`}>
                       Report
                     </button>
+                  )}
+                  {c.imageUrl && (
+                    <div>
+                      <CommentPicture url={c.imageUrl} />
+                    </div>
                   )}
                 </>
               )}
@@ -163,17 +198,20 @@ export function CommentThread({ threadKey, load, add, update, remove, canModerat
         </button>
       )}
       {user && (
-        <form onSubmit={handleSubmit} className="flex gap-2 pt-1">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            maxLength={MAX_COMMENT}
-            placeholder="Write a comment…"
-            className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent,#8b5cf6)] focus:outline-none"
-          />
-          <button type="submit" className="rounded-md bg-[var(--profile-accent-fill,#7c3aed)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent,#ffffff)] hover:opacity-90">
-            Post
-          </button>
+        <form onSubmit={handleSubmit} className="space-y-1 pt-1">
+          <div className="flex gap-2">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              maxLength={MAX_COMMENT}
+              placeholder="Write a comment…"
+              className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent,#8b5cf6)] focus:outline-none"
+            />
+            <button type="submit" className="rounded-md bg-[var(--profile-accent-fill,#7c3aed)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent,#ffffff)] hover:opacity-90">
+              Post
+            </button>
+          </div>
+          <CommentPicturePicker url={picture} onChange={setPicture} />
         </form>
       )}
       {error && <p className="text-xs text-red-400">{error}</p>}

@@ -43,7 +43,9 @@ export const profilesApi = {
   /** Newest first, twenty at a time; `before` is the id of the oldest you have. */
   getComments: (username: string, before?: string) => api.get<{ comments: Comment[]; hasMore?: boolean }>(`/profiles/${username}/comments${before ? `?before=${encodeURIComponent(before)}` : ""}`),
   updateComment: (commentId: string, content: string) => api.patch<{ comment: Comment }>(`/profiles/comments/${encodeURIComponent(commentId)}`, { content }),
-  addComment: (username: string, content: string) =>
-    api.post<{ comment: Comment }>(`/profiles/${username}/comments`, { content }),
+  addComment: (username: string, content: string, imageUrl?: string) =>
+    api.post<{ comment: Comment }>(`/profiles/${username}/comments`, { content, ...(imageUrl ? { imageUrl } : {}) }),
+  /** Take the picture off your testimonial (the words stay). */
+  removeCommentPicture: (commentId: string) => api.patch<{ comment: Comment }>(`/profiles/comments/${encodeURIComponent(commentId)}`, { imageUrl: null }),
   deleteComment: (commentId: string) => api.delete<void>(`/profiles/comments/${commentId}`),
 };

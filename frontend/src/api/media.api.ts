@@ -5,7 +5,7 @@ import { API_BASE } from "./base";
 
 const API_URL = API_BASE;
 
-export type UploadPurpose = "avatars" | "wallpapers" | "portfolio" | "tracks";
+export type UploadPurpose = "avatars" | "wallpapers" | "portfolio" | "tracks" | "comments";
 
 export async function uploadFile(
   file: File,
@@ -46,7 +46,9 @@ export const mediaApi = {
     api.put<{ likes: number; dislikes: number; myReaction: 1 | -1 | 0 }>(`/media/${id}/reaction`, { value }),
   /** Comments on a piece, oldest first, a page at a time (`after` is the last comment you have). */
   comments: (id: string, after?: string) => api.get<{ comments: Comment[]; hasMore?: boolean }>(`/media/${id}/comments${after ? `?after=${encodeURIComponent(after)}` : ""}`),
-  addComment: (id: string, content: string) => api.post<{ comment: Comment }>(`/media/${id}/comments`, { content }),
+  addComment: (id: string, content: string, imageUrl?: string) => api.post<{ comment: Comment }>(`/media/${id}/comments`, { content, ...(imageUrl ? { imageUrl } : {}) }),
+  /** Take the picture off your comment (the words stay). */
+  removeCommentPicture: (commentId: string) => api.patch<{ comment: Comment }>(`/media/comments/${encodeURIComponent(commentId)}`, { imageUrl: null }),
   updateComment: (commentId: string, content: string) => api.patch<{ comment: Comment }>(`/media/comments/${encodeURIComponent(commentId)}`, { content }),
   removeComment: (commentId: string) => api.delete<void>(`/media/comments/${encodeURIComponent(commentId)}`),
 };
