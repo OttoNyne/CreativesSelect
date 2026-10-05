@@ -184,6 +184,13 @@ describe("NotificationBell: where clicking goes", () => {
     expect(where()).toBe("/u/zoe");
   });
 
+  it("a comment on your blog entry: says which entry and opens it at the comment", async () => {
+    await openAndRender([note({ type: "blog_comment", payload: { entryId: "e4", commentId: "c2", title: "My studio" } })]);
+    expect(screen.getByText(/commented on your blog entry "My studio"/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText(/commented on your blog entry/));
+    expect(where()).toBe("/blog/e4?comment=c2");
+  });
+
   it("someone accepting your friend request: opens their profile", async () => {
     await openAndRender([note({ type: "friend_accept" })]);
     await userEvent.click(screen.getByText(/accepted your friend request/));

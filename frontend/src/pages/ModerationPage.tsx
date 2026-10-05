@@ -20,6 +20,7 @@ const TYPE_LABEL: Record<string, string> = {
   groupReply: "Group reply",
   mediaComment: "Comment on a piece",
   event: "Event",
+  blogComment: "Comment on a blog entry",
 };
 const ACTION_LABEL: Record<string, string> = {
   dismissed: "Dismissed",

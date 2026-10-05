@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { blogApi } from "../api/blog.api";
 import { moderationApi } from "../api/moderation.api";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
+import { BlogComments } from "../components/blog/BlogComments";
 import { formatDay } from "../lib/when";
 import type { BlogEntry } from "../types";
 
@@ -12,7 +13,10 @@ import type { BlogEntry } from "../types";
 export function BlogEntryPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const highlightId = params.get("comment");
   const [entry, setEntry] = useState<BlogEntry | null>(null);
+  const [commentCount, setCommentCount] = useState(0);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
 
   useEffect(() => {
@@ -24,6 +28,7 @@ export function BlogEntryPage() {
       .then(({ entry }) => {
         if (cancelled) return;
         setEntry(entry);
+        setCommentCount(entry.commentCount ?? 0);
         setState("ready");
       })
       .catch((err) => {
@@ -116,6 +121,14 @@ export function BlogEntryPage() {
             )}
           </div>
         </article>
+      )}
+      {state === "ready" && entry && (
+        <section aria-label="Comments" className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">
+            Comments <span className="font-normal normal-case">({commentCount})</span>
+          </h2>
+          <BlogComments entryId={entry.id} isAuthor={entry.isAuthor} onCountChange={(update) => setCommentCount(update)} highlightId={highlightId} />
+        </section>
       )}
     </div>
   );

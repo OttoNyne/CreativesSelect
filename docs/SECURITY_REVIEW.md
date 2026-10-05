@@ -1091,6 +1091,20 @@ Comments can now carry a picture or GIF and web addresses. That gives strangers 
 
 Covered by 24 backend tests, 33 frontend tests for the link finder, the picture and the picker, the three kinds of comment and the requests, and 3 browser flows (links, the link limit, refusal of other addresses) on all three browsers. A real upload isn't exercised in the browser tests, because the test servers have no storage account (the upload path is covered by the backend tests with a fake storage service).
 
+### 5.57 Comments on blog entries: another way for strangers to write on someone's page
+
+Blog entries are long, public writing, so they draw comments. Comments there are the same kind of risk as comments on pictures and posts (abuse the author can't remove, reaching writing you shouldn't see, flooding, files left behind), and they go through the same single check as every other comment.
+
+- **Only people who can read the entry can read or write on it.** Both go through the entry's own gate, so a private profile, a block in either direction or a suspended author gives the same 404 as an entry that doesn't exist (tested for strangers, blocks both ways and suspension). Comments by people you have blocked, or who blocked you, are left out of what you see. Like the rest of the blog, everything needs a sign-in.
+- **The author is in charge of their page.** The author of an entry can take down any comment on it; the commenter can change or delete their own. Nobody else can: not another reader, and not even the author can reword someone else's words (tested), so a comment is never put in a person's mouth.
+- **Same checks as every comment.** Hidden characters removed, empty and over-long (1000 characters) refused, nothing cut, at most three web addresses, one picture that must be a file the same person uploaded here and never an address they typed (see 5.56), the author and entry taken from the session and the address and never the request (tested by sending them), 40 comments per 10 minutes and 60 edits an hour.
+- **Only the author is told.** One note per comment, to the entry's author, naming who, which entry and which comment, never for their own comments. It opens the entry with the comment highlighted.
+- **Reports and moderators.** A comment can be reported; the moderator sees the words, any picture and a link that opens the entry at that comment; removing it removes the picture from storage. A moderator who removes an entry removes its comments and their pictures with it.
+- **Nothing is left behind.** Deleting an entry deletes its comments, their pictures and the notes about them; deleting an account deletes the comments it wrote and everyone's comments on its entries, releases other people's pictures in them, and removes the reports about them (tested).
+- **Not covered:** comments are flat (a reply is another comment, so there is no threading and no note to the person you reply to), an author can't switch comments off for one entry, and a comment can't be pinned.
+
+Covered by 19 backend tests, 12 frontend tests for the comments, the entry page, the notification and the requests, and 2 browser flows (a reader comments with a link and changes it, the author is told, lands on it and takes it down; and a private profile's entries refused to a stranger) on all three browsers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

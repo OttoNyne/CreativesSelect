@@ -71,6 +71,7 @@ export function ProfileBlog({ username, isOwner }: { username: string; isOwner: 
               <span className="block font-medium text-white">{e.title}</span>
               <span className="block text-xs text-white/60">{formatDay(e.createdAt)}</span>
               <span className="mt-1 block text-sm text-white/70">{e.excerpt}</span>
+              {e.commentCount ? <span className="mt-1 block text-xs text-white/60">{e.commentCount} {e.commentCount === 1 ? "comment" : "comments"}</span> : null}
             </Link>
           </li>
         ))}

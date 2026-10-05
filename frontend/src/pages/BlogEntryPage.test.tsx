@@ -10,6 +10,14 @@ import type { BlogEntry, User } from "../types";
 
 vi.mock("../api/blog.api", () => ({ blogApi: { get: vi.fn(), remove: vi.fn() } }));
 vi.mock("../api/moderation.api", () => ({ moderationApi: { report: vi.fn() } }));
+// the comments have their own loading and tests; here we only check the entry and where the comments go
+vi.mock("../components/blog/BlogComments", () => ({
+  BlogComments: ({ entryId, isAuthor, highlightId }: { entryId: string; isAuthor: boolean; highlightId: string | null }) => (
+    <div>
+      comments for {entryId}{isAuthor ? " (author)" : ""}{highlightId ? ` highlighting ${highlightId}` : ""}
+    </div>
+  ),
+}));
 const api = vi.mocked(blogApi);
 
 const ada = { id: "u1", username: "ada", displayName: "Ada" } as User;
@@ -54,6 +62,19 @@ describe("BlogEntryPage", () => {
     expect(document.querySelector("article b")).toBeNull();
     expect(screen.getByRole("link", { name: /Back to Ada's profile/ })).toHaveAttribute("href", "/u/ada#blog");
     expect(screen.queryByText("(edited)")).not.toBeInTheDocument();
+  });
+
+  it("shows the comments under the entry, with their count, for the author and for a reader", async () => {
+    api.get.mockResolvedValue({ entry: entry({ commentCount: 3 }) });
+    renderAt();
+    expect(await screen.findByRole("heading", { level: 2, name: /Comments/ })).toHaveTextContent("Comments (3)");
+    expect(screen.getByText("comments for e1")).toBeInTheDocument();
+  });
+
+  it("tells the comments the reader is the author, and which comment to highlight from a notification", async () => {
+    api.get.mockResolvedValue({ entry: entry({ isAuthor: true }) });
+    renderAt("/blog/e1?comment=c7");
+    expect(await screen.findByText("comments for e1 (author) highlighting c7")).toBeInTheDocument();
   });
 
   it("says when an entry has been edited", async () => {

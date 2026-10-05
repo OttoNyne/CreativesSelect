@@ -279,6 +279,8 @@ export interface BlogSummary {
   excerpt: string;
   createdAt: string;
   updatedAt: string;
+  /** How many comments the entry has. */
+  commentCount?: number;
 }
 
 export interface BlogEntry {
@@ -289,12 +291,14 @@ export interface BlogEntry {
   updatedAt: string;
   isAuthor: boolean;
   author: User;
+  /** How many comments the entry has. */
+  commentCount?: number;
 }
 
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

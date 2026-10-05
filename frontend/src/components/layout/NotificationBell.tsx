@@ -35,6 +35,8 @@ function describe(n: Notification): string {
       return "left a comment on your profile";
     case "media_comment":
       return "commented on your portfolio";
+    case "blog_comment":
+      return typeof n.payload.title === "string" ? `commented on your blog entry "${n.payload.title}"` : "commented on your blog entry";
     case "friend_birthday":
       return "has a birthday today 🎂";
     case "event_created":

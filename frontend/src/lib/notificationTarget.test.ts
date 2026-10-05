@@ -55,6 +55,12 @@ describe("notificationTarget", () => {
     expect(notificationTarget(n("friend_birthday", {}, null), "me")).toBeNull();
   });
 
+  it("a comment on your blog entry opens the entry at that comment", () => {
+    expect(notificationTarget(n("blog_comment", { entryId: "e1", commentId: "c1" }), "ada")).toEqual({ to: "/blog/e1?comment=c1", label: "View comment" });
+    expect(notificationTarget(n("blog_comment", { entryId: "e1" }), "ada")?.to).toBe("/blog/e1");
+    expect(notificationTarget(n("blog_comment", {}), "ada")).toEqual({ to: "/u/zoe", label: "View profile" });
+  });
+
   it("friend requests go to Friends; an accepted request goes to the new friend's profile", () => {
     expect(notificationTarget(n("friend_request"), "me")?.to).toBe("/friends");
     expect(notificationTarget(n("friend_accept"), "me")).toEqual({ to: "/u/zoe", label: "View profile" });

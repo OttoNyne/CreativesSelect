@@ -36,6 +36,12 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const commentId = str(n.payload.commentId);
       return { to: `/u/${viewerUsername}?piece=${encodeURIComponent(mediaId)}${commentId ? `&comment=${encodeURIComponent(commentId)}` : ""}#portfolio`, label: "View comment" };
     }
+    case "blog_comment": {
+      const entryId = str(n.payload.entryId);
+      if (!entryId) return actorProfile;
+      const commentId = str(n.payload.commentId);
+      return { to: `/blog/${entryId}${commentId ? `?comment=${encodeURIComponent(commentId)}` : ""}`, label: "View comment" };
+    }
     case "profile_comment":
       return viewerUsername ? { to: `/u/${viewerUsername}#testimonials`, label: "View testimonial" } : null;
     case "message":
