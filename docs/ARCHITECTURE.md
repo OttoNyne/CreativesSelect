@@ -537,7 +537,7 @@ change.
 App
 ├── AuthProvider            (fetches /api/auth/me once; exposes {user, isLoading, setUser})
 │   └── PlaybackProvider     (global "now playing" state — survives navigation)
-│       ├── NavBar           (links + MessagesLink unread badge + NotificationBell)
+│       ├── NavBar           (the logo, links + MessagesLink unread badge + NotificationBell)
 │       ├── InstallBanner    (iPhone/iPad only: how to Add to Home Screen; dismissible, remembered 30 days)
 │       ├── VerifyEmailBanner (signed-in people whose email isn't confirmed: reminder with Resend; dismissible for the visit)
 │       ├── Routes
@@ -800,7 +800,16 @@ There is deliberately no service worker: offline caching would risk serving stal
 bundles after a deploy for no real benefit to a server-backed social app. A native
 App Store build would need a wrapper (e.g. Capacitor), an Apple developer account and
 Apple's review for little extra over this. The icons are drawn from the same mark as
-the favicon; the maskable variant leaves a safe margin for Android's shapes.
+the favicon (the CreativesSelect logo: a cyan-and-blue "C" interlocked with a violet-and-magenta "S",
+kept as plain vector shapes in `components/common/Logo.tsx` and `public/logo-mark.svg` so it stays sharp at
+any size); the maskable variant leaves a safe margin for Android's shapes.
+
+**The logo and the link preview.** The top bar shows the logo (`Logo`: the mark and the name, with the
+`Select` half in the brand gradient) and the footer a small mark. `index.html` carries Open Graph and Twitter
+Card tags, so a link to the site shows a 1200 x 630 thumbnail (`public/og-image.png`: the logo, "Bold ideas.
+Strong brands. Smart growth." and the web address) when it is pasted into a message or a social post. The tags
+name the image by its full address (`https://www.creativesselect.com/og-image.png`), because the sites that show
+previews do not resolve relative ones. A test checks the tags, the thumbnail's size and the icons' sizes.
 
 **Uploads fail with a message, not a 500.** Cloudinary's free plan caps images at
 10 MB; the API used to surface that as a generic "Internal server error" (found while

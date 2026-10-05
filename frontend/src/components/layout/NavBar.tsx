@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Logo } from "../common/Logo";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../api/auth.api";
 import { Avatar } from "../common/Avatar";
@@ -41,8 +42,8 @@ export function NavBar() {
   return (
     <nav className="sticky top-0 z-20 border-b border-white/10 bg-[#0e0e12]/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <Link to="/" className="text-lg font-bold tracking-tight text-violet-400" onClick={() => setMenuOpen(false)}>
-          CreativesSelect
+        <Link to="/" className="shrink-0" onClick={() => setMenuOpen(false)}>
+          <Logo height={26} />
         </Link>
 
         {user ? (

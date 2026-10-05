@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LogoMark } from "../common/Logo";
 import { ShareButton } from "../share/ShareButton";
 import { siteUrl } from "../../lib/share";
 
@@ -14,6 +15,7 @@ export function SiteFooter() {
     <footer className="mt-10 border-t border-white/10 px-4 py-6 pb-20 text-sm text-white/60">
       <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 sm:flex-row">
         <p>
+          <LogoMark height={16} glow={false} className="mr-1.5 inline-block align-[-3px]" />
           <span className="font-semibold text-white/70">CreativesSelect</span> — a home for creatives.
         </p>
         <nav aria-label="About this site" className="flex flex-wrap justify-center gap-x-5 gap-y-1">
