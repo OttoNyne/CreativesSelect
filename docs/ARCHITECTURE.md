@@ -589,7 +589,7 @@ App
 │       │   │   ├── PortfolioGrid           (a piece's comments open beside it: PieceComments → the shared CommentThread, also used by posts)
 │       │   │   └── ProfileComments
 │       │   └── *            → redirect to /
-│       └── NowPlayingBar    (renders when PlaybackContext.current is set: a bar across the bottom with the title and the Skip and Stop buttons; for a YouTube video the bar is the same and the video is a small 224 x 200 window in the bottom corner just above it, because YouTube needs the video visible and at least 200px high)
+│       └── NowPlayingBar    (renders when PlaybackContext.current is set: a bar across the bottom with the title and the Play/Skip/Stop buttons for an uploaded song; for a YouTube video one small card in the bottom corner with the video (224 x 200) and the title and Skip/Stop buttons beside it, and nothing across the bottom of the page, because YouTube needs the video visible and at least 200px high)
 ```
 
 **Where API calls live**: each page owns its own data-fetching in a
@@ -698,7 +698,7 @@ rather than adding input validation to each route individually.
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 1230 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 1232 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,

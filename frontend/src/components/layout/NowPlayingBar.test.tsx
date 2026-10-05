@@ -100,27 +100,45 @@ describe("NowPlayingBar", () => {
       expect(screen.queryByRole("button", { name: /^(Play|Pause)$/ })).not.toBeInTheDocument();
     });
 
-    it("is a small window in the corner just above the bar, and the controls stay in the bar across the bottom", () => {
+    it("is one small card in the corner, with the video and its controls side by side and nothing across the bottom of the page", () => {
       render(<NowPlayingBar />);
       const frame = document.querySelector("iframe") as HTMLIFrameElement;
-      const window_ = frame.parentElement as HTMLElement;
-      expect(window_.className).toContain("fixed");
-      expect(window_.className).toContain("bottom-14"); // sits on top of the bar
-      expect(window_.className).toContain("right-2");
-      expect(window_.className).toContain("w-[min(224px,"); // 224 pixels wide (less on a very narrow screen)
-      expect(window_.className).not.toContain("left-");
+      const card = frame.parentElement as HTMLElement;
+      expect(card.className).toContain("fixed");
+      expect(card.className).toContain("bottom-2");
+      expect(card.className).toContain("right-2");
+      expect(card.className).toContain("w-[min(340px,"); // about as wide as the video and its buttons need (less on a very narrow screen)
+      expect(card.className).not.toContain("left-");
       expect(frame.className).toContain("h-[200px]"); // still the 200 pixels YouTube asks for
+      expect(frame.className).toContain("w-[224px]");
+      expect(frame.className).toContain("shrink-0"); // the buttons give way, never the video
 
-      // the bar runs across the bottom of the page and holds the title, the state and the buttons
+      // the title, the state and the buttons are in the same card as the video
+      expect(card).toContainElement(screen.getByText("A video"));
+      expect(card).toContainElement(screen.getByRole("status"));
+      expect(card).toContainElement(screen.getByRole("button", { name: /Skip/ }));
+      expect(card).toContainElement(screen.getByRole("button", { name: "Stop" }));
+      // and nothing is stretched across the bottom
+      expect(document.querySelectorAll(".fixed")).toHaveLength(1);
+      expect(document.querySelector(".left-0.right-0")).toBeNull();
+    });
+
+    it("keeps working from the card: skip and stop", async () => {
+      render(<NowPlayingBar />);
+      await userEvent.click(screen.getByRole("button", { name: /Skip/ }));
+      expect(playNext).toHaveBeenCalled();
+      await userEvent.click(screen.getByRole("button", { name: "Stop" }));
+      expect(stop).toHaveBeenCalled();
+    });
+
+    it("keeps the thin bar across the bottom for an uploaded song, which has no video", () => {
+      setPlayback();
+      render(<NowPlayingBar />);
       const bar = screen.getByRole("status").closest(".fixed") as HTMLElement;
-      expect(bar).not.toBe(window_);
       expect(bar.className).toContain("bottom-0");
       expect(bar.className).toContain("left-0");
       expect(bar.className).toContain("right-0");
-      expect(bar).toContainElement(screen.getByText("A video"));
-      expect(bar).toContainElement(screen.getByRole("button", { name: /Skip/ }));
-      expect(bar).toContainElement(screen.getByRole("button", { name: "Stop" }));
-      expect(window_).not.toContainElement(screen.getByRole("button", { name: "Stop" }));
+      expect(document.querySelector("iframe")).toBeNull();
     });
 
     it("tells the player to start as soon as it is ready", async () => {

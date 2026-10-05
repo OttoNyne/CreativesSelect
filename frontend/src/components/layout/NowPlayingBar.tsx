@@ -4,7 +4,7 @@ import { loadYouTubeIframeApi, youtubeErrorMessage, type YTPlayer } from "../../
 
 const YT_ELEMENT_ID = "now-playing-yt-player";
 
-const barButton = "rounded-md border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10";
+const barButton = "whitespace-nowrap rounded-md border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10";
 
 export function NowPlayingBar() {
   const { current, playNext, stop, isPlaying, toggle, error } = usePlayback();
@@ -53,50 +53,62 @@ export function NowPlayingBar() {
     ? ytError ?? (needsTap ? "Tap play to start" : "Playing via YouTube")
     : error ?? (isPlaying ? "Playing" : "Paused");
 
+  // YouTube requires an embedded player to be visible and at least 200 pixels high, and a phone only lets a person start it by tapping
+  // it, so it can't shrink into a thin bar. A video is therefore one small card in the corner: the video at its smallest allowed size
+  // (224 x 200) with the title and the buttons beside it, and nothing across the bottom of the page. A song that was uploaded has no
+  // video, so it keeps the thin bar.
+  if (isYouTube) {
+    return (
+      <div className="fixed bottom-2 right-2 z-40 flex w-[min(340px,calc(100vw-1rem))] overflow-hidden rounded-xl border border-white/15 bg-[#0e0e12]/95 shadow-lg backdrop-blur">
+        <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-2.5">
+          <div className="min-w-0">
+            <p className="line-clamp-4 break-words text-sm font-medium text-white">{current.title}</p>
+            <p role="status" className={`mt-1 break-words text-xs ${ytError ? "text-amber-300" : "text-white/60"}`}>
+              {status}
+            </p>
+            {ytError && (
+              <a href={`https://www.youtube.com/watch?v=${current.url}`} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-violet-300 hover:underline">
+                Open on YouTube
+              </a>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={playNext} className={barButton}>
+              Skip ⏭
+            </button>
+            <button onClick={stop} aria-label="Stop" className={barButton}>
+              ✕
+            </button>
+          </div>
+        </div>
+        <iframe
+          key={current.id}
+          id={YT_ELEMENT_ID}
+          src={`https://www.youtube.com/embed/${current.url}?enablejsapi=1&autoplay=1&playsinline=1&rel=0&origin=${encodeURIComponent(window.location.origin)}`}
+          title={current.title}
+          className="block h-[200px] w-[224px] shrink-0 bg-black"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
   return (
     <>
-      {isYouTube && (
-        // YouTube requires an embedded player to be visible and at least 200 pixels high, and a phone only lets a person start it by
-        // tapping it, so it can't shrink into the bar. It is a small window in the corner just above the bar (the smallest size YouTube
-        // allows, 224 x 200), with the controls in the bar across the bottom of the page.
-        <div className="fixed bottom-14 right-2 z-40 w-[min(224px,calc(100vw-1rem))]">
-          <iframe
-            key={current.id}
-            id={YT_ELEMENT_ID}
-            src={`https://www.youtube.com/embed/${current.url}?enablejsapi=1&autoplay=1&playsinline=1&rel=0&origin=${encodeURIComponent(window.location.origin)}`}
-            title={current.title}
-            className="block h-[200px] w-full rounded-lg border border-white/10 bg-black"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowFullScreen
-          />
-          {ytError && (
-            <a
-              href={`https://www.youtube.com/watch?v=${current.url}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-1 block rounded-md bg-black/80 px-2 py-1 text-center text-xs text-violet-300 hover:underline"
-            >
-              Open on YouTube
-            </a>
-          )}
-        </div>
-      )}
-
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0e0e12]/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2">
-          {!isYouTube && (
-            <button
-              onClick={toggle}
-              aria-label={isPlaying ? "Pause" : "Play"}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white hover:bg-violet-500"
-            >
-              {isPlaying ? "⏸" : "▶"}
-            </button>
-          )}
+          <button
+            onClick={toggle}
+            aria-label={isPlaying ? "Pause" : "Play"}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white hover:bg-violet-500"
+          >
+            {isPlaying ? "⏸" : "▶"}
+          </button>
 
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-white">{current.title}</p>
-            <p role="status" className={`truncate text-xs ${ytError || error ? "text-amber-300" : "text-white/60"}`}>
+            <p role="status" className={`truncate text-xs ${error ? "text-amber-300" : "text-white/60"}`}>
               {status}
             </p>
           </div>
