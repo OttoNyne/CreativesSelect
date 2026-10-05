@@ -100,6 +100,23 @@ describe("NowPlayingBar", () => {
       expect(screen.queryByRole("button", { name: /^(Play|Pause)$/ })).not.toBeInTheDocument();
     });
 
+    it("is a small window in the corner of the page with its controls under the video, not a full-width bar", () => {
+      render(<NowPlayingBar />);
+      const frame = document.querySelector("iframe") as HTMLIFrameElement;
+      const card = frame.parentElement as HTMLElement;
+      expect(card.className).toMatch(/fixed/);
+      expect(card.className).toMatch(/bottom-2/);
+      expect(card.className).toMatch(/right-2/);
+      expect(card.className).toContain("w-[min(224px,"); // 224 pixels wide (less on a very narrow screen)
+      expect(card.className).not.toMatch(/left-0/); // it doesn't stretch across the page
+      // the title, the state and the buttons are in the same small window, under the video
+      expect(card).toContainElement(screen.getByText("A video"));
+      expect(card).toContainElement(screen.getByRole("status"));
+      expect(card).toContainElement(screen.getByRole("button", { name: /Skip/ }));
+      expect(card).toContainElement(screen.getByRole("button", { name: "Stop" }));
+      expect(frame.className).toContain("h-[200px]"); // still the 200 pixels YouTube asks for
+    });
+
     it("tells the player to start as soon as it is ready", async () => {
       render(<NowPlayingBar />);
       await waitFor(() => expect(playerOptions).toBeDefined());
@@ -143,5 +160,16 @@ describe("NowPlayingBar", () => {
       render(<NowPlayingBar />);
       expect(playVideo).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("NowPlayingBar: an uploaded song keeps the full-width bar", () => {
+  it("is a bar across the bottom of the page, with no video", () => {
+    setPlayback();
+    render(<NowPlayingBar />);
+    const bar = screen.getByRole("status").closest(".fixed") as HTMLElement;
+    expect(bar.className).toMatch(/bottom-0/);
+    expect(bar.className).toMatch(/left-0/);
+    expect(bar.className).toMatch(/right-0/);
   });
 });
