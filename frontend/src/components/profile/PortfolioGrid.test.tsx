@@ -10,7 +10,7 @@ import { checkVideoFile } from "../../lib/video";
 import type { MediaItem } from "../../types";
 
 vi.mock("../../api/media.api", () => ({
-  mediaApi: { byUser: vi.fn(), create: vi.fn(), remove: vi.fn(), react: vi.fn(), setAlbum: vi.fn() },
+  mediaApi: { byUser: vi.fn(), create: vi.fn(), remove: vi.fn(), react: vi.fn(), setAlbum: vi.fn(), setCaption: vi.fn() },
   uploadFile: vi.fn(),
 }));
 vi.mock("../../api/albums.api", async (importOriginal) => ({
@@ -29,7 +29,13 @@ vi.mock("../ai/GenerateImageButton", () => ({
     </button>
   ),
 }));
-vi.mock("../ai/ImageSearchPicker", () => ({ ImageSearchPicker: () => <div>search</div> }));
+vi.mock("../ai/ImageSearchPicker", () => ({
+  ImageSearchPicker: ({ onSelect }: { onSelect: (url: string) => void }) => (
+    <button type="button" onClick={() => onSelect("https://images.example.com/found.jpg")}>
+      fake-search-pick
+    </button>
+  ),
+}));
 const api = vi.mocked(mediaApi);
 const upload = vi.mocked(uploadFile);
 
@@ -400,7 +406,7 @@ describe("PortfolioGrid: adding videos", () => {
     renderGrid(true);
     await screen.findAllByRole("button", { name: "Like" });
     chooseFile(mp4());
-    await waitFor(() => expect(upload).toHaveBeenCalledWith(expect.any(File), "portfolio"));
+    await waitFor(() => expect(upload).toHaveBeenCalledWith(expect.any(File), "portfolio", undefined));
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Like" })).toHaveLength(3));
   });
 
@@ -447,5 +453,170 @@ describe("PortfolioGrid: adding videos", () => {
   it("tells the owner the limits", async () => {
     renderGrid(true);
     expect(await screen.findByText(/up to 30 seconds and 30 MB/)).toBeInTheDocument();
+  });
+});
+
+describe("PortfolioGrid: captions", () => {
+  const LONG = "Harbour at dusk, the last boats coming in while the lamps come on along the quay and the light goes soft over the water";
+  const chooseImage = () => {
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(["x"], "p.png", { type: "image/png" })] } });
+  };
+  const nextBox = () => screen.getByLabelText("Caption for the next piece");
+
+  it("shows a caption in full under its picture, to anyone, and offers a visitor no way to change it", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: LONG })] });
+    renderGrid(false);
+    expect(await screen.findByText(LONG)).toBeInTheDocument();
+    expect(screen.getByRole("img")).toHaveAttribute("alt", LONG);
+    expect(screen.queryByRole("button", { name: "Edit caption" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add a caption" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Caption for the next piece")).not.toBeInTheDocument();
+  });
+
+  it("shows nothing where a piece has no caption, for a visitor", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: null })] });
+    renderGrid(false);
+    await screen.findByRole("button", { name: "Like" });
+    expect(screen.queryByText(/caption/i)).not.toBeInTheDocument();
+  });
+
+  it("offers the owner a way to add one to a piece without it, and to change one that has it", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: null }), item({ id: "m2", caption: "Old words" })] });
+    renderGrid(true);
+    expect(await screen.findByRole("button", { name: "Add a caption" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit caption" })).toBeInTheDocument();
+  });
+
+  it("adds a caption to a piece that had none", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: null })] });
+    api.setCaption.mockResolvedValue({ item: item({ id: "m1", caption: "Sunrise" }) });
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Add a caption" }));
+    const box = screen.getByLabelText("Caption");
+    expect(box).toHaveAttribute("maxLength", "200");
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled(); // nothing written yet
+    await userEvent.type(box, "  Sunrise ");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(api.setCaption).toHaveBeenCalledWith("m1", "Sunrise");
+    expect(await screen.findByText("Sunrise")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Caption")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit caption" })).toBeInTheDocument();
+  });
+
+  it("changes a caption, and takes it off by saving it empty", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: "Old words" })] });
+    api.setCaption.mockResolvedValueOnce({ item: item({ id: "m1", caption: "New words" }) }).mockResolvedValueOnce({ item: item({ id: "m1", caption: null }) });
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Edit caption" }));
+    const box = screen.getByLabelText("Caption");
+    expect(box).toHaveValue("Old words");
+    await userEvent.clear(box);
+    await userEvent.type(box, "New words");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(api.setCaption).toHaveBeenLastCalledWith("m1", "New words");
+    expect(await screen.findByText("New words")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit caption" }));
+    await userEvent.clear(screen.getByLabelText("Caption"));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(api.setCaption).toHaveBeenLastCalledWith("m1", null);
+    await waitFor(() => expect(screen.queryByText("New words")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Add a caption" })).toBeInTheDocument();
+  });
+
+  it("lets the owner change their mind", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: "Keep me" })] });
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Edit caption" }));
+    await userEvent.type(screen.getByLabelText("Caption"), " and more");
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(api.setCaption).not.toHaveBeenCalled();
+    expect(screen.getByText("Keep me")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Caption")).not.toBeInTheDocument();
+  });
+
+  it("says why a caption couldn't be saved, keeps what was typed, and keeps the old caption", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: "Old words" })] });
+    api.setCaption.mockRejectedValue(new ApiError(400, "Caption must be text of 200 characters or fewer"));
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Edit caption" }));
+    await userEvent.type(screen.getByLabelText("Caption"), "!");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Caption must be text of 200 characters or fewer");
+    expect(screen.getByLabelText("Caption")).toHaveValue("Old words!");
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByText("Old words")).toBeInTheDocument();
+  });
+
+  it("counts the characters as the owner writes", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: "abc" })] });
+    renderGrid(true);
+    await userEvent.click(await screen.findByRole("button", { name: "Edit caption" }));
+    expect(screen.getByText("3/200")).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("Caption"), "de");
+    expect(screen.getByText("5/200")).toBeInTheDocument();
+  });
+
+  it("gives an uploaded photo the caption written beforehand, then clears the box for the next one", async () => {
+    upload.mockResolvedValue({ url: "u", mediaItem: item({ id: "new", caption: "Studio at dawn" }) });
+    renderGrid(true);
+    await screen.findAllByRole("button", { name: "Like" });
+    expect(nextBox()).toHaveAttribute("maxLength", "200");
+    await userEvent.type(nextBox(), "  Studio at dawn ");
+    chooseImage();
+    await waitFor(() => expect(upload).toHaveBeenCalledWith(expect.any(File), "portfolio", "Studio at dawn"));
+    expect(await screen.findByText("Studio at dawn")).toBeInTheDocument();
+    expect(nextBox()).toHaveValue("");
+  });
+
+  it("uploads without a caption when none was written", async () => {
+    upload.mockResolvedValue({ url: "u", mediaItem: item({ id: "new" }) });
+    renderGrid(true);
+    await screen.findAllByRole("button", { name: "Like" });
+    chooseImage();
+    await waitFor(() => expect(upload).toHaveBeenCalledWith(expect.any(File), "portfolio", undefined));
+  });
+
+  it("keeps the caption written beforehand if the upload fails, so it needn't be typed again", async () => {
+    upload.mockRejectedValue(new ApiError(400, "Pictures can be up to 10 MB"));
+    renderGrid(true);
+    await screen.findAllByRole("button", { name: "Like" });
+    await userEvent.type(nextBox(), "Keep this");
+    chooseImage();
+    expect(await screen.findByText("Pictures can be up to 10 MB")).toBeInTheDocument();
+    expect(nextBox()).toHaveValue("Keep this");
+  });
+
+  it("gives a video link, a photo from the search and a generated picture the caption too", async () => {
+    api.create.mockImplementation(async (input) => ({ mediaItem: item({ id: "n" + Math.random(), caption: input.caption ?? null }) }));
+    renderGrid(true);
+    await screen.findAllByRole("button", { name: "Like" });
+
+    await userEvent.type(nextBox(), "From a link");
+    await userEvent.click(screen.getByRole("button", { name: "+ Video link" }));
+    await userEvent.type(screen.getByLabelText("Video link"), "https://youtu.be/dQw4w9WgXcQ");
+    await userEvent.click(screen.getByRole("button", { name: "Add video" }));
+    await waitFor(() => expect(api.create).toHaveBeenLastCalledWith(expect.objectContaining({ type: "video", caption: "From a link" })));
+    await waitFor(() => expect(nextBox()).toHaveValue(""));
+
+    await userEvent.type(nextBox(), "Found it");
+    await userEvent.click(screen.getByRole("button", { name: "fake-search-pick" }));
+    await waitFor(() => expect(api.create).toHaveBeenLastCalledWith({ url: "https://images.example.com/found.jpg", type: "image", caption: "Found it" }));
+    await waitFor(() => expect(nextBox()).toHaveValue(""));
+
+    await userEvent.type(nextBox(), "Mine, not the prompt");
+    await userEvent.type(screen.getByPlaceholderText("Describe an image to generate…"), "a long description of a harbour");
+    await userEvent.click(screen.getByRole("button", { name: "fake-generate" }));
+    await waitFor(() => expect(api.create).toHaveBeenLastCalledWith(expect.objectContaining({ isAiImage: true, caption: "Mine, not the prompt" })));
+  });
+
+  it("still uses the prompt as the caption of a generated picture when no caption was written", async () => {
+    api.create.mockResolvedValue({ mediaItem: item({ id: "gen" }) });
+    renderGrid(true);
+    await screen.findAllByRole("button", { name: "Like" });
+    await userEvent.type(screen.getByPlaceholderText("Describe an image to generate…"), "a harbour");
+    await userEvent.click(screen.getByRole("button", { name: "fake-generate" }));
+    await waitFor(() => expect(api.create).toHaveBeenCalledWith(expect.objectContaining({ caption: "a harbour", isAiImage: true })));
   });
 });

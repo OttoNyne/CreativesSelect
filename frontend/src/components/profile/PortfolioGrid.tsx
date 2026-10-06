@@ -5,13 +5,12 @@ import { useAuth } from "../../context/AuthContext";
 import { checkVideoFile, MAX_VIDEO_SECONDS } from "../../lib/video";
 import { GenerateImageButton } from "../ai/GenerateImageButton";
 import { ImageSearchPicker } from "../ai/ImageSearchPicker";
-import { PortfolioTile } from "./PortfolioTile";
+import { PortfolioTile, MAX_CAPTION_LENGTH } from "./PortfolioTile";
 import { PieceComments } from "./PieceComments";
 import { AlbumBar, ALL } from "./AlbumBar";
 import { albumsApi } from "../../api/albums.api";
 import type { Album, MediaItem } from "../../types";
 
-const MAX_CAPTION_LENGTH = 200;
 
 export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComment = null }: { username: string; isOwner: boolean; /** A piece, and one of its comments, to open and scroll to (from a notification). */ focusPiece?: string | null; focusComment?: string | null }) {
   const { user: viewer } = useAuth();
@@ -19,6 +18,8 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
   const [albums, setAlbums] = useState<Album[]>([]);
   const [selected, setSelected] = useState<string>(ALL);
   const [prompt, setPrompt] = useState("");
+  // A caption written before adding the next piece (an upload, a video link or a photo from the search).
+  const [nextCaption, setNextCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showLink, setShowLink] = useState(false);
@@ -109,8 +110,9 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
     }
     setUploading(true);
     try {
-      const { mediaItem } = await uploadFile(file, "portfolio");
+      const { mediaItem } = await uploadFile(file, "portfolio", nextCaption.trim() || undefined);
       if (mediaItem) setItems((i) => [mediaItem, ...i]);
+      setNextCaption("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't upload that file.");
     } finally {
@@ -128,8 +130,10 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
         type: "video",
         url: linkUrl.trim(),
         startSeconds: linkStart.trim() ? Number(linkStart) : undefined,
+        caption: nextCaption.trim() || undefined,
       });
       setItems((i) => [mediaItem, ...i]);
+      setNextCaption("");
       setLinkUrl("");
       setLinkStart("");
       setShowLink(false);
@@ -146,9 +150,10 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       // The prompt becomes the caption, but captions are limited to 200 characters while
       // prompts can be far longer — an over-long caption used to make the save fail and
       // lose the generated picture.
-      const caption = prompt.trim().slice(0, MAX_CAPTION_LENGTH) || undefined;
+      const caption = nextCaption.trim() || prompt.trim().slice(0, MAX_CAPTION_LENGTH) || undefined;
       const { mediaItem } = await mediaApi.create({ url, type: "image", caption, isAiImage: true });
       setItems((i) => [mediaItem, ...i]);
+      setNextCaption("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't save that image.");
     }
@@ -157,10 +162,22 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
   async function handleSearchSelected(url: string) {
     setError(null);
     try {
-      const { mediaItem } = await mediaApi.create({ url, type: "image" });
+      const { mediaItem } = await mediaApi.create({ url, type: "image", caption: nextCaption.trim() || undefined });
       setItems((i) => [mediaItem, ...i]);
+      setNextCaption("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't save that image.");
+    }
+  }
+
+  /** Saves a caption (or takes it off); gives back the reason it couldn't be saved, for the box to show. */
+  async function handleCaption(id: string, caption: string | null): Promise<string | null> {
+    try {
+      const { item } = await mediaApi.setCaption(id, caption);
+      setItems((list) => list.map((x) => (x.id === id ? { ...x, caption: item.caption } : x)));
+      return null;
+    } catch (err) {
+      return problemOf(err, "Couldn't save that caption.");
     }
   }
 
@@ -257,6 +274,14 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
               </button>
             </form>
           )}
+          <input
+            value={nextCaption}
+            onChange={(e) => setNextCaption(e.target.value)}
+            maxLength={MAX_CAPTION_LENGTH}
+            placeholder="Caption for the next piece you add (optional)"
+            aria-label="Caption for the next piece"
+            className={`${field} w-full`}
+          />
           <div className="flex items-center gap-2">
             <input
               value={prompt}
@@ -286,6 +311,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
             onReact={handleReact}
             albums={albums}
             onMove={moveItem}
+            onCaption={handleCaption}
             commentsOpen={commentsOpenFor === item.id}
             onToggleComments={(id) => setCommentsOpenFor((open) => (open === id ? null : id))}
             comments={

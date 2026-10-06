@@ -60,3 +60,23 @@ describe("comments on a piece", () => {
     expect(JSON.parse(fetchFn.mock.calls[2][1].body)).toEqual({ content: "Nice" });
   });
 });
+
+describe("captions", () => {
+  it("sends a caption with an uploaded file, before the file so the server has it by then, and none when there is none", async () => {
+    const fetchFn = mockFetch(201, { url: "https://cdn.example.com/a.png" });
+    await uploadFile(file, "portfolio", "Studio at dawn");
+    await uploadFile(file, "portfolio");
+    const withCaption = fetchFn.mock.calls[0][1].body as FormData;
+    expect([...withCaption.keys()]).toEqual(["caption", "file"]);
+    expect(withCaption.get("caption")).toBe("Studio at dawn");
+    expect([...(fetchFn.mock.calls[1][1].body as FormData).keys()]).toEqual(["file"]);
+  });
+
+  it("sets and takes off a caption on one piece", async () => {
+    const fetchFn = mockFetch(200, { item: {} });
+    await mediaApi.setCaption("m1", "A caption");
+    await mediaApi.setCaption("m1", null);
+    const calls = fetchFn.mock.calls.map(([url, init]) => `${init?.method} ${String(url).replace(/^.*\/api/, "")} ${init?.body}`);
+    expect(calls).toEqual(['PATCH /media/m1 {"caption":"A caption"}', 'PATCH /media/m1 {"caption":null}']);
+  });
+});

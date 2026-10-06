@@ -10,8 +10,12 @@ export type UploadPurpose = "avatars" | "wallpapers" | "portfolio" | "tracks" | 
 export async function uploadFile(
   file: File,
   purpose: UploadPurpose,
+  /** A portfolio piece can be given its caption as it is added. */
+  caption?: string,
 ): Promise<{ url: string; mediaItem?: MediaItem }> {
   const formData = new FormData();
+  // the caption goes first: the server reads the fields that come before the file
+  if (caption) formData.append("caption", caption);
   formData.append("file", file);
 
   const res = await fetch(`${API_URL}/api/media/upload?purpose=${purpose}`, {
@@ -40,6 +44,8 @@ export const mediaApi = {
   byUser: (username: string) => api.get<{ media: MediaItem[] }>(`/media/user/${username}`),
   create: (input: CreateMediaItemInput) => api.post<{ mediaItem: MediaItem }>("/media", input),
   remove: (id: string) => api.delete<void>(`/media/${id}`),
+  /** Give a piece a caption, change it, or (null, or only spaces) take it off. */
+  setCaption: (id: string, caption: string | null) => api.patch<{ item: MediaItem }>(`/media/${id}`, { caption }),
   /** Put a piece in one of your albums, or (null) take it out of its album. */
   setAlbum: (id: string, album: string | null) => api.patch<{ item: MediaItem }>(`/media/${id}`, { album }),
   react: (id: string, value: 1 | -1 | 0) =>

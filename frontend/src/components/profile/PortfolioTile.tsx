@@ -1,9 +1,60 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { assetUrl } from "../../api/client";
 import { clipWindow, directVideoSrc, playableVideoUrl, videoPosterUrl, youtubeEmbedUrl } from "../../lib/video";
 import type { Album, MediaItem } from "../../types";
 
 type Reaction = 1 | -1 | 0;
+
+export const MAX_CAPTION_LENGTH = 200;
+
+/** The owner's way to write, change or take off a piece's caption, in place. Says why it can't be saved. */
+function CaptionEditor({ caption, onSave, onCancel }: { caption: string; onSave: (caption: string | null) => Promise<string | null>; onCancel: () => void }) {
+  const [draft, setDraft] = useState(caption);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    const failed = await onSave(draft.trim() || null);
+    if (failed) {
+      setProblem(failed);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-1">
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        maxLength={MAX_CAPTION_LENGTH}
+        placeholder="Say something about this piece"
+        aria-label="Caption"
+        autoFocus
+        className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
+      />
+      <div className="flex items-center gap-2 text-[11px]">
+        <button type="submit" disabled={busy || draft.trim() === caption} className="rounded-md bg-[var(--profile-accent-fill)] px-2 py-0.5 font-medium text-[var(--profile-on-accent)] disabled:opacity-50">
+          {busy ? "Saving…" : "Save"}
+        </button>
+        <button type="button" onClick={onCancel} disabled={busy} className="text-white/70 hover:underline disabled:opacity-50">
+          Cancel
+        </button>
+        <span className="ml-auto text-white/60">
+          {draft.length}/{MAX_CAPTION_LENGTH}
+        </span>
+      </div>
+      {problem && (
+        <p role="alert" className="text-[11px] text-red-400">
+          {problem}
+        </p>
+      )}
+    </form>
+  );
+}
 
 // One portfolio piece: the picture/video/audio, an always-visible remove
 // button for its owner (hover-only controls don't exist on phones),
@@ -16,6 +67,7 @@ export function PortfolioTile({
   onReact,
   albums = [],
   onMove,
+  onCaption,
   commentsOpen = false,
   onToggleComments,
   comments,
@@ -28,6 +80,8 @@ export function PortfolioTile({
   /** Their albums, and how to move this piece into one (owner only). */
   albums?: Album[];
   onMove?: (id: string, albumId: string | null) => void;
+  /** How the owner changes the piece's caption: resolves to the reason it couldn't be saved, or null. */
+  onCaption?: (id: string, caption: string | null) => Promise<string | null>;
   /** Whether the comments are showing, how to show or hide them, and what to show. */
   commentsOpen?: boolean;
   onToggleComments?: (id: string) => void;
@@ -36,6 +90,7 @@ export function PortfolioTile({
   const isVideoish = item.type === "video" || item.type === "embed";
   const embed = item.type === "embed" ? youtubeEmbedUrl(item.url, item.startSeconds ?? 0) : null;
   const isUploadedVideo = item.type === "video" && item.durationSeconds != null;
+  const [editingCaption, setEditingCaption] = useState(false);
 
   function onTimeUpdate(e: React.SyntheticEvent<HTMLVideoElement>) {
     // A linked video can't be measured, so it only plays a 30-second window.
@@ -98,6 +153,31 @@ export function PortfolioTile({
         )}
       </div>
 
+      {(item.caption || (isOwner && onCaption)) && (
+        <div className="bg-black/20 px-2 pt-1.5 text-xs text-white/80">
+          {editingCaption && onCaption ? (
+            <CaptionEditor
+              caption={item.caption ?? ""}
+              onSave={async (caption) => {
+                const failed = await onCaption(item.id, caption);
+                if (!failed) setEditingCaption(false);
+                return failed;
+              }}
+              onCancel={() => setEditingCaption(false)}
+            />
+          ) : (
+            <p className="flex items-start gap-1.5">
+              {item.caption && <span className="min-w-0 flex-1 break-words">{item.caption}</span>}
+              {isOwner && onCaption && (
+                <button type="button" onClick={() => setEditingCaption(true)} aria-label={item.caption ? "Edit caption" : "Add a caption"} className="shrink-0 text-[11px] text-[var(--profile-accent-text)] hover:underline">
+                  {item.caption ? "✎ Edit" : "+ Add a caption"}
+                </button>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center gap-1 bg-black/20 px-2 py-1">
         <button
           type="button"
@@ -137,7 +217,6 @@ export function PortfolioTile({
             💬 {item.commentCount ?? 0}
           </button>
         )}
-        {item.caption && <span className="ml-auto truncate text-[11px] text-white/60">{item.caption}</span>}
       </div>
       {isOwner && onMove && albums.length > 0 && (
         <div className="bg-black/20 px-2 pb-1.5">

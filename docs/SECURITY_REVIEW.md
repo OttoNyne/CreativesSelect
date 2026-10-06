@@ -1148,6 +1148,18 @@ A verified badge tells strangers "this one is real", so the risk is not only tha
 
 Covered by 11 backend tests (the administrator routes and who may use them, the record, giving and removing, the list and its paging, nothing a person can set themselves, counting active friends at its edges, earning, keeping and losing, the two badges kept apart, the timed check and its limits, and the one-announcement guarantee), 15 frontend tests (the badge, the moderation view, the note, the profile and the search result) and 1 browser flow (an administrator gives the badge, it shows on the profile and in search, the person is told, then it is taken away and recorded) on all three browsers.
 
+### 5.61 Captions on photos: words from the owner, shown to everyone
+
+A caption is text the owner puts on their own page and everyone who can see that page reads, so the questions are what it can contain, who can change it and who can see it.
+
+- **Only the owner, only the words.** Changing a caption is part of the owner-only edit of a piece (anyone else gets `404`, signed-out callers `401`), and the edit can touch nothing but the caption and the album: the address, type, owner and AI mark cannot be changed through it even if sent (tested). If the album part of an edit fails, the caption is not changed either.
+- **One checker for every way in.** Adding by link, uploading with a caption and editing all go through one function, so they cannot disagree: one line, hidden and control characters removed, at most 200 characters counted as people see them (so a row of emoji isn't cut short or let through long), and a caption that isn't text, or is too long, is refused with the reason. A caption sent with an upload that can't be kept refuses the whole upload and takes the stored file out again, leaving no record (tested), so a bad caption can't be used to leave files behind.
+- **Plain text, never markup or links.** The page draws a caption as text, so a caption such as `<b>x</b>` or `<img onerror=…>` shows as those characters and does nothing, and a web address in it is not made into a link, so a caption can't be used to put a clickable link where the site's own link rules (for comments) don't apply.
+- **Seen by exactly the people who see the piece.** Captions are part of the portfolio, so they follow the profile's rules: a private profile's are for friends and the owner, and blocked people get nothing (tested). They are also the picture's description (`alt`) for screen readers.
+- **Not covered:** captions are not checked for what they say (as with a post or a bio, that is for reports and moderators), they are not searched, and the owner is trusted to describe their own picture truthfully.
+
+Covered by 16 backend tests (what a caption can be, adding, uploading, editing, who may and who sees), 15 frontend tests (writing one before adding, adding, changing, taking off, the reasons shown, and what a visitor sees) and 3 browser flows on all three browsers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
