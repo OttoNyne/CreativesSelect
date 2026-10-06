@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "../common/Logo";
+import { turnOffThisDevice } from "../../lib/push";
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../api/auth.api";
 import { Avatar } from "../common/Avatar";
@@ -26,6 +27,8 @@ export function NavBar() {
 
   async function handleLogout() {
     try {
+      // stop this device getting the account's notifications (this needs the session, so it comes first)
+      await turnOffThisDevice();
       await authApi.logout();
     } catch {
       // The server call failed (e.g. offline). The user still gets logged out on

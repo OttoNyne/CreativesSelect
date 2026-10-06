@@ -5,10 +5,12 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { NavBar } from "./NavBar";
 import { authApi } from "../../api/auth.api";
 import { useAuth } from "../../context/AuthContext";
+import { turnOffThisDevice } from "../../lib/push";
 import type { User } from "../../types";
 
 vi.mock("../../api/auth.api", () => ({ authApi: { logout: vi.fn() } }));
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../../lib/push", () => ({ turnOffThisDevice: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("./NotificationBell", () => ({ NotificationBell: () => <span>bell</span> }));
 vi.mock("../../api/messages.api", () => ({
   messagesApi: { unreadCount: vi.fn().mockResolvedValue({ unread: 0 }) },
@@ -100,6 +102,15 @@ describe("NavBar", () => {
     expect(logout).toHaveBeenCalled();
     await waitFor(() => expect(setUser).toHaveBeenCalledWith(null));
     expect(await screen.findByText("Login screen")).toBeInTheDocument();
+  });
+
+  it("stops this device getting the account's notifications before it logs out, while the session still works", async () => {
+    logout.mockResolvedValue(undefined);
+    renderBar(sam);
+    await userEvent.click(screen.getAllByRole("button", { name: "Log out" })[0]);
+    await waitFor(() => expect(logout).toHaveBeenCalled());
+    expect(turnOffThisDevice).toHaveBeenCalled();
+    expect(vi.mocked(turnOffThisDevice).mock.invocationCallOrder[0]).toBeLessThan(logout.mock.invocationCallOrder[0]);
   });
 
   it("still logs the user out on this device if the server call fails", async () => {
