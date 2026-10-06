@@ -11,7 +11,15 @@ export interface ProfileTheme {
   textColor?: string;
   accentColor?: string;
   fontFamily?: string;
+  /** An older setting that no longer does anything. */
   layoutStyle?: string;
+  /** How the profile is styled: a choice from a fixed list for each (see lib/profileStyle.ts). */
+  cardStyle?: string;
+  corners?: string;
+  density?: string;
+  headings?: string;
+  avatarShape?: string;
+  width?: string;
 }
 
 export interface User {

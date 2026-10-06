@@ -39,9 +39,9 @@ export function AboutMe({ username, isOwner }: { username: string; isOwner: bool
   if (!isOwner && isEmpty(data)) return null;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+    <div className="profile-card rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">About me</h2>
+        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">About me</h2>
         {isOwner && !editing && (
           <button type="button" onClick={() => setEditing(true)} className="text-xs text-[var(--profile-accent-text,#c4b5fd)] hover:underline">
             Edit

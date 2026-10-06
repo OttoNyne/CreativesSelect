@@ -24,8 +24,8 @@ export function ProfileVisitors() {
   if (failed || visitors === null) return null;
 
   return (
-    <section id="visitors" aria-label="Recent visitors" className="mt-6 rounded-xl border border-white/10 bg-black/20 p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Recent visitors</h2>
+    <section id="visitors" aria-label="Recent visitors" className="profile-card mt-6 rounded-xl border border-white/10 bg-black/20 p-4">
+      <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Recent visitors</h2>
       <p className="mt-1 text-xs text-white/60">Only you can see this. It lists people who have also turned on profile views, from the last 30 days.</p>
       {visitors.length === 0 ? (
         <p className="mt-3 text-sm text-white/60">No visitors to show yet.</p>

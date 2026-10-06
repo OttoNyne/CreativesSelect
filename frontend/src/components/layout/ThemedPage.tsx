@@ -4,6 +4,7 @@ import type { User } from "../../types";
 import { PANEL_STYLE, WALLPAPER_SCRIM } from "../../theme/contrast";
 import { profileThemeStyle, readableTheme } from "../../theme/applyProfileTheme";
 import { motionOf } from "../../lib/wallpaperMotion";
+import { styleAttributes } from "../../lib/profileStyle";
 import { MovingWallpaper } from "../profile/MovingWallpaper";
 
 type Look = Pick<User, "theme" | "wallpaperUrl" | "wallpaperType" | "wallpaperPosition" | "wallpaperMotion">;
@@ -47,7 +48,7 @@ export function ThemedPage({
   }
 
   return (
-    <div data-scheme={scheme} data-wallpaper={wallpaperUrl ? "true" : undefined} style={style} className="isolate min-h-[calc(100vh-56px)]">
+    <div data-scheme={scheme} data-wallpaper={wallpaperUrl ? "true" : undefined} {...(backgroundOnly ? {} : styleAttributes(look.theme))} style={style} className="isolate min-h-[calc(100vh-56px)]">
       {isMovingWallpaper && <MovingWallpaper url={wallpaperUrl!} position={look.wallpaperPosition} motion={motion} />}
       {isVideoWallpaper && (
         <>

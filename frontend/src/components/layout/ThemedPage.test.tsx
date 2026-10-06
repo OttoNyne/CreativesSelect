@@ -92,3 +92,35 @@ describe("ThemedPage", () => {
     expect(only.style.getPropertyValue("--profile-bg")).toBe("#102040");
   });
 });
+
+describe("ThemedPage: profile styles", () => {
+  it("carries the owner's choices as attributes the styles respond to, and the usual ones where nothing is chosen", () => {
+    const plain = renderPage();
+    expect(plain.frame).toHaveAttribute("data-card", "solid");
+    expect(plain.frame).toHaveAttribute("data-corners", "rounded");
+    expect(plain.frame).toHaveAttribute("data-density", "comfortable");
+    expect(plain.frame).toHaveAttribute("data-headings", "caps");
+    expect(plain.frame).toHaveAttribute("data-avatar", "circle");
+    cleanup();
+    const chosen = renderPage({ theme: { cardStyle: "glass", corners: "square", density: "roomy", headings: "serif", avatarShape: "rounded" } });
+    expect(chosen.frame).toHaveAttribute("data-card", "glass");
+    expect(chosen.frame).toHaveAttribute("data-corners", "square");
+    expect(chosen.frame).toHaveAttribute("data-density", "roomy");
+    expect(chosen.frame).toHaveAttribute("data-headings", "serif");
+    expect(chosen.frame).toHaveAttribute("data-avatar", "rounded");
+  });
+
+  it("ignores a value that isn't one of the choices, rather than passing it on", () => {
+    const { frame } = renderPage({ theme: { cardStyle: 'x" onload="alert(1)', corners: "huge" } });
+    expect(frame).toHaveAttribute("data-card", "solid");
+    expect(frame).toHaveAttribute("data-corners", "rounded");
+    expect(frame.getAttribute("onload")).toBeNull();
+  });
+
+  it("leaves the feed's own look alone: the background only, with none of the profile's styles", () => {
+    const { frame } = renderPage({ theme: { bgColor: "#102040", cardStyle: "glass", corners: "square" } }, { backgroundOnly: true });
+    expect(frame.getAttribute("data-card")).toBeNull();
+    expect(frame.getAttribute("data-corners")).toBeNull();
+    expect(frame.style.getPropertyValue("--profile-bg")).toBe("#102040");
+  });
+});

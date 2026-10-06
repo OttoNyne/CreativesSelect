@@ -163,6 +163,35 @@ test.describe("text can be read on light and dark backgrounds", () => {
     });
   }
 
+  // the profile styles (boxes that are outlined, glass or flat) change what text sits on, so each has to stay readable on light, middling
+  // and dark backgrounds, and over a wallpaper
+  const STYLED = [
+    { name: "a white background", theme: { bgColor: "#ffffff", textColor: "#111111", accentColor: "#6d28d9" } },
+    { name: "a mid-grey background", theme: { bgColor: "#808080", textColor: "#808080", accentColor: "#808080" } },
+    { name: "a dark background", theme: { bgColor: "#101018", textColor: "#f5f5f7", accentColor: "#8b5cf6" } },
+    { name: "a wallpaper", theme: { bgColor: "#ffffff", textColor: "#111111", accentColor: "#6d28d9" }, wallpaper: true },
+  ];
+  for (const cardStyle of ["outline", "glass", "flat"]) {
+    for (const bg of STYLED) {
+      test(`a profile with ${cardStyle} boxes on ${bg.name}`, async ({ page, browser, baseURL }) => {
+        const me = newUser("styled");
+        await signUpViaUi(page, me);
+        const data = { bio: "Painter and potter.", theme: { ...bg.theme, cardStyle, corners: "square", headings: "serif", density: "roomy" }, ...(bg.wallpaper ? { wallpaperUrl: PIXEL, wallpaperType: "image" } : {}) };
+        expect((await page.request.patch("/api/profiles/me", { data })).status()).toBe(200);
+        const visitor = await apiUser(browser, baseURL!, "visitor");
+        await befriend(page.request, visitor.request, me.username);
+        await visitor.request.post(`/api/profiles/${me.username}/comments`, { data: { content: "Lovely work!" } });
+        await page.request.post("/api/media", { data: { type: "image", url: PIXEL, caption: "A caption to read" } });
+        await page.goto(`/u/${me.username}`);
+        await expect(page.getByText("Lovely work!")).toBeVisible({ timeout: 20_000 });
+        await expectReadable(page, `the profile (${cardStyle} boxes on ${bg.name})`);
+        await page.getByRole("button", { name: "Edit profile" }).click();
+        await expectReadable(page, `the profile being edited (${cardStyle} boxes on ${bg.name})`);
+        await visitor.context.close();
+      });
+    }
+  }
+
   for (const { name, theme } of THEMES) {
     test(`a profile with ${name}`, async ({ page, browser, baseURL }) => {
       const me = newUser("owner");

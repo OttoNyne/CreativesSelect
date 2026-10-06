@@ -211,9 +211,9 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
     "min-w-0 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none";
 
   return (
-    <div id="portfolio" className="scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
+    <div id="portfolio" className="profile-card scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Portfolio</h2>
+        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Portfolio</h2>
         {isOwner && (
           <div className="flex gap-3">
             <button

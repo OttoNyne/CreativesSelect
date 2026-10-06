@@ -48,6 +48,18 @@ function renderAs(viewer: User | null, username: string, search = "") {
   );
 }
 
+function renderAsWithContainer(viewer: User | null, username: string, search = "") {
+  vi.mocked(useAuth).mockReturnValue({ user: viewer, isLoading: false, setUser: vi.fn(), refresh: async () => {} });
+  return render(
+    <MemoryRouter initialEntries={[`/u/${username}${search}`]}>
+      <Routes>
+        <Route path="/u/:username" element={<ProfilePage />} />
+        <Route path="/login" element={<div>Login screen</div>} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
 beforeEach(() => {
   [profiles, friends, vi.mocked(moderationApi)].forEach((api) => Object.values(api).forEach((fn) => fn.mockReset()));
   vi.mocked(profileViewsApi.record).mockReset();
@@ -137,6 +149,59 @@ describe("ProfilePage", () => {
 
     await waitFor(() => expect(profiles.updateMe).toHaveBeenCalled());
     expect(profiles.updateMe.mock.calls[0][0]).toMatchObject({ bio: "Painter and potter" });
+  });
+
+  it("is drawn in the style its owner chose: the page carries it, and the width follows", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, theme: { cardStyle: "glass", corners: "square", headings: "serif", width: "wide" } } });
+    const { container } = renderAsWithContainer(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    const frame = container.querySelector("[data-scheme]") as HTMLElement;
+    expect(frame).toHaveAttribute("data-card", "glass");
+    expect(frame).toHaveAttribute("data-corners", "square");
+    expect(frame).toHaveAttribute("data-headings", "serif");
+    expect(container.querySelector(".max-w-5xl")).not.toBeNull();
+    expect(container.querySelector(".max-w-3xl")).toBeNull();
+  });
+
+  it("is the usual style, and the usual width, for a profile that has chosen none", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    const { container } = renderAsWithContainer(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    const frame = container.querySelector("[data-scheme]") as HTMLElement;
+    expect(frame).toHaveAttribute("data-card", "solid");
+    expect(frame).toHaveAttribute("data-corners", "rounded");
+    expect(container.querySelector(".max-w-3xl")).not.toBeNull();
+  });
+
+  it("shows the owner a style as it is chosen, before it is saved, and then saves every setting", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, theme: { cardStyle: "outline" } } });
+    const { container } = renderAsWithContainer(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const frame = () => container.querySelector("[data-scheme]") as HTMLElement;
+    expect(frame()).toHaveAttribute("data-card", "solid");
+    await userEvent.selectOptions(screen.getByLabelText("Boxes"), "outline");
+    expect(frame()).toHaveAttribute("data-card", "outline"); // already, though nothing has been saved
+    await userEvent.selectOptions(screen.getByLabelText("Page width"), "narrow");
+    expect(container.querySelector(".max-w-2xl")).not.toBeNull();
+    expect(profiles.updateMe).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(profiles.updateMe).toHaveBeenCalled());
+    const sent = profiles.updateMe.mock.calls[0][0].theme as Record<string, unknown>;
+    expect(sent).toMatchObject({ cardStyle: "outline", width: "narrow", bgColor: null, textColor: null, accentColor: null, fontFamily: null, corners: null, density: null, headings: null, avatarShape: null });
+  });
+
+  it("applies a ready-made look in one go", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    const { container } = renderAsWithContainer(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    await userEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    const frame = container.querySelector("[data-scheme]") as HTMLElement;
+    expect(frame).toHaveAttribute("data-card", "glass");
+    expect(frame).toHaveAttribute("data-corners", "soft");
+    expect(frame).toHaveAttribute("data-headings", "plain");
+    expect(container.querySelector(".max-w-5xl")).not.toBeNull();
   });
 
   it("shows a creative's mood, what they are listening to and tags that lead to others who do the same", async () => {

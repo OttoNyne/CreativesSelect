@@ -54,9 +54,9 @@ export function ProfileBlog({ username, isOwner }: { username: string; isOwner: 
   if (!signedIn || !loaded || (!entries.length && !isOwner)) return null;
 
   return (
-    <section id="blog" aria-label="Blog" className="scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
+    <section id="blog" aria-label="Blog" className="profile-card scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Blog</h2>
+        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Blog</h2>
         {isOwner && (
           <Link to="/blog/new" className="rounded-md border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
             Write an entry

@@ -9,6 +9,7 @@ import { assetUrl, ApiError } from "../api/client";
 import type { User, ProfileTheme } from "../types";
 import { ShareButton } from "../components/share/ShareButton";
 import { ThemedPage } from "../components/layout/ThemedPage";
+import { WIDTH_CLASS, styleValue, themeToSave } from "../lib/profileStyle";
 import { motionOf } from "../lib/wallpaperMotion";
 import { WallpaperStudio } from "../components/profile/WallpaperStudio";
 import { ProfileMood, ProfileTags } from "../components/profile/ProfileStatus";
@@ -211,10 +212,12 @@ export function ProfilePage() {
   };
 
   const wallpaperUrl = assetUrl(profile.wallpaperUrl);
+  // while the owner is editing, the page shows the style as it is being changed, before it is saved
+  const look = editing ? { ...profile, theme } : profile;
   const motion = motionOf(profile.wallpaperMotion);
 
   return (
-    <ThemedPage look={profile} contentClassName="mx-auto max-w-3xl px-4 pt-8" panelClassName="min-h-[calc(100vh-56px)] pb-6 sm:rounded-b-2xl">
+    <ThemedPage look={look} contentClassName={`mx-auto ${WIDTH_CLASS[styleValue(look.theme, "width")]} px-4 pt-8`} panelClassName="min-h-[calc(100vh-56px)] pb-6 sm:rounded-b-2xl">
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
         <div className="relative">
           <Avatar
@@ -222,7 +225,7 @@ export function ProfilePage() {
             displayName={profile.displayName}
             avatarUrl={profile.avatarUrl}
             size={88}
-            className="border-4 border-[var(--profile-bg)]"
+            className="profile-avatar border-4 border-[var(--profile-bg)]"
           />
           {isOwner && (
             <button
@@ -402,7 +405,7 @@ export function ProfilePage() {
             />
           )}
           <button
-            onClick={() => saveProfile({ bio, theme, mood, listeningTo, tags })}
+            onClick={() => saveProfile({ bio, theme: themeToSave(theme), mood, listeningTo, tags })}
             disabled={saving}
             className="rounded-md px-4 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
             style={{ background: "var(--profile-accent-fill)" }}
@@ -427,7 +430,7 @@ export function ProfilePage() {
 
       {isOwner && viewer?.profileViews && <ProfileVisitors />}
 
-      <div className="mt-6 flex flex-col gap-4 pb-10">
+      <div className="profile-sections mt-6 flex flex-col gap-4 pb-10">
         {order
           .filter((key) => rearranging || !hidden.includes(key))
           .map((key, i, shown) => {

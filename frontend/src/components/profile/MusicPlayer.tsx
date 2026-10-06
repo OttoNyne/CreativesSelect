@@ -154,9 +154,9 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+    <div className="profile-card rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Music</h2>
+        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Music</h2>
         <span className="text-xs text-white/60">
           {tracks.length}/{MAX_TRACKS}
         </span>

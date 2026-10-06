@@ -105,8 +105,8 @@ export function ProfileComments({ username }: { username: string }) {
   }
 
   return (
-    <div id="testimonials" className="scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Testimonials</h2>
+    <div id="testimonials" className="profile-card scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
+      <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Testimonials</h2>
 
       {user && (
         <form onSubmit={handleSubmit} className="mt-3 space-y-1">

@@ -69,9 +69,9 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+    <div className="profile-card rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Top Friends</h2>
+        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Top Friends</h2>
         {isOwner && !editing && (
           <button onClick={startEditing} className="text-xs text-[var(--profile-accent-text)] hover:underline">
             Edit

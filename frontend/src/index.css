@@ -141,3 +141,82 @@ a {
     animation: none !important;
   }
 }
+
+/*
+ * Profile styles. A profile's page carries a few attributes set from the owner's choices (see lib/profileStyle.ts): data-card, data-corners,
+ * data-density, data-headings and data-avatar. Each section is a .profile-card with a .profile-heading, and the picture is a
+ * .profile-avatar. There is no custom CSS anywhere: only these fixed looks.
+ *
+ * The colours come from var(--color-white), which flips to a dark shade on a light profile, so every look stays readable on a light or a
+ * dark page. On a wallpaper every box keeps a dark tint whatever its style, so the text on it stays readable over any photo.
+ */
+[data-density="compact"] {
+  --profile-gap: 0.5rem;
+  --profile-pad: 0.75rem;
+}
+[data-density="comfortable"] {
+  --profile-gap: 1rem;
+  --profile-pad: 1rem;
+}
+[data-density="roomy"] {
+  --profile-gap: 1.75rem;
+  --profile-pad: 1.5rem;
+}
+[data-density] .profile-card {
+  padding: var(--profile-pad);
+}
+[data-density] .profile-sections {
+  gap: var(--profile-gap);
+}
+
+[data-card="outline"] .profile-card {
+  background: transparent;
+  border-width: 2px;
+  border-color: color-mix(in srgb, var(--color-white) 38%, transparent);
+}
+[data-card="glass"] .profile-card {
+  /* a see-through tint that goes the same way the usual boxes do (darker on a dark page, lighter on a light one), never against the text */
+  background: color-mix(in srgb, var(--color-black) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-white) 22%, transparent);
+  backdrop-filter: blur(10px);
+}
+[data-card="flat"] .profile-card {
+  background: transparent;
+  border-color: transparent;
+  padding-inline: 0;
+}
+[data-wallpaper="true"][data-card="outline"] .profile-card,
+[data-wallpaper="true"][data-card="glass"] .profile-card,
+[data-wallpaper="true"][data-card="flat"] .profile-card {
+  background-color: rgba(0, 0, 0, 0.55);
+}
+[data-wallpaper="true"][data-card="flat"] .profile-card {
+  padding-inline: 1rem;
+}
+
+[data-corners="square"] .profile-card {
+  border-radius: 0;
+}
+[data-corners="soft"] .profile-card {
+  border-radius: 1.75rem;
+}
+
+[data-headings="plain"] .profile-heading {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 1rem;
+}
+[data-headings="serif"] .profile-heading {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+[data-avatar="rounded"] .profile-avatar {
+  border-radius: 22%;
+}
+[data-avatar="square"] .profile-avatar {
+  border-radius: 0;
+}
