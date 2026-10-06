@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { apiUser, befriend, expectNoHorizontalOverflow, fakeIpHeaders, newUser, signUpViaUi } from "./helpers";
+import { apiUser, befriend, codeAt, expectNoHorizontalOverflow, fakeIpHeaders, newUser, signUpViaUi } from "./helpers";
 
 test.use({ extraHTTPHeaders: fakeIpHeaders() });
 
@@ -85,6 +85,59 @@ test.describe("text can be read on light and dark backgrounds", () => {
       await phone.close();
     });
   }
+
+  // two-step sign-in: the settings (key and picture, then the recovery codes), and the code step of logging in, on a dark and on a white profile
+  for (const bg of [{ name: "dark", theme: {} }, { name: "white", theme: { bgColor: "#ffffff", textColor: "#111111", accentColor: "#6d28d9" } }]) {
+    test(`two-step sign-in is readable on a ${bg.name} profile`, async ({ page }) => {
+      const me = newUser("tworead");
+      await signUpViaUi(page, me);
+      expect((await page.request.patch("/api/profiles/me", { data: { theme: bg.theme } })).status()).toBe(200);
+      await page.goto(`/u/${me.username}`);
+      await page.getByRole("button", { name: "Edit profile" }).click();
+      await page.getByRole("button", { name: /Two-step sign-in…/ }).click();
+      await expectReadable(page, `two-step sign-in, off (${bg.name})`);
+      await page.getByRole("button", { name: "Turn on two-step sign-in" }).click();
+      await page.getByLabel("Your password").fill(me.password);
+      await expectReadable(page, `two-step sign-in, asking for the password (${bg.name})`);
+      await page.getByRole("button", { name: "Continue" }).click();
+      const secret = ((await page.getByLabel("Setup key").textContent()) ?? "").replace(/s/g, "");
+      await expectReadable(page, `two-step sign-in, the key and picture (${bg.name})`);
+      await page.getByLabel("6-digit code").fill("000000");
+      await page.getByRole("button", { name: "Turn on", exact: true }).click();
+      await expect(page.getByRole("alert")).toContainText("That code didn't match");
+      await expect(page.getByRole("button", { name: "Turn on", exact: true })).toBeEnabled();
+      await expectReadable(page, `two-step sign-in, a wrong code (${bg.name})`);
+      await page.getByLabel("6-digit code").fill(codeAt(secret));
+      await page.getByRole("button", { name: "Turn on", exact: true }).click();
+      await expect(page.getByRole("list", { name: "Recovery codes" })).toBeVisible();
+      await expectReadable(page, `two-step sign-in, the recovery codes (${bg.name})`);
+      await page.getByLabel(/I've saved these codes/).check();
+      await page.getByRole("button", { name: "Done", exact: true }).click();
+      await expectReadable(page, `two-step sign-in, on (${bg.name})`);
+      await page.getByRole("button", { name: "Turn off" }).first().click();
+      await expectReadable(page, `two-step sign-in, turning off (${bg.name})`);
+    });
+  }
+
+  test("the code step of logging in is readable, with an error showing", async ({ page, browser, baseURL }) => {
+    const me = newUser("twologin");
+    await signUpViaUi(page, me);
+    const setup = await (await page.request.post("/api/auth/2fa/setup", { data: { password: me.password } })).json();
+    expect((await page.request.post("/api/auth/2fa/enable", { data: { code: codeAt(setup.secret) } })).status()).toBe(200);
+    const other = await browser.newContext({ baseURL, extraHTTPHeaders: fakeIpHeaders() });
+    const p = await other.newPage();
+    await p.goto("/login");
+    await p.getByPlaceholder("Email").fill(me.email);
+    await p.getByPlaceholder("Password").fill(me.password);
+    await p.getByRole("button", { name: "Log in" }).click();
+    await expect(p.getByRole("heading", { name: "Two-step sign-in" })).toBeVisible();
+    await expectReadable(p, "the code step of logging in");
+    await p.getByLabel("Code from your app").fill("000000");
+    await p.getByRole("button", { name: "Continue" }).click();
+    await expect(p.getByRole("alert")).toBeVisible();
+    await expectReadable(p, "the code step of logging in, after a wrong code");
+    await other.close();
+  });
 
   test("messages and notices: errors, group chat, search, friend requests, the picture adjuster", async ({ page, browser, baseURL }) => {
     // an error message on a form

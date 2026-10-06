@@ -26,9 +26,18 @@ export interface SignedInDevice {
   lastSeenAt: string;
 }
 
+/** What logging in gives back: the person, or (when they've turned on two-step sign-in) a note to send with the code from their app. */
+export type LoginResult = { user: User } | { twoFactorRequired: true; challenge: string };
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  recoveryCodesLeft: number;
+}
+
 export const authApi = {
   register: (input: RegisterInput) => api.post<{ user: User; invitedBy?: string }>("/auth/register", input),
-  login: (input: LoginInput) => api.post<{ user: User }>("/auth/login", input),
+  login: (input: LoginInput) => api.post<LoginResult>("/auth/login", input),
+  loginTwoFactor: (challenge: string, code: string) => api.post<{ user: User; recoveryCodesLeft: number }>("/auth/login/2fa", { challenge, code }),
   logout: () => api.post<void>("/auth/logout"),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.put<void>("/auth/password", { currentPassword, newPassword }),
@@ -38,6 +47,11 @@ export const authApi = {
   verifyEmail: (token: string) => api.post<void>("/auth/verify-email", { token }),
   resendVerification: () => api.post<void>("/auth/resend-verification"),
   me: () => api.get<{ user: User }>("/auth/me"),
+  twoFactorStatus: () => api.get<TwoFactorStatus>("/auth/2fa"),
+  twoFactorSetup: (password: string) => api.post<{ secret: string; otpauthUrl: string }>("/auth/2fa/setup", { password }),
+  twoFactorEnable: (code: string) => api.post<{ recoveryCodes: string[] }>("/auth/2fa/enable", { code }),
+  twoFactorDisable: (password: string, code: string) => api.post<void>("/auth/2fa/disable", { password, code }),
+  twoFactorNewRecoveryCodes: (password: string, code: string) => api.post<{ recoveryCodes: string[] }>("/auth/2fa/recovery-codes", { password, code }),
   sessions: () => api.get<{ sessions: SignedInDevice[] }>("/auth/sessions"),
   endSession: (id: string) => api.delete<void>(`/auth/sessions/${encodeURIComponent(id)}`),
   endOtherSessions: () => api.post<{ ended: number }>("/auth/sessions/end-others"),

@@ -1,5 +1,5 @@
 import { expect, type APIRequestContext, type Browser, type BrowserContext, type Page } from "@playwright/test";
-import { randomBytes } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 
 export const PASSWORD = "E2e-password-1";
 
@@ -93,4 +93,26 @@ export async function befriend(a: APIRequestContext, b: APIRequestContext, aUser
 export async function expectNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow, "page is wider than the viewport").toBeLessThanOrEqual(1);
+}
+
+// What an authenticator app does (RFC 6238), so the browser tests can play the part of the person's phone.
+const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+export function codeAt(secret: string, secondsFromNow = 0): string {
+  const bytes: number[] = [];
+  let bits = 0;
+  let value = 0;
+  for (const char of secret.replace(/\s/g, "")) {
+    value = (value << 5) | BASE32.indexOf(char);
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor((Date.now() / 1000 + secondsFromNow) / 30)));
+  const hmac = createHmac("sha1", Buffer.from(bytes)).update(counter).digest();
+  const offset = hmac[hmac.length - 1] & 15;
+  const binary = ((hmac[offset] & 0x7f) << 24) | (hmac[offset + 1] << 16) | (hmac[offset + 2] << 8) | hmac[offset + 3];
+  return String(binary % 1_000_000).padStart(6, "0");
 }

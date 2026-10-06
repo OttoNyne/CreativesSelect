@@ -35,6 +35,7 @@ import { ImageSearchPicker } from "../components/ai/ImageSearchPicker";
 import { DeleteAccount } from "../components/profile/DeleteAccount";
 import { ChangePassword } from "../components/profile/ChangePassword";
 import { SignedInDevices } from "../components/profile/SignedInDevices";
+import { TwoFactorSettings } from "../components/profile/TwoFactorSettings";
 import { EmailStatus } from "../components/profile/EmailStatus";
 import { PushSettings } from "../components/profile/PushSettings";
 import { ProfileNames } from "../components/profile/ProfileNames";
@@ -416,6 +417,7 @@ export function ProfilePage() {
           <div className="space-y-3 border-t border-white/10 pt-3">
             <EmailStatus />
             <PushSettings />
+            <TwoFactorSettings />
             <SignedInDevices />
             <ChangePassword />
             <DeleteAccount />
