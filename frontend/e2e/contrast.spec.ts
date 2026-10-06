@@ -98,6 +98,7 @@ test.describe("text can be read on light and dark backgrounds", () => {
       await expectReadable(page, `two-step sign-in, off (${bg.name})`);
       await page.getByRole("button", { name: "Turn on two-step sign-in" }).click();
       await page.getByLabel("Your password").fill(me.password);
+      await expect(page.getByRole("button", { name: "Continue" })).toHaveCSS("opacity", "1");
       await expectReadable(page, `two-step sign-in, asking for the password (${bg.name})`);
       await page.getByRole("button", { name: "Continue" }).click();
       const secret = ((await page.getByLabel("Setup key").textContent()) ?? "").replace(/s/g, "");
@@ -105,16 +106,19 @@ test.describe("text can be read on light and dark backgrounds", () => {
       await page.getByLabel("6-digit code").fill("000000");
       await page.getByRole("button", { name: "Turn on", exact: true }).click();
       await expect(page.getByRole("alert")).toContainText("That code didn't match");
-      await expect(page.getByRole("button", { name: "Turn on", exact: true })).toBeEnabled();
+      await expect(page.getByRole("button", { name: "Turn on", exact: true })).toHaveCSS("opacity", "1");
       await expectReadable(page, `two-step sign-in, a wrong code (${bg.name})`);
       await page.getByLabel("6-digit code").fill(codeAt(secret));
       await page.getByRole("button", { name: "Turn on", exact: true }).click();
       await expect(page.getByRole("list", { name: "Recovery codes" })).toBeVisible();
       await expectReadable(page, `two-step sign-in, the recovery codes (${bg.name})`);
       await page.getByLabel(/I've saved these codes/).check();
+      await expect(page.getByRole("button", { name: "Done", exact: true })).toHaveCSS("opacity", "1");
       await page.getByRole("button", { name: "Done", exact: true }).click();
+      await expect(page.getByText("You have 8 recovery codes left.")).toBeVisible();
       await expectReadable(page, `two-step sign-in, on (${bg.name})`);
       await page.getByRole("button", { name: "Turn off" }).first().click();
+      await expect(page.getByLabel("Code from your app")).toBeVisible();
       await expectReadable(page, `two-step sign-in, turning off (${bg.name})`);
     });
   }
