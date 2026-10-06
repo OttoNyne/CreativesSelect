@@ -60,3 +60,17 @@ export function formatCalendarDay(day: string, locale?: string): string {
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }).format(date);
 }
+
+/** How long ago something was, in a few words: "just now", "12 minutes ago", "3 hours ago", "2 days ago". */
+export function agoText(iso: string | Date, now: Date = new Date()): string {
+  const date = typeof iso === "string" ? new Date(iso) : iso;
+  const ms = now.getTime() - date.getTime();
+  if (Number.isNaN(ms)) return "";
+  if (ms < 60_000) return "just now";
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.round(ms / 3_600_000);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(ms / 86_400_000);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}

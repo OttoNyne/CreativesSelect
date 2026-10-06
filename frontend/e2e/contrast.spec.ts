@@ -66,6 +66,26 @@ test.describe("text can be read on light and dark backgrounds", () => {
     await friend.context.close();
   });
 
+  // the settings the owner opens: the list of where they're signed in, on a dark and on a white profile
+  for (const bg of [{ name: "dark", theme: {} }, { name: "white", theme: { bgColor: "#ffffff", textColor: "#111111", accentColor: "#6d28d9" } }]) {
+    test(`the list of where you're signed in is readable on a ${bg.name} profile`, async ({ page, browser, baseURL }) => {
+      const me = newUser("devlist");
+      await signUpViaUi(page, me);
+      expect((await page.request.patch("/api/profiles/me", { data: { theme: bg.theme } })).status()).toBe(200);
+      const phone = await browser.newContext({ baseURL, extraHTTPHeaders: fakeIpHeaders() });
+      expect((await phone.request.post("/api/auth/login", { data: { email: me.email, password: me.password } })).status()).toBe(200);
+      await page.goto(`/u/${me.username}`);
+      await page.getByRole("button", { name: "Edit profile" }).click();
+      await page.getByRole("button", { name: /Where you.re signed in/ }).click();
+      await expect(page.getByRole("region", { name: "Where you're signed in" }).getByRole("listitem")).toHaveCount(2);
+      await expectReadable(page, `the list of devices on a ${bg.name} profile`);
+      await page.getByRole("button", { name: "Sign out the other device" }).click();
+      await expect(page.getByText("Signed out 1 other device.")).toBeVisible();
+      await expectReadable(page, `the list of devices after signing one out (${bg.name})`);
+      await phone.close();
+    });
+  }
+
   test("messages and notices: errors, group chat, search, friend requests, the picture adjuster", async ({ page, browser, baseURL }) => {
     // an error message on a form
     await page.goto("/login");

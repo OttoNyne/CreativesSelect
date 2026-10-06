@@ -1,9 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { daysLeft, earliestStart, formatCalendarDay, formatDay, formatWhen, toLocalInput, untilText } from "./when";
+import { agoText, daysLeft, earliestStart, formatCalendarDay, formatDay, formatWhen, toLocalInput, untilText } from "./when";
 
 const NOW = new Date("2026-10-10T12:00:00Z");
 const at = (ms: number) => new Date(NOW.getTime() + ms).toISOString();
 const MIN = 60_000;
+
+describe("agoText", () => {
+  it("says how long ago in a few words", () => {
+    expect(agoText(at(-5_000), NOW)).toBe("just now");
+    expect(agoText(at(-59_000), NOW)).toBe("just now");
+    expect(agoText(at(-MIN), NOW)).toBe("1 minute ago");
+    expect(agoText(at(-12 * MIN), NOW)).toBe("12 minutes ago");
+    expect(agoText(at(-60 * MIN), NOW)).toBe("1 hour ago");
+    expect(agoText(at(-5 * 60 * MIN), NOW)).toBe("5 hours ago");
+    expect(agoText(at(-24 * 60 * MIN), NOW)).toBe("1 day ago");
+    expect(agoText(at(-3 * 24 * 60 * MIN), NOW)).toBe("3 days ago");
+  });
+
+  it("doesn't mind a clock that is a little ahead, and says nothing for nonsense", () => {
+    expect(agoText(at(30_000), NOW)).toBe("just now");
+    expect(agoText("not a date", NOW)).toBe("");
+  });
+});
 
 describe("formatCalendarDay", () => {
   it("writes a UTC calendar day out in full, whatever the viewer's time zone", () => {

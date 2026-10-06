@@ -15,6 +15,17 @@ export interface LoginInput {
   password: string;
 }
 
+/** One place the person is signed in (see where-you-are-signed-in on the profile). */
+export interface SignedInDevice {
+  id: string;
+  /** A plain label such as "Chrome on Windows". */
+  device: string;
+  /** The device being used right now. */
+  current: boolean;
+  createdAt: string;
+  lastSeenAt: string;
+}
+
 export const authApi = {
   register: (input: RegisterInput) => api.post<{ user: User; invitedBy?: string }>("/auth/register", input),
   login: (input: LoginInput) => api.post<{ user: User }>("/auth/login", input),
@@ -27,4 +38,7 @@ export const authApi = {
   verifyEmail: (token: string) => api.post<void>("/auth/verify-email", { token }),
   resendVerification: () => api.post<void>("/auth/resend-verification"),
   me: () => api.get<{ user: User }>("/auth/me"),
+  sessions: () => api.get<{ sessions: SignedInDevice[] }>("/auth/sessions"),
+  endSession: (id: string) => api.delete<void>(`/auth/sessions/${encodeURIComponent(id)}`),
+  endOtherSessions: () => api.post<{ ended: number }>("/auth/sessions/end-others"),
 };
