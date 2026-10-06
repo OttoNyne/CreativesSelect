@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { PostCard } from "./PostCard";
@@ -9,7 +9,7 @@ import { ApiError } from "../../api/client";
 import type { Post, User } from "../../types";
 
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
-vi.mock("../../api/posts.api", () => ({ postsApi: { update: vi.fn() } }));
+vi.mock("../../api/posts.api", () => ({ postsApi: { update: vi.fn(), react: vi.fn() } }));
 vi.mock("./PostCommentList", () => ({
   PostCommentList: ({ postId, onCountChange }: { postId: string; onCountChange: (n: number) => void }) => (
     <div>
@@ -168,5 +168,53 @@ describe("PostCard", () => {
     renderCard(makePost({ editedAt: "2026-05-01T00:00:00.000Z" }), "someone-else");
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.getByText("(edited)")).toBeInTheDocument();
+  });
+});
+
+describe("PostCard: emoji reactions", () => {
+  const none = { counts: { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, fire: 0 }, total: 0, mine: null } as const;
+  const some = { counts: { like: 2, love: 0, laugh: 0, wow: 0, sad: 0, fire: 1 }, total: 3, mine: "fire" } as const;
+
+  it("shows the reactions the post has, with the viewer's own marked", () => {
+    renderCard(makePost({ reactions: some }), "u2");
+    expect(screen.getByRole("button", { name: "Like: 2" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Fire: 1, your reaction" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("copes with a post that came without any (nothing shown but the way to add one)", () => {
+    renderCard(makePost({ reactions: undefined }), "u2");
+    expect(screen.getByRole("button", { name: "Add a reaction" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^(Like|Love|Haha|Wow|Sad|Fire): / })).not.toBeInTheDocument();
+  });
+
+  it("reacts with the emoji chosen, and shows what the server says", async () => {
+    vi.mocked(postsApi.react).mockResolvedValue({ reactions: { counts: { like: 0, love: 1, laugh: 0, wow: 0, sad: 0, fire: 0 }, total: 1, mine: "love" } });
+    renderCard(makePost({ reactions: none }), "u2");
+    await userEvent.click(screen.getByRole("button", { name: "Add a reaction" }));
+    await userEvent.click(screen.getByRole("button", { name: "Love" }));
+    expect(postsApi.react).toHaveBeenCalledWith("p1", "love");
+    expect(await screen.findByRole("button", { name: "Love: 1, your reaction" })).toBeInTheDocument();
+  });
+
+  it("takes your reaction away when you choose it again", async () => {
+    vi.mocked(postsApi.react).mockResolvedValue({ reactions: { ...none, counts: { ...none.counts, like: 2 }, total: 2, mine: null } });
+    renderCard(makePost({ reactions: some }), "u2");
+    await userEvent.click(screen.getByRole("button", { name: "Fire: 1, your reaction" }));
+    expect(postsApi.react).toHaveBeenCalledWith("p1", null);
+    await waitFor(() => expect(screen.queryByRole("button", { name: /^Fire: / })).not.toBeInTheDocument());
+  });
+
+  it("says why when it couldn't be saved, and leaves the reactions as they were", async () => {
+    vi.mocked(postsApi.react).mockRejectedValue(new ApiError(429, "You're reacting too fast — try again in a bit"));
+    renderCard(makePost({ reactions: some }), "u2");
+    await userEvent.click(screen.getByRole("button", { name: "Like: 2" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("reacting too fast");
+    expect(screen.getByRole("button", { name: "Like: 2" })).toBeInTheDocument();
+  });
+
+  it("shows the counts to someone who isn't signed in, with nothing to press", () => {
+    renderCard(makePost({ reactions: some }), null);
+    expect(screen.getByRole("button", { name: "Like: 2" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Add a reaction" })).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { Post } from "../../types";
+import type { Post, ReactionKey, ReactionSummary } from "../../types";
+import { ReactionBar } from "../common/ReactionBar";
+import { emptyReactions } from "../../lib/reactions";
 import { Avatar } from "../common/Avatar";
 import { CSBadge } from "../common/CSBadge";
 import { assetUrl } from "../../api/client";
@@ -43,6 +45,8 @@ export function PostCard({
   const [content, setContent] = useState(post.content);
   const [editedAt, setEditedAt] = useState(post.editedAt ?? null);
   const [editing, setEditing] = useState(false);
+  const [reactions, setReactions] = useState<ReactionSummary>(post.reactions ?? emptyReactions());
+  const [reactError, setReactError] = useState<string | null>(null);
   const isOwner = user?.id === post.authorId;
 
   async function saveEdit(text: string): Promise<string | null> {
@@ -54,6 +58,16 @@ export function PostCard({
       return null;
     } catch (err) {
       return err instanceof ApiError ? err.message : "Couldn't save that change.";
+    }
+  }
+
+  async function react(emoji: ReactionKey | null) {
+    setReactError(null);
+    try {
+      const result = await postsApi.react(post.id, emoji);
+      setReactions(result.reactions);
+    } catch (err) {
+      setReactError(err instanceof ApiError ? err.message : "Couldn't save your reaction.");
     }
   }
 
@@ -112,7 +126,16 @@ export function PostCard({
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-4 border-t border-white/5 pt-2 text-xs text-white/60">
+      <div className="mt-3 border-t border-white/5 pt-2">
+        <ReactionBar summary={reactions} canReact={Boolean(user)} onReact={react} label="Reactions to this post" />
+        {reactError && (
+          <p role="alert" className="mt-1 text-xs text-red-400">
+            {reactError}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-2 flex items-center gap-4 text-xs text-white/60">
         <button onClick={() => setShowComments((s) => !s)} className="hover:text-white">
           💬 {commentCount} comment{commentCount === 1 ? "" : "s"}
         </button>

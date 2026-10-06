@@ -7,6 +7,7 @@ import { Avatar } from "../common/Avatar";
 import { useAuth } from "../../context/AuthContext";
 import { notificationTarget } from "../../lib/notificationTarget";
 import { formatWhen } from "../../lib/when";
+import { REACTIONS } from "../../lib/reactions";
 import type { Notification } from "../../types";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -39,6 +40,10 @@ function describe(n: Notification): string {
       return typeof n.payload.title === "string" ? `commented on your blog entry "${n.payload.title}"` : "commented on your blog entry";
     case "friend_birthday":
       return "has a birthday today 🎂";
+    case "reaction": {
+      const mark = REACTIONS.find((r) => r.key === n.payload.emoji)?.emoji ?? "";
+      return n.payload.targetType === "post" ? `reacted ${mark} to your post` : `reacted ${mark} to your portfolio`;
+    }
     case "cs_verified":
       return n.payload.reason === "friends" ? "— you're now CSverified: you have 1,000 active friends." : "— you're now CSverified: an administrator gave you the badge.";
     case "event_created":

@@ -22,7 +22,7 @@ const api = vi.mocked(mediaApi);
 
 const person = (id: string, name: string) => ({ id, username: name.toLowerCase(), displayName: name }) as User;
 const comment = (id: string, authorId: string, name: string, content: string, over: Partial<Comment> = {}): Comment => ({ id, content, createdAt: "", author: person(authorId, name), ...over }) as Comment;
-const piece = (over: Partial<MediaItem> = {}): MediaItem => ({ id: "m1", ownerId: "owner", url: "https://images.example.com/a.jpg", type: "image", caption: "Harbour", isAiImage: false, likes: 0, dislikes: 0, myReaction: 0, commentCount: 2, createdAt: "", ...over });
+const piece = (over: Partial<MediaItem> = {}): MediaItem => ({ id: "m1", ownerId: "owner", url: "https://images.example.com/a.jpg", type: "image", caption: "Harbour", isAiImage: false, reactions: { counts: { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, fire: 0 }, total: 0, mine: null }, commentCount: 2, createdAt: "", ...over });
 
 function renderGrid({ owner = false, signedIn = true, focusPiece = null as string | null, focusComment = null as string | null } = {}) {
   vi.mocked(useAuth).mockReturnValue({ user: signedIn ? person(owner ? "owner" : "me", owner ? "Owner" : "Me") : null, isLoading: false, setUser: () => {}, refresh: async () => {} });

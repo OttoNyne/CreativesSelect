@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { Comment, Post } from "../types";
+import type { Comment, Post, ReactionKey, ReactionSummary } from "../types";
 
 export interface CreatePostInput {
   content: string;
@@ -18,6 +18,8 @@ export const postsApi = {
   byUser: (username: string) => api.get<{ posts: Post[] }>(`/posts/user/${username}`),
   create: (input: CreatePostInput) => api.post<{ post: Post }>("/posts", input),
   remove: (id: string) => api.delete<void>(`/posts/${id}`),
+  /** React with one of the six emoji, change it, or (null) take it away. */
+  react: (id: string, emoji: ReactionKey | null) => api.put<{ reactions: ReactionSummary }>(`/posts/${encodeURIComponent(id)}/reaction`, { emoji }),
   /** Change the words of your own post. */
   update: (id: string, content: string) => api.patch<{ post: Post }>(`/posts/${encodeURIComponent(id)}`, { content }),
   /** Twenty at a time, oldest first; `after` is the id of the last one you have. */

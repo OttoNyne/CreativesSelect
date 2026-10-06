@@ -69,6 +69,8 @@ export interface Post {
   /** When its author last changed the words; null if never. */
   editedAt?: string | null;
   commentCount: number;
+  /** The emoji reactions on it, and the signed-in viewer's own. */
+  reactions?: ReactionSummary;
 }
 
 export interface Comment {
@@ -137,6 +139,16 @@ export interface Album {
   count: number;
 }
 
+/** The six emoji reactions on pictures and posts. */
+export type ReactionKey = "like" | "love" | "laugh" | "wow" | "sad" | "fire";
+
+/** How many of each reaction a picture or post has, the total, and the signed-in viewer's own (null if none). */
+export interface ReactionSummary {
+  counts: Record<ReactionKey, number>;
+  total: number;
+  mine: ReactionKey | null;
+}
+
 export interface MediaItem {
   id: string;
   ownerId: string;
@@ -150,10 +162,8 @@ export interface MediaItem {
   durationSeconds?: number | null;
   /** The album this piece is in, if any. */
   albumId?: string | null;
-  likes: number;
-  dislikes: number;
-  /** The signed-in viewer's own reaction: 1 like, -1 dislike, 0 none. */
-  myReaction: 1 | -1 | 0;
+  /** The emoji reactions on it, and the signed-in viewer's own. */
+  reactions: ReactionSummary;
   /** How many comments the piece has. */
   commentCount?: number;
   createdAt: string;
@@ -317,7 +327,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

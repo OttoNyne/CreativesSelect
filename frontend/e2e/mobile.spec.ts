@@ -49,7 +49,8 @@ test.describe("on a phone", () => {
     const box = await remove.boundingBox();
     expect(box!.width).toBeGreaterThanOrEqual(24); // big enough to tap
     expect(box!.height).toBeGreaterThanOrEqual(24);
-    await page.getByRole("button", { name: "Like", exact: true }).tap();
-    await expect(page.getByRole("button", { name: "Like", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Add a reaction" }).tap();
+    await page.getByRole("group", { name: "Pick a reaction" }).getByRole("button", { name: "Love", exact: true }).tap();
+    await expect(page.getByRole("button", { name: "Love: 1, your reaction" })).toHaveAttribute("aria-pressed", "true");
   });
 });

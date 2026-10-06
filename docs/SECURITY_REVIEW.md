@@ -1175,6 +1175,19 @@ Push is unusual because the server makes outgoing requests to an address supplie
 
 Covered by 26 backend tests (what an address may be, signing up, the limits, devices and who owns them, the switches, the test message, when a push is and isn't sent, what it says, forgetting dead devices, and surviving failures), 43 frontend tests (the worker's behaviour, the browser helpers, every state of the settings, and logging out) and 4 browser checks on all three browsers. A real subscription needs a browser maker's push service, which an automated browser doesn't have (the settings were exercised up to that step, and show a clear message when the browser can't finish), so that last step is checked by hand on a real phone once the keys are set.
 
+### 5.63 Emoji reactions: a small way to write on someone else's work
+
+A reaction is something a visitor adds to a post or a picture that the owner didn't write, so the questions are what it can be, who may do it, and whether it can be used to pester anyone.
+
+- **Only six things it can be.** The server accepts one of six fixed names (or null to take it away) and nothing else (tested with numbers, text, the emoji themselves, objects and the old like/dislike form). Free text or arbitrary emoji are never stored, so nothing offensive or oversized can be attached to someone's work this way, and counts can't be skewed by variants.
+- **The same gate as the thing itself.** To react to a post you must be allowed to see its author's profile, and to a picture the profile it is on: a private profile's are for friends, and a blocked person gets the same 404 as for something that doesn't exist, so a reaction can't be used to find out that a private post exists (tested). A signed-out visitor sees the counts and can't react.
+- **One each, and no way to inflate a count.** A reaction is one row per person per thing (a unique index, with a retry for two requests at once), so repeating or switching never adds to the total, and a person can't react to the same post twice under one account. Taking it away removes it. Reactions on a thing, and the notes about them, go when the thing goes (the owner deleting it, a moderator removing it, or either account being deleted).
+- **Hard to use for pestering.** The owner is told once for each person and thing, and only for the first reaction: changing it, taking it away or putting it back doesn't send another note (tested), and a person's own reaction to their own post never does. The note says who and what, and on a lock screen shows only that ("Zoe reacted 🔥 to your post"), never the post. All reacting shares one limit of 300 an hour, the owner can turn off the push for comments and reactions, and the bell still holds them.
+- **No dislike.** The old like/dislike on pictures became these. Likes were carried over as 👍 when the server started (safe to run twice, or from two servers at once; tested), and dislikes were dropped on purpose: there's no emoji for them, and showing "who disliked my work" is the kind of thing this change is meant to avoid.
+- **Not covered:** the page shows how many of each, not who (people can see only their own reaction); and reactions aren't searched or reported separately (a post can still be reported as a whole).
+
+Covered by 17 backend tests (the six, what is refused, pictures and posts, who can see and react, one each, being removed with the thing, the single note and the push, the limit, and carrying the old likes over), 24 frontend tests (the bar, the post, the picture, the notification and its target) and 3 browser flows on all three browsers (a picture, a post with a friend, and a notification that opens the post).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

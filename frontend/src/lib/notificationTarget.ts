@@ -64,6 +64,12 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const entryId = str(n.payload.entryId);
       return entryId ? { to: `/blog/${entryId}`, label: "Read entry" } : actorProfile;
     }
+    case "reaction": {
+      const targetId = str(n.payload.targetId);
+      if (!targetId) return actorProfile;
+      if (n.payload.targetType === "post") return { to: `/posts/${targetId}`, label: "View post" };
+      return viewerUsername ? { to: `/u/${viewerUsername}?piece=${encodeURIComponent(targetId)}#portfolio`, label: "View piece" } : actorProfile;
+    }
     case "cs_verified":
       return viewerUsername ? { to: `/u/${viewerUsername}`, label: "View your profile" } : null;
     case "live_scheduled":

@@ -28,18 +28,18 @@ test.describe("portfolio pictures", () => {
     const remove = page.getByRole("button", { name: "Remove from portfolio" });
     await expect(remove).toBeVisible();
 
-    const like = page.getByRole("button", { name: "Like", exact: true });
-    const dislike = page.getByRole("button", { name: "Dislike", exact: true });
-    await like.click();
-    await expect(like).toHaveAttribute("aria-pressed", "true");
-    await expect(like).toContainText("1");
-    await dislike.click(); // switch
-    await expect(dislike).toHaveAttribute("aria-pressed", "true");
-    await expect(like).toContainText("0");
-    await expect(dislike).toContainText("1");
-    await dislike.click(); // clear
-    await expect(dislike).toHaveAttribute("aria-pressed", "false");
-    await expect(dislike).toContainText("0");
+    const pick = async (name: string) => {
+      await page.getByRole("button", { name: "Add a reaction" }).click();
+      await page.getByRole("group", { name: "Pick a reaction" }).getByRole("button", { name, exact: true }).click();
+    };
+    await pick("Like");
+    const liked = page.getByRole("button", { name: "Like: 1, your reaction" });
+    await expect(liked).toHaveAttribute("aria-pressed", "true");
+    await pick("Fire"); // switch
+    await expect(page.getByRole("button", { name: "Fire: 1, your reaction" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: /^Like: / })).toHaveCount(0);
+    await page.getByRole("button", { name: "Fire: 1, your reaction" }).click(); // take it away
+    await expect(page.getByRole("button", { name: /^Fire: / })).toHaveCount(0);
 
     page.once("dialog", (d) => d.accept());
     await remove.click();
@@ -56,18 +56,19 @@ test.describe("portfolio pictures", () => {
     await expect(page.getByRole("button", { name: "Remove from portfolio" })).toBeVisible();
   });
 
-  test("other people can like and dislike your pictures, and you see the counts", async ({ page, browser, baseURL }) => {
+  test("other people can react to your pictures with emoji, and you see the counts", async ({ page, browser, baseURL }) => {
     const owner = await openOwnProfile(page, "showoff");
     await addGeneratedPicture(page);
 
     const fan = await apiUser(browser, baseURL!, "fan");
     const list = await (await fan.request.get(`/api/media/user/${owner.username}`)).json();
-    const res = await fan.request.put(`/api/media/${list.media[0].id}/reaction`, { data: { value: 1 } });
+    const res = await fan.request.put(`/api/media/${list.media[0].id}/reaction`, { data: { emoji: "love" } });
     expect(res.status()).toBe(200);
 
     await page.reload();
-    await expect(page.getByRole("button", { name: "Like", exact: true })).toContainText("1");
-    await expect(page.getByRole("button", { name: "Like", exact: true })).toHaveAttribute("aria-pressed", "false"); // that's the fan's like
+    const loved = page.getByRole("button", { name: "Love: 1" });
+    await expect(loved).toContainText("1");
+    await expect(loved).toHaveAttribute("aria-pressed", "false"); // that's the fan's reaction, not the owner's
     await fan.context.close();
   });
 
@@ -80,7 +81,7 @@ test.describe("portfolio pictures", () => {
     await vpage.goto(`/u/${owner.username}`);
     await expect(vpage.locator("img[alt]").first()).toBeVisible();
     await expect(vpage.getByRole("button", { name: "Remove from portfolio" })).toHaveCount(0);
-    await expect(vpage.getByRole("button", { name: "Like", exact: true })).toBeDisabled(); // signed out: can look, can't react
+    await expect(vpage.getByRole("button", { name: "Add a reaction" })).toHaveCount(0); // signed out: can look, can't react
     await visitor.close();
   });
 });

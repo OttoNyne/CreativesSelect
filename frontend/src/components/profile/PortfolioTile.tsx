@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { assetUrl } from "../../api/client";
 import { clipWindow, directVideoSrc, playableVideoUrl, videoPosterUrl, youtubeEmbedUrl } from "../../lib/video";
-import type { Album, MediaItem } from "../../types";
+import type { Album, MediaItem, ReactionKey } from "../../types";
+import { ReactionBar } from "../common/ReactionBar";
 
-type Reaction = 1 | -1 | 0;
 
 export const MAX_CAPTION_LENGTH = 200;
 
@@ -58,7 +58,7 @@ function CaptionEditor({ caption, onSave, onCancel }: { caption: string; onSave:
 
 // One portfolio piece: the picture/video/audio, an always-visible remove
 // button for its owner (hover-only controls don't exist on phones),
-// like/dislike buttons and a button for its comments, which open beside it.
+// emoji reactions and a button for its comments, which open beside it.
 export function PortfolioTile({
   item,
   isOwner,
@@ -76,7 +76,7 @@ export function PortfolioTile({
   isOwner: boolean;
   canReact: boolean;
   onRemove: (id: string) => void;
-  onReact: (id: string, value: Reaction) => void;
+  onReact: (id: string, emoji: ReactionKey | null) => Promise<void>;
   /** Their albums, and how to move this piece into one (owner only). */
   albums?: Album[];
   onMove?: (id: string, albumId: string | null) => void;
@@ -178,33 +178,8 @@ export function PortfolioTile({
         </div>
       )}
 
-      <div className="flex items-center gap-1 bg-black/20 px-2 py-1">
-        <button
-          type="button"
-          onClick={() => onReact(item.id, item.myReaction === 1 ? 0 : 1)}
-          disabled={!canReact}
-          aria-pressed={item.myReaction === 1}
-          aria-label="Like"
-          title={canReact ? "Like" : "Log in to react"}
-          className={`rounded-md px-2 py-0.5 text-xs disabled:opacity-60 ${
-            item.myReaction === 1 ? "bg-emerald-500/25 text-emerald-300" : "text-white/60 hover:bg-white/10"
-          }`}
-        >
-          👍 {item.likes}
-        </button>
-        <button
-          type="button"
-          onClick={() => onReact(item.id, item.myReaction === -1 ? 0 : -1)}
-          disabled={!canReact}
-          aria-pressed={item.myReaction === -1}
-          aria-label="Dislike"
-          title={canReact ? "Dislike" : "Log in to react"}
-          className={`rounded-md px-2 py-0.5 text-xs disabled:opacity-60 ${
-            item.myReaction === -1 ? "bg-red-500/25 text-red-300" : "text-white/60 hover:bg-white/10"
-          }`}
-        >
-          👎 {item.dislikes}
-        </button>
+      <div className="flex flex-wrap items-center gap-1 bg-black/20 px-2 py-1">
+        <ReactionBar summary={item.reactions} canReact={canReact} onReact={(key) => onReact(item.id, key)} label="Reactions to this piece" />
         {onToggleComments && (
           <button
             type="button"

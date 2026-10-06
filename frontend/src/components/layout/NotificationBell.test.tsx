@@ -257,6 +257,16 @@ describe("NotificationBell: moderation", () => {
   });
 });
 
+describe("NotificationBell: reactions", () => {
+  it("says who reacted how to what, and opens the post or the picture", async () => {
+    await openWith([note({ id: "a", type: "reaction", payload: { targetType: "post", targetId: "p9", emoji: "fire" } }), note({ id: "b", type: "reaction", payload: { targetType: "media", targetId: "m4", emoji: "love" } })]);
+    expect(await screen.findByText("reacted 🔥 to your post")).toBeInTheDocument();
+    expect(screen.getByText("reacted ❤️ to your portfolio")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View post" })).toHaveAttribute("href", "/posts/p9");
+    expect(screen.getByRole("link", { name: "View piece" })).toHaveAttribute("href", "/u/me?piece=m4#portfolio");
+  });
+});
+
 describe("NotificationBell: CSverified", () => {
   it("says which way the badge was given, and opens your own profile", async () => {
     await openWith([note({ id: "a", type: "cs_verified", payload: { reason: "admin" }, actor: null }), note({ id: "b", type: "cs_verified", payload: { reason: "friends" }, actor: null })]);

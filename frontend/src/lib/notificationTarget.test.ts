@@ -55,6 +55,13 @@ describe("notificationTarget", () => {
     expect(notificationTarget(n("friend_birthday", {}, null), "me")).toBeNull();
   });
 
+  it("a reaction opens the post, or the picture on your own profile, and falls back to the person", () => {
+    expect(notificationTarget(n("reaction", { targetType: "post", targetId: "p1", emoji: "like" }), "ada")).toEqual({ to: "/posts/p1", label: "View post" });
+    expect(notificationTarget(n("reaction", { targetType: "media", targetId: "m 1", emoji: "like" }), "ada")).toEqual({ to: "/u/ada?piece=m%201#portfolio", label: "View piece" });
+    expect(notificationTarget(n("reaction", { targetType: "media", targetId: "m1" }), undefined)).toEqual({ to: "/u/zoe", label: "View profile" });
+    expect(notificationTarget(n("reaction", {}), "ada")).toEqual({ to: "/u/zoe", label: "View profile" });
+  });
+
   it("being CSverified opens your own profile, and has nothing to open without one", () => {
     expect(notificationTarget(n("cs_verified", { reason: "admin" }, null), "ada")).toEqual({ to: "/u/ada", label: "View your profile" });
     expect(notificationTarget(n("cs_verified", {}, null), undefined)).toBeNull();

@@ -9,7 +9,7 @@ import { PortfolioTile, MAX_CAPTION_LENGTH } from "./PortfolioTile";
 import { PieceComments } from "./PieceComments";
 import { AlbumBar, ALL } from "./AlbumBar";
 import { albumsApi } from "../../api/albums.api";
-import type { Album, MediaItem } from "../../types";
+import type { Album, MediaItem, ReactionKey } from "../../types";
 
 
 export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComment = null }: { username: string; isOwner: boolean; /** A piece, and one of its comments, to open and scroll to (from a notification). */ focusPiece?: string | null; focusComment?: string | null }) {
@@ -192,11 +192,11 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
     }
   }
 
-  async function handleReact(id: string, value: 1 | -1 | 0) {
+  async function handleReact(id: string, emoji: ReactionKey | null) {
     setError(null);
     try {
-      const result = await mediaApi.react(id, value);
-      setItems((list) => list.map((item) => (item.id === id ? { ...item, ...result } : item)));
+      const result = await mediaApi.react(id, emoji);
+      setItems((list) => list.map((item) => (item.id === id ? { ...item, reactions: result.reactions } : item)));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't save your reaction.");
     }

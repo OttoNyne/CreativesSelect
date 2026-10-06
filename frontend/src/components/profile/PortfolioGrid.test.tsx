@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PortfolioGrid } from "./PortfolioGrid";
 import { mediaApi, uploadFile } from "../../api/media.api";
@@ -7,7 +7,7 @@ import { albumsApi } from "../../api/albums.api";
 import { ApiError } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { checkVideoFile } from "../../lib/video";
-import type { MediaItem } from "../../types";
+import type { MediaItem, ReactionKey, ReactionSummary } from "../../types";
 
 vi.mock("../../api/media.api", () => ({
   mediaApi: { byUser: vi.fn(), create: vi.fn(), remove: vi.fn(), react: vi.fn(), setAlbum: vi.fn(), setCaption: vi.fn() },
@@ -47,9 +47,7 @@ function item(over: Partial<MediaItem> = {}): MediaItem {
     type: "image",
     caption: null,
     isAiImage: false,
-    likes: 0,
-    dislikes: 0,
-    myReaction: 0,
+    reactions: { counts: { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, fire: 0 }, total: 0, mine: null },
     createdAt: "",
     ...over,
   };
@@ -249,52 +247,87 @@ describe("PortfolioGrid: removing pictures", () => {
 
   it("gives visitors no remove buttons", async () => {
     renderGrid(false);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
     expect(screen.queryByRole("button", { name: "Remove from portfolio" })).not.toBeInTheDocument();
   });
 });
 
-describe("PortfolioGrid: likes and dislikes", () => {
-  it("likes a picture, then un-likes it by clicking again", async () => {
-    api.react.mockResolvedValueOnce({ likes: 1, dislikes: 0, myReaction: 1 }).mockResolvedValueOnce({ likes: 0, dislikes: 0, myReaction: 0 });
+describe("PortfolioGrid: emoji reactions", () => {
+  const summary = (counts: Partial<Record<ReactionKey, number>> = {}, mine: ReactionKey | null = null): ReactionSummary => {
+    const full = { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, fire: 0, ...counts };
+    return { counts: full, total: Object.values(full).reduce((a, n) => a + n, 0), mine };
+  };
+
+  it("shows each emoji that has been used, with how many, and marks the viewer's own", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ reactions: summary({ like: 3, fire: 1 }, "fire") })] });
     renderGrid(false);
-    const like = (await screen.findAllByRole("button", { name: "Like" }))[0];
-
-    await userEvent.click(like);
-    expect(api.react).toHaveBeenLastCalledWith("m1", 1);
-    await waitFor(() => expect(screen.getAllByRole("button", { name: "Like" })[0]).toHaveAttribute("aria-pressed", "true"));
-    expect(screen.getAllByRole("button", { name: "Like" })[0]).toHaveTextContent("1");
-
-    await userEvent.click(screen.getAllByRole("button", { name: "Like" })[0]);
-    expect(api.react).toHaveBeenLastCalledWith("m1", 0);
-    await waitFor(() => expect(screen.getAllByRole("button", { name: "Like" })[0]).toHaveAttribute("aria-pressed", "false"));
+    const like = await screen.findByRole("button", { name: "Like: 3" });
+    expect(like).toHaveAttribute("aria-pressed", "false");
+    expect(like).toHaveTextContent("👍 3");
+    const fire = screen.getByRole("button", { name: "Fire: 1, your reaction" });
+    expect(fire).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: /^Love/ })).not.toBeInTheDocument(); // none used, none shown
   });
 
-  it("switches a like to a dislike", async () => {
-    api.byUser.mockResolvedValue({ media: [item({ likes: 1, myReaction: 1 })] });
-    api.react.mockResolvedValue({ likes: 0, dislikes: 1, myReaction: -1 });
+  it("opens the six to choose from, and reacts with the one chosen", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1" })] });
+    api.react.mockResolvedValue({ reactions: summary({ love: 1 }, "love") });
     renderGrid(false);
-    await userEvent.click(await screen.findByRole("button", { name: "Dislike" }));
-    expect(api.react).toHaveBeenCalledWith("m1", -1);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Dislike" })).toHaveAttribute("aria-pressed", "true"));
-    expect(screen.getByRole("button", { name: "Like" })).toHaveTextContent("0");
+    await userEvent.click(await screen.findByRole("button", { name: "Add a reaction" }));
+    const picker = screen.getByRole("group", { name: "Pick a reaction" });
+    expect(within(picker).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Like", "Love", "Haha", "Wow", "Sad", "Fire"]);
+    await userEvent.click(within(picker).getByRole("button", { name: "Love" }));
+    expect(api.react).toHaveBeenCalledWith("m1", "love");
+    expect(await screen.findByRole("button", { name: "Love: 1, your reaction" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("group", { name: "Pick a reaction" })).not.toBeInTheDocument(); // closes once chosen
   });
 
-  it("shows the counts to everyone but only lets signed-in people react", async () => {
-    api.byUser.mockResolvedValue({ media: [item({ likes: 4, dislikes: 2 })] });
+  it("takes a reaction away by choosing it again, from its own button or from the six", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", reactions: summary({ love: 1 }, "love") })] });
+    api.react.mockResolvedValueOnce({ reactions: summary() }).mockResolvedValueOnce({ reactions: summary({ love: 1 }, "love") }).mockResolvedValueOnce({ reactions: summary() });
+    renderGrid(false);
+    await userEvent.click(await screen.findByRole("button", { name: "Love: 1, your reaction" }));
+    expect(api.react).toHaveBeenLastCalledWith("m1", null);
+    await waitFor(() => expect(screen.queryByRole("button", { name: /^Love: / })).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole("button", { name: "Add a reaction" }));
+    await userEvent.click(within(screen.getByRole("group", { name: "Pick a reaction" })).getByRole("button", { name: "Love" }));
+    await screen.findByRole("button", { name: "Love: 1, your reaction" });
+    await userEvent.click(screen.getByRole("button", { name: "Add a reaction" }));
+    expect(within(screen.getByRole("group", { name: "Pick a reaction" })).getByRole("button", { name: "Love" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(within(screen.getByRole("group", { name: "Pick a reaction" })).getByRole("button", { name: "Love" }));
+    expect(api.react).toHaveBeenLastCalledWith("m1", null);
+  });
+
+  it("switches from one emoji to another, showing what the server says", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ id: "m1", reactions: summary({ like: 2 }, "like") })] });
+    api.react.mockResolvedValue({ reactions: summary({ like: 1, fire: 1 }, "fire") });
+    renderGrid(false);
+    await userEvent.click(await screen.findByRole("button", { name: "Add a reaction" }));
+    await userEvent.click(within(screen.getByRole("group", { name: "Pick a reaction" })).getByRole("button", { name: "Fire" }));
+    expect(api.react).toHaveBeenCalledWith("m1", "fire");
+    expect(await screen.findByRole("button", { name: "Fire: 1, your reaction" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Like: 1" })).toBeInTheDocument();
+  });
+
+  it("shows the counts to someone who isn't signed in, with nothing to press", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ reactions: summary({ like: 4, laugh: 2 }) }), item({ id: "m2", reactions: summary() })] });
     renderGrid(false, false);
-    const like = await screen.findByRole("button", { name: "Like" });
-    expect(like).toHaveTextContent("4");
-    expect(screen.getByRole("button", { name: "Dislike" })).toHaveTextContent("2");
+    const like = await screen.findByRole("button", { name: "Like: 4" });
     expect(like).toBeDisabled();
     expect(like).toHaveAttribute("title", "Log in to react");
+    expect(screen.getByRole("button", { name: "Haha: 2" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Add a reaction" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("group", { name: "Reactions to this piece" })).toHaveLength(1); // the piece with none shows nothing
   });
 
-  it("shows the server's message if reacting fails", async () => {
+  it("shows the server's message if reacting fails, and leaves things as they were", async () => {
+    api.byUser.mockResolvedValue({ media: [item({ reactions: summary({ like: 1 }) })] });
     api.react.mockRejectedValue(new ApiError(429, "You're reacting too fast — try again in a bit"));
     renderGrid(false);
-    await userEvent.click((await screen.findAllByRole("button", { name: "Like" }))[0]);
+    await userEvent.click(await screen.findByRole("button", { name: "Like: 1" }));
     expect(await screen.findByText(/reacting too fast/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Like: 1" })).toHaveAttribute("aria-pressed", "false");
   });
 });
 
@@ -304,7 +337,7 @@ describe("PortfolioGrid: videos", () => {
       media: [item({ type: "video", url: "https://res.cloudinary.com/demo/video/upload/v1/x/clip.mov", durationSeconds: 12 })],
     });
     const { container } = renderGrid(false);
-    await screen.findByRole("button", { name: "Like" });
+    await screen.findByRole("button", { name: "Add a reaction" });
     const el = container.querySelector("video")!;
     expect(el).toHaveAttribute("controls");
     expect(el).toHaveAttribute("playsinline");
@@ -314,14 +347,14 @@ describe("PortfolioGrid: videos", () => {
   it("plays a linked direct video as a 30-second window from its start time", async () => {
     api.byUser.mockResolvedValue({ media: [item({ type: "video", url: "https://cdn.example.com/a.mp4", startSeconds: 20 })] });
     const { container } = renderGrid(false);
-    await screen.findByRole("button", { name: "Like" });
+    await screen.findByRole("button", { name: "Add a reaction" });
     expect(container.querySelector("video")!.getAttribute("src")).toBe("https://cdn.example.com/a.mp4#t=20,50");
   });
 
   it("stops a linked video at the end of its 30-second window", async () => {
     api.byUser.mockResolvedValue({ media: [item({ type: "video", url: "https://cdn.example.com/a.mp4", startSeconds: 0 })] });
     const { container } = renderGrid(false);
-    await screen.findByRole("button", { name: "Like" });
+    await screen.findByRole("button", { name: "Add a reaction" });
     const el = container.querySelector("video")!;
     const pause = vi.spyOn(el, "pause").mockImplementation(() => {});
     Object.defineProperty(el, "currentTime", { value: 31, writable: true });
@@ -335,7 +368,7 @@ describe("PortfolioGrid: videos", () => {
       media: [item({ type: "embed", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", startSeconds: 5 })],
     });
     const { container } = renderGrid(false);
-    await screen.findByRole("button", { name: "Like" });
+    await screen.findByRole("button", { name: "Add a reaction" });
     const src = container.querySelector("iframe")!.getAttribute("src")!;
     expect(src).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ\?start=5&end=35/);
   });
@@ -361,7 +394,7 @@ describe("PortfolioGrid: generated pictures", () => {
       caption: "a red kite",
       isAiImage: true,
     });
-    await waitFor(() => expect(screen.getAllByRole("button", { name: "Like" })).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Add a reaction" })).toHaveLength(3));
   });
 
   it("truncates a long prompt to the 200-character caption limit instead of losing the picture (regression)", async () => {
@@ -404,16 +437,16 @@ describe("PortfolioGrid: adding videos", () => {
     vi.mocked(checkVideoFile).mockResolvedValue(null);
     upload.mockResolvedValue({ url: "u", mediaItem: item({ id: "new", type: "video", url: "https://x/clip.mp4", durationSeconds: 9 }) });
     renderGrid(true);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
     chooseFile(mp4());
     await waitFor(() => expect(upload).toHaveBeenCalledWith(expect.any(File), "portfolio", undefined));
-    await waitFor(() => expect(screen.getAllByRole("button", { name: "Like" })).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Add a reaction" })).toHaveLength(3));
   });
 
   it("refuses an over-long or over-large video before uploading, with the reason", async () => {
     vi.mocked(checkVideoFile).mockResolvedValue("Videos can be up to 30 seconds — this one is 42 seconds.");
     renderGrid(true);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
     chooseFile(mp4());
     expect(await screen.findByText(/this one is 42 seconds/)).toBeInTheDocument();
     expect(upload).not.toHaveBeenCalled();
@@ -423,7 +456,7 @@ describe("PortfolioGrid: adding videos", () => {
     vi.mocked(checkVideoFile).mockResolvedValue(null);
     upload.mockRejectedValue(new ApiError(400, "Videos can be up to 30 seconds — this one is 44 seconds"));
     renderGrid(true);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
     chooseFile(mp4());
     expect(await screen.findByText(/this one is 44 seconds/)).toBeInTheDocument();
   });
@@ -477,7 +510,7 @@ describe("PortfolioGrid: captions", () => {
   it("shows nothing where a piece has no caption, for a visitor", async () => {
     api.byUser.mockResolvedValue({ media: [item({ id: "m1", caption: null })] });
     renderGrid(false);
-    await screen.findByRole("button", { name: "Like" });
+    await screen.findByRole("button", { name: "Add a reaction" });
     expect(screen.queryByText(/caption/i)).not.toBeInTheDocument();
   });
 
@@ -561,7 +594,7 @@ describe("PortfolioGrid: captions", () => {
   it("gives an uploaded photo the caption written beforehand, then clears the box for the next one", async () => {
     upload.mockResolvedValue({ url: "u", mediaItem: item({ id: "new", caption: "Studio at dawn" }) });
     renderGrid(true);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
     expect(nextBox()).toHaveAttribute("maxLength", "200");
     await userEvent.type(nextBox(), "  Studio at dawn ");
     chooseImage();
@@ -573,7 +606,7 @@ describe("PortfolioGrid: captions", () => {
   it("uploads without a caption when none was written", async () => {
     upload.mockResolvedValue({ url: "u", mediaItem: item({ id: "new" }) });
     renderGrid(true);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
     chooseImage();
     await waitFor(() => expect(upload).toHaveBeenCalledWith(expect.any(File), "portfolio", undefined));
   });
@@ -581,7 +614,7 @@ describe("PortfolioGrid: captions", () => {
   it("keeps the caption written beforehand if the upload fails, so it needn't be typed again", async () => {
     upload.mockRejectedValue(new ApiError(400, "Pictures can be up to 10 MB"));
     renderGrid(true);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
     await userEvent.type(nextBox(), "Keep this");
     chooseImage();
     expect(await screen.findByText("Pictures can be up to 10 MB")).toBeInTheDocument();
@@ -591,7 +624,7 @@ describe("PortfolioGrid: captions", () => {
   it("gives a video link, a photo from the search and a generated picture the caption too", async () => {
     api.create.mockImplementation(async (input) => ({ mediaItem: item({ id: "n" + Math.random(), caption: input.caption ?? null }) }));
     renderGrid(true);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
 
     await userEvent.type(nextBox(), "From a link");
     await userEvent.click(screen.getByRole("button", { name: "+ Video link" }));
@@ -614,7 +647,7 @@ describe("PortfolioGrid: captions", () => {
   it("still uses the prompt as the caption of a generated picture when no caption was written", async () => {
     api.create.mockResolvedValue({ mediaItem: item({ id: "gen" }) });
     renderGrid(true);
-    await screen.findAllByRole("button", { name: "Like" });
+    await screen.findAllByRole("button", { name: "Add a reaction" });
     await userEvent.type(screen.getByPlaceholderText("Describe an image to generate…"), "a harbour");
     await userEvent.click(screen.getByRole("button", { name: "fake-generate" }));
     await waitFor(() => expect(api.create).toHaveBeenCalledWith(expect.objectContaining({ caption: "a harbour", isAiImage: true })));

@@ -7,7 +7,7 @@ export type PushPrefs = Record<PushCategory, boolean>;
 export const PUSH_CATEGORIES: { name: PushCategory; label: string; hint: string }[] = [
   { name: "messages", label: "Messages", hint: "When a friend messages you" },
   { name: "friends", label: "Friends", hint: "Friend requests, accepted requests, invites, group invites and birthdays" },
-  { name: "comments", label: "Comments", hint: "On your posts, profile, portfolio and blog entries" },
+  { name: "comments", label: "Comments", hint: "On your posts, profile, portfolio and blog entries, and emoji reactions to your posts and pictures" },
   { name: "events", label: "Events and plans", hint: "Events you host or answered, and lives you asked to be reminded of" },
   { name: "live", label: "Lives", hint: "When a friend goes live" },
   { name: "updates", label: "Everything else", hint: "New blog entries, Help wanted offers, moderator notices and badges" },
