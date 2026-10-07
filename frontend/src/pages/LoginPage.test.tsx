@@ -7,9 +7,13 @@ import { authApi } from "../api/auth.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types";
+import { passkeysApi } from "../api/passkeys.api";
+import { PasskeyError, passkeysSupported, signInWithPasskey } from "../lib/passkeys";
 
 vi.mock("../api/auth.api", () => ({ authApi: { login: vi.fn(), loginTwoFactor: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../api/passkeys.api", () => ({ passkeysApi: { loginOptions: vi.fn(), loginVerify: vi.fn() } }));
+vi.mock("../lib/passkeys", async (importOriginal) => ({ ...(await importOriginal<typeof import("../lib/passkeys")>()), passkeysSupported: vi.fn(() => false), signInWithPasskey: vi.fn() }));
 const login = vi.mocked(authApi.login);
 const loginTwoFactor = vi.mocked(authApi.loginTwoFactor);
 const setUser = vi.fn();
@@ -29,6 +33,10 @@ function renderPage() {
 beforeEach(() => {
   login.mockReset();
   loginTwoFactor.mockReset();
+  vi.mocked(passkeysApi.loginOptions).mockReset();
+  vi.mocked(passkeysApi.loginVerify).mockReset();
+  vi.mocked(signInWithPasskey).mockReset();
+  vi.mocked(passkeysSupported).mockReturnValue(false);
   setUser.mockReset();
   vi.mocked(useAuth).mockReturnValue({ user: null, isLoading: false, setUser, refresh: async () => {} });
 });
@@ -174,6 +182,78 @@ describe("LoginPage: two-step sign-in", () => {
     login.mockResolvedValue({ user: { id: "1" } as User });
     await userEvent.click(screen.getByRole("button", { name: "Log in" }));
     expect(loginTwoFactor).not.toHaveBeenCalled();
+    expect(await screen.findByText("Home feed")).toBeInTheDocument();
+  });
+});
+
+describe("LoginPage: passkeys", () => {
+  const button = () => screen.getByRole("button", { name: "Sign in with a passkey" });
+
+  it("offers a passkey only where the browser can use one", () => {
+    renderPage();
+    expect(screen.queryByRole("button", { name: "Sign in with a passkey" })).not.toBeInTheDocument();
+  });
+
+  it("asks the server, then the device, then the server again, and signs in with no password or code", async () => {
+    vi.mocked(passkeysSupported).mockReturnValue(true);
+    vi.mocked(passkeysApi.loginOptions).mockResolvedValue({ challenge: "abc" } as never);
+    vi.mocked(signInWithPasskey).mockResolvedValue({ id: "key" } as never);
+    const user = { id: "1", username: "sam", displayName: "Sam" } as User;
+    vi.mocked(passkeysApi.loginVerify).mockResolvedValue({ user });
+    renderPage();
+    await userEvent.click(button());
+    expect(signInWithPasskey).toHaveBeenCalledWith({ challenge: "abc" });
+    expect(passkeysApi.loginVerify).toHaveBeenCalledWith({ id: "key" });
+    await waitFor(() => expect(setUser).toHaveBeenCalledWith(user));
+    expect(await screen.findByText("Home feed")).toBeInTheDocument();
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  it("says nothing when the person closes the device prompt", async () => {
+    vi.mocked(passkeysSupported).mockReturnValue(true);
+    vi.mocked(passkeysApi.loginOptions).mockResolvedValue({ challenge: "abc" } as never);
+    vi.mocked(signInWithPasskey).mockRejectedValue(new PasskeyError("cancelled", "Signing in with a passkey was cancelled."));
+    renderPage();
+    await userEvent.click(button());
+    await waitFor(() => expect(button()).toBeEnabled());
+    expect(screen.queryByText(/cancelled/)).not.toBeInTheDocument();
+    expect(passkeysApi.loginVerify).not.toHaveBeenCalled();
+    expect(setUser).not.toHaveBeenCalled();
+  });
+
+  it("shows what went wrong, in the server's or the device's words, and stays on the page", async () => {
+    vi.mocked(passkeysSupported).mockReturnValue(true);
+    vi.mocked(passkeysApi.loginOptions).mockResolvedValue({ challenge: "abc" } as never);
+    vi.mocked(signInWithPasskey).mockResolvedValue({ id: "key" } as never);
+    vi.mocked(passkeysApi.loginVerify).mockRejectedValueOnce(new ApiError(401, "That passkey didn't work. Try again, or sign in with your password."));
+    renderPage();
+    await userEvent.click(button());
+    expect(await screen.findByText(/That passkey didn't work/)).toBeInTheDocument();
+    expect(setUser).not.toHaveBeenCalled();
+
+    vi.mocked(signInWithPasskey).mockRejectedValueOnce(new PasskeyError("no-support", "This device can't make a passkey that is unlocked with a fingerprint, face or PIN. Try another device or password manager."));
+    await userEvent.click(button());
+    expect(await screen.findByText(/Try another device or password manager/)).toBeInTheDocument();
+  });
+
+  it("shows a suspended account's message, and a plain one for anything unexpected", async () => {
+    vi.mocked(passkeysSupported).mockReturnValue(true);
+    vi.mocked(passkeysApi.loginOptions).mockRejectedValueOnce(new ApiError(403, "This account has been suspended."));
+    renderPage();
+    await userEvent.click(button());
+    expect(await screen.findByText("This account has been suspended.")).toBeInTheDocument();
+    vi.mocked(passkeysApi.loginOptions).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await userEvent.click(button());
+    expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
+  });
+
+  it("keeps the password form working beside it", async () => {
+    vi.mocked(passkeysSupported).mockReturnValue(true);
+    login.mockResolvedValue({ user: { id: "1" } as User });
+    renderPage();
+    await userEvent.type(screen.getByPlaceholderText("Email"), "sam@example.com");
+    await userEvent.type(screen.getByPlaceholderText("Password"), "hunter2hunter2");
+    await userEvent.click(screen.getByRole("button", { name: "Log in" }));
     expect(await screen.findByText("Home feed")).toBeInTheDocument();
   });
 });

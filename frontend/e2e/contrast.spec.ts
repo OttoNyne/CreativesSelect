@@ -173,6 +173,41 @@ test.describe("text can be read on light and dark backgrounds", () => {
     await expectReadable(page, "the undo-email-change page, link refused");
   });
 
+  // the settings the owner opens: passkeys, on a dark and on a white profile, with the form and an error showing
+  for (const bg of [{ name: "dark", theme: {} }, { name: "white", theme: { bgColor: "#ffffff", textColor: "#111111", accentColor: "#6d28d9" } }]) {
+    test(`passkeys are readable on a ${bg.name} profile`, async ({ page }) => {
+      const me = newUser("keyread");
+      await signUpViaUi(page, me);
+      expect((await page.request.patch("/api/profiles/me", { data: { theme: bg.theme } })).status()).toBe(200);
+      await page.goto(`/u/${me.username}`);
+      await page.getByRole("button", { name: "Edit profile" }).click();
+      await page.getByRole("button", { name: /Passkeys…/ }).click();
+      const panel = page.getByRole("region", { name: "Passkeys" });
+      await expect(panel.getByText("You haven't added any passkeys yet.")).toBeVisible();
+      await expectReadable(page, `passkeys, none yet (${bg.name})`);
+      // a browser with no passkey support (some test browsers) shows a notice instead of the form
+      if (!(await panel.getByRole("button", { name: "Add a passkey" }).isVisible())) {
+        await expect(panel.getByText(/can't use passkeys/)).toBeVisible();
+        return;
+      }
+      await panel.getByRole("button", { name: "Add a passkey" }).click();
+      await panel.getByLabel("Your password").fill("Not-the-password-1");
+      const add = panel.getByRole("button", { name: "Add passkey" });
+      await expect(add).toHaveCSS("opacity", "1");
+      await expectReadable(page, `passkeys, the add form (${bg.name})`);
+      await add.click();
+      await expect(panel.getByRole("alert")).toContainText("That password isn't right");
+      await expect(add).toHaveCSS("opacity", "1");
+      await expectReadable(page, `passkeys, with an error (${bg.name})`);
+    });
+  }
+
+  test("the login page with its passkey button is readable", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("button", { name: "Log in", exact: true })).toBeVisible();
+    await expectReadable(page, "the login page");
+  });
+
   test("the code step of logging in is readable, with an error showing", async ({ page, browser, baseURL }) => {
     const me = newUser("twologin");
     await signUpViaUi(page, me);

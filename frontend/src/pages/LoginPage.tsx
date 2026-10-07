@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { authApi } from "../api/auth.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { passkeysApi } from "../api/passkeys.api";
+import { PasskeyError, passkeysSupported, signInWithPasskey } from "../lib/passkeys";
 
 export function LoginPage() {
   const { setUser } = useAuth();
@@ -51,6 +53,24 @@ export function LoginPage() {
       }
       setCode("");
       setError(err instanceof ApiError ? err.message : "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // The device holds the key and asks the person (fingerprint, face or PIN): no password and no code are typed.
+  async function handlePasskey() {
+    setError(null);
+    setSubmitting(true);
+    try {
+      const options = await passkeysApi.loginOptions();
+      const response = await signInWithPasskey(options);
+      const { user } = await passkeysApi.loginVerify(response);
+      setUser(user);
+      navigate("/");
+    } catch (err) {
+      // closing the prompt is not an error worth shouting about
+      setError(err instanceof PasskeyError && err.reason === "cancelled" ? null : err instanceof ApiError || err instanceof PasskeyError ? err.message : "Something went wrong");
     } finally {
       setSubmitting(false);
     }
@@ -140,6 +160,19 @@ export function LoginPage() {
           {submitting ? "Logging in…" : "Log in"}
         </button>
       </form>
+
+      {passkeysSupported() && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={handlePasskey}
+            disabled={submitting}
+            className="w-full rounded-md border border-white/20 py-2 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
+          >
+            Sign in with a passkey
+          </button>
+        </div>
+      )}
 
       <p className="mt-4 text-center text-sm text-white/60">
         No account?{" "}
