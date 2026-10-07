@@ -9,7 +9,7 @@ import { API_BASE } from "../api/base";
 type Data = Record<string, unknown>;
 type Handler = (data: Data) => void;
 
-const EVENT_TYPES = ["notification", "message"] as const;
+const EVENT_TYPES = ["notification", "message", "typing"] as const;
 const RETRY_LATER_MS = 30_000;
 
 class LiveUpdates {

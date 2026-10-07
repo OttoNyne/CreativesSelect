@@ -495,6 +495,27 @@ describe("ProfilePage: the order of the sections", () => {
     await waitFor(() => expect(screen.getByLabelText("Show who I know to friends of friends")).not.toBeChecked());
   });
 
+  it("lets the owner choose whether friends see when they've read messages and when they're typing, on by default", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, chatStatus: true } });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, chatStatus: false } });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const label = "Show friends when I've read their messages and when I'm typing";
+    const box = screen.getByLabelText(label);
+    expect(box).toBeChecked();
+    expect(screen.getByText(/Either of you turning it off turns it off for both/)).toBeInTheDocument();
+    await userEvent.click(box);
+    expect(profiles.updateMe).toHaveBeenCalledWith({ chatStatus: false });
+    await waitFor(() => expect(screen.getByLabelText(label)).not.toBeChecked());
+  });
+
+  it("treats a profile that has never said as having it on", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    expect(screen.getByLabelText("Show friends when I've read their messages and when I'm typing")).toBeChecked();
+  });
+
   it("lets the owner move a section, saving the new order straight away", async () => {
     profiles.get.mockResolvedValue({ user: me });
     profiles.updateMe.mockResolvedValue({ user: { ...me, sectionOrder: ["about", "music", "friends", "portfolio", "blog", "testimonials"] } });

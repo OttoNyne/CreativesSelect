@@ -1293,6 +1293,18 @@ Notifications and messages used to appear at the next poll, up to half a minute 
 
 Covered by 20 backend tests (the stream and its headers, every kind of hint and who gets it, edits and deletes, what is never sent, the limits, the keep-alive and the five-minute end, and each way a sign-in can stop counting) on a real HTTP server, 16 frontend tests (the connection manager and the refresh hook: one shared connection, retries, reconnects, fast and slow timers, no EventSource) and 5 browser flows on all three browsers (a message, an edit and a deletion appearing in an open chat, the list, the bell, the polling fallback with the stream blocked, and the stream's own access rules).
 
+### 5.72 Typing indicators and read receipts: showing what you're doing only if both people want it
+
+"Seen" and "is typing…" tell someone what you are doing right now. For a friend that is welcome; for someone who doesn't want to be pressured to answer, it is a small loss of privacy. "Seen" already existed and could not be turned off. Adding typing without fixing that would have made it worse, so both now follow one setting, and the question the design has to answer is who decides.
+
+- **Both people decide.** The setting (`chatStatus`, on by default, in the privacy settings) is shared: if either person has it off, neither shows these to the other and neither sees them, which is the usual way chat apps handle it and means turning it off isn't a way to watch others unseen. Because the answer is the same in both cases, the other person can't tell which of the two switched it off (tested both ways).
+- **The server decides, not the page.** The read time is withheld by the server unless both have it on, and is never sent to the person who received the message at all (tested). The typing ping always gets the same quiet answer (`204`) whether or not it went anywhere, so it can't be used to find out the other person's setting, and an unfriended or blocked person can't send it (tested). Turning it off also stops the "Seen" hint going to the sender's open chat (tested), so nothing leaks through the live connection either.
+- **Nothing is stored.** A typing ping makes no record: it is a live hint to the other person's open pages and is gone. Pings faster than one a second are ignored, the page sends at most one every three seconds and only for a non-empty box, and the receiving page only shows it if it names the friend whose chat is open and removes it after six seconds or when their message arrives.
+- **The unread counts don't depend on it.** Opening a chat still marks their messages read and clears the notification whatever the setting is (tested), so turning receipts off doesn't leave a permanent unread badge.
+- **Not covered:** the setting is for all friends at once, not per friend; "Seen" shows that the chat was opened, not that a particular message was read; a friend who is blocked or removed stops seeing everything immediately, but one who was already looking at an old "Seen" keeps seeing what was shown.
+
+Covered by 17 backend tests (the setting and what it accepts, when the read time is and isn't sent, the live hint, every case of typing: friends only, blocks, either person off, rate, nothing kept), 12 frontend tests (the typing line, its timing and the pings' pace, Seen, the setting's checkbox) and 4 browser flows on all three browsers (typing appearing and fading in a friend's open chat, Seen appearing without a reload, the setting switched off and remembered with neither shown, and the endpoint's rules).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

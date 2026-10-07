@@ -54,6 +54,8 @@ export interface User {
   profileViews?: boolean;
   /** Only in your own: whether you may be named as a mutual friend and suggested to friends of friends. */
   showConnections?: boolean;
+  /** Only in your own: whether friends see when you've read their messages and when you're typing (and you see theirs). */
+  chatStatus?: boolean;
   /** On your own profile: whether you are a moderator of the site. */
   isAdmin?: boolean;
   isPrivate: boolean;

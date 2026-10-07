@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { announceMessagesChanged, MAX_MESSAGE_LENGTH, MESSAGES_CHANGED_EVENT, messagesApi } from "../api/messages.api";
 import { ApiError } from "../api/client";
-import { useLiveRefresh } from "../lib/liveUpdates";
+import { liveUpdates, useLiveRefresh } from "../lib/liveUpdates";
 import { Avatar } from "../components/common/Avatar";
 import { ActivityBadge } from "../components/common/ActivityBadge";
 import { EditBox } from "../components/common/EditBox";
@@ -16,6 +16,9 @@ const THREAD_POLL_MS = 5_000;
 const LIST_POLL_MS = 15_000;
 // While the live connection is up the server says when something arrives, so these timers are only a safety net.
 const THREAD_SLOW_POLL_MS = 60_000;
+// "Typing…" is sent at most this often while writing, and shown for this long after the last one.
+const TYPING_PING_MS = 3_000;
+const TYPING_SHOWN_MS = 6_000;
 const LIST_SLOW_POLL_MS = 120_000;
 
 function timeLabel(iso: string): string {
@@ -86,6 +89,23 @@ function Thread({ username }: { username: string }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
   const lastSeenId = useRef<string | null>(null);
+  const [peerTyping, setPeerTyping] = useState(false);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPing = useRef(0);
+
+  // Their "typing…" shows while pings keep coming and goes away on its own; a message from them also ends it.
+  useEffect(() => {
+    const stop = liveUpdates.subscribe("typing", (data) => {
+      if (data.with !== username) return;
+      setPeerTyping(true);
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      typingTimer.current = setTimeout(() => setPeerTyping(false), TYPING_SHOWN_MS);
+    });
+    return () => {
+      stop();
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+    };
+  }, [username]);
 
   const refresh = useCallback(
     async (first = false) => {
@@ -104,6 +124,7 @@ function Thread({ username }: { username: string }) {
         // Opening a thread marks it read, so the badge and list should update; after
         // that only tell them when something new arrived, not on every quiet poll.
         const newest = res.messages.at(-1)?.id ?? null;
+        if (newest !== lastSeenId.current && res.messages.at(-1) && !res.messages.at(-1)!.mine) setPeerTyping(false);
         if (first || newest !== lastSeenId.current) announceMessagesChanged();
         lastSeenId.current = newest;
       } catch (err) {
@@ -258,10 +279,21 @@ function Thread({ username }: { username: string }) {
       </div>
 
       {actionError && <p className="px-3 text-xs text-red-400">{actionError}</p>}
+      <p role="status" aria-live="polite" className="min-h-[1.25rem] px-3 text-xs italic text-white/60">
+        {peerTyping ? `${other?.displayName ?? username} is typing…` : ""}
+      </p>
       <form onSubmit={handleSend} className="flex items-end gap-2 border-t border-white/10 p-3">
         <textarea
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            // tell them, at most every few seconds, that something is being written (the server drops it if either of you has this off)
+            const now = Date.now();
+            if (e.target.value.trim() && now - lastPing.current >= TYPING_PING_MS) {
+              lastPing.current = now;
+              messagesApi.typing(username).catch(() => {});
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();

@@ -18,6 +18,7 @@ export interface UpdateProfileInput {
   showActivity?: boolean;
   profileViews?: boolean;
   showConnections?: boolean;
+  chatStatus?: boolean;
   isPrivate?: boolean;
   theme?: ProfileTheme;
 }

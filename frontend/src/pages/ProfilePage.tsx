@@ -341,6 +341,13 @@ export function ProfilePage() {
               Profile views
             </label>
             <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+              <input type="checkbox" checked={profile.chatStatus !== false} onChange={(e) => saveProfile({ chatStatus: e.target.checked })} />
+              Show friends when I&apos;ve read their messages and when I&apos;m typing
+            </label>
+            <p className="w-full text-xs text-[var(--profile-muted)]">
+              On: a friend sees &quot;Seen&quot; under their message once you open the chat, and &quot;typing…&quot; while you write. Off: they see neither, and you don&apos;t see theirs. Either of you turning it off turns it off for both.
+            </p>
+            <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input type="checkbox" checked={profile.showConnections !== false} onChange={(e) => saveProfile({ showConnections: e.target.checked })} />
               Show who I know to friends of friends
             </label>

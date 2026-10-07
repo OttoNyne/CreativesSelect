@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { MessagesPage } from "./MessagesPage";
@@ -9,7 +9,7 @@ import type { Conversation, DirectMessage, User } from "../types";
 
 vi.mock("../api/messages.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/messages.api")>()),
-  messagesApi: { conversations: vi.fn(), thread: vi.fn(), send: vi.fn(), edit: vi.fn(), remove: vi.fn(), unreadCount: vi.fn() },
+  messagesApi: { conversations: vi.fn(), thread: vi.fn(), send: vi.fn(), edit: vi.fn(), remove: vi.fn(), unreadCount: vi.fn(), typing: vi.fn() },
 }));
 const api = vi.mocked(messagesApi);
 
@@ -41,8 +41,32 @@ function renderAt(path: string) {
   );
 }
 
+/** A stand-in for the browser's EventSource, so the tests can say "the server just told us they are typing". */
+class FakeSource {
+  static instances: FakeSource[] = [];
+  readyState = 0;
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  listeners = new Map<string, ((e: { data?: string }) => void)[]>();
+  constructor() {
+    FakeSource.instances.push(this);
+  }
+  addEventListener(type: string, fn: (e: { data?: string }) => void) {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), fn]);
+  }
+  close() {
+    this.readyState = 2;
+  }
+  emit(type: string, data: object) {
+    for (const fn of this.listeners.get(type) ?? []) fn({ data: JSON.stringify(data) });
+  }
+}
+
 beforeEach(() => {
+  FakeSource.instances = [];
+  vi.stubGlobal("EventSource", FakeSource);
   Object.values(api).forEach((fn) => fn.mockReset());
+  api.typing.mockResolvedValue(undefined);
   api.conversations.mockResolvedValue({ conversations });
   api.thread.mockResolvedValue({ user: zoe, messages: [msg("m1", "Free Friday?", true, { readAt: "x" }), msg("m2", "See you then", false)], hasMore: false });
   window.confirm = vi.fn(() => true);
@@ -197,5 +221,115 @@ describe("MessagesPage", () => {
     renderAt("/messages/zoe");
     await screen.findByText("Free Friday?");
     expect(screen.queryByRole("button", { name: "Edit message" })).not.toBeInTheDocument();
+  });
+});
+
+describe("MessagesPage: typing and seen", () => {
+  const source = () => FakeSource.instances.at(-1)!;
+
+  it("shows that they are typing when the server says so, and only for this conversation", async () => {
+    renderAt("/messages/zoe");
+    await screen.findByText("Free Friday?");
+    expect(screen.queryByText(/is typing/)).not.toBeInTheDocument();
+    act(() => source().emit("typing", { with: "kai" }));
+    expect(screen.queryByText(/is typing/)).not.toBeInTheDocument();
+    act(() => source().emit("typing", { with: "zoe" }));
+    expect(screen.getByText("Zoe is typing…")).toBeInTheDocument();
+  });
+
+  it("stops showing it after a few seconds without another", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderAt("/messages/zoe");
+      await screen.findByText("Free Friday?");
+      act(() => source().emit("typing", { with: "zoe" }));
+      expect(screen.getByText("Zoe is typing…")).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(5_000));
+      expect(screen.getByText("Zoe is typing…")).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(2_000));
+      expect(screen.queryByText(/is typing/)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps showing it while more keep coming", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderAt("/messages/zoe");
+      await screen.findByText("Free Friday?");
+      for (let i = 0; i < 3; i++) {
+        act(() => source().emit("typing", { with: "zoe" }));
+        act(() => vi.advanceTimersByTime(4_000));
+      }
+      expect(screen.getByText("Zoe is typing…")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("takes it away when their message arrives", async () => {
+    renderAt("/messages/zoe");
+    await screen.findByText("Free Friday?");
+    act(() => source().emit("typing", { with: "zoe" }));
+    expect(screen.getByText("Zoe is typing…")).toBeInTheDocument();
+    api.thread.mockResolvedValue({ user: zoe, messages: [msg("m1", "Free Friday?", true), msg("m2", "See you then", false), msg("m3", "Here I am", false)], hasMore: false });
+    act(() => source().emit("message", { with: "zoe" }));
+    await screen.findByText("Here I am");
+    expect(screen.queryByText(/is typing/)).not.toBeInTheDocument();
+  });
+
+  it("tells them you are typing, at most every few seconds, and never for an empty box", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderAt("/messages/zoe");
+      await screen.findByText("Free Friday?");
+      const box = screen.getByLabelText("Message");
+      fireEvent.change(box, { target: { value: "   " } });
+      expect(api.typing).not.toHaveBeenCalled();
+      fireEvent.change(box, { target: { value: "H" } });
+      fireEvent.change(box, { target: { value: "He" } });
+      fireEvent.change(box, { target: { value: "Hel" } });
+      expect(api.typing).toHaveBeenCalledTimes(1);
+      expect(api.typing).toHaveBeenCalledWith("zoe");
+      act(() => vi.advanceTimersByTime(3_100));
+      fireEvent.change(box, { target: { value: "Hell" } });
+      expect(api.typing).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("carries on typing when telling them fails", async () => {
+    api.typing.mockRejectedValue(new ApiError(500, "Internal server error"));
+    renderAt("/messages/zoe");
+    await screen.findByText("Free Friday?");
+    fireEvent.change(screen.getByLabelText("Message"), { target: { value: "Hi" } });
+    expect(screen.getByLabelText("Message")).toHaveValue("Hi");
+    expect(screen.queryByText(/Internal server error/)).not.toBeInTheDocument();
+  });
+
+  it("shows Seen only under my own messages that the server says were read", async () => {
+    api.thread.mockResolvedValue({ user: zoe, messages: [msg("m1", "Read one", true, { readAt: "2026-10-07T12:00:00Z" }), msg("m2", "Unread one", true), msg("m3", "Theirs", false)], hasMore: false });
+    renderAt("/messages/zoe");
+    await screen.findByText("Read one");
+    expect(screen.getAllByText("Seen")).toHaveLength(1);
+  });
+
+  it("shows no Seen at all when the server sends none (either person has it off)", async () => {
+    api.thread.mockResolvedValue({ user: zoe, messages: [msg("m1", "Hello", true), msg("m2", "Hi back", false)], hasMore: false });
+    renderAt("/messages/zoe");
+    await screen.findByText("Hello");
+    expect(screen.queryByText("Seen")).not.toBeInTheDocument();
+  });
+
+  it("reloads the chat when the server says the message was read, so Seen shows at once", async () => {
+    api.thread.mockResolvedValueOnce({ user: zoe, messages: [msg("m1", "Hello", true)], hasMore: false });
+    renderAt("/messages/zoe");
+    await screen.findByText("Hello");
+    expect(screen.queryByText("Seen")).not.toBeInTheDocument();
+    api.thread.mockResolvedValue({ user: zoe, messages: [msg("m1", "Hello", true, { readAt: "2026-10-07T12:00:00Z" })], hasMore: false });
+    act(() => source().emit("message", { with: "zoe" }));
+    expect(await screen.findByText("Seen")).toBeInTheDocument();
   });
 });

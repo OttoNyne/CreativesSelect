@@ -6,6 +6,8 @@ export const MAX_MESSAGE_LENGTH = 2000;
 export const messagesApi = {
   conversations: () => api.get<{ conversations: Conversation[] }>("/messages/conversations"),
   unreadCount: () => api.get<{ unread: number }>("/messages/unread-count"),
+  /** "Typing…": a hint to the friend's open chat, which the server drops if either of you has switched it off. */
+  typing: (username: string) => api.post<void>(`/messages/with/${encodeURIComponent(username)}/typing`, {}),
   thread: (username: string, before?: string) =>
     api.get<{ user: User; messages: DirectMessage[]; hasMore: boolean }>(
       `/messages/with/${encodeURIComponent(username)}${before ? `?before=${encodeURIComponent(before)}` : ""}`
