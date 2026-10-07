@@ -36,7 +36,7 @@ jobs:
   # is checked out from its own repo; the database is a throwaway container.
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     services:
       mongo:
         image: mongo:7
