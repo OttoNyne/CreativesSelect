@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { announceMessagesChanged, MAX_MESSAGE_LENGTH, MESSAGES_CHANGED_EVENT, messagesApi } from "../api/messages.api";
 import { ApiError } from "../api/client";
+import { useLiveRefresh } from "../lib/liveUpdates";
 import { Avatar } from "../components/common/Avatar";
 import { ActivityBadge } from "../components/common/ActivityBadge";
 import { EditBox } from "../components/common/EditBox";
@@ -13,6 +14,9 @@ import type { Conversation, DirectMessage, User } from "../types";
 
 const THREAD_POLL_MS = 5_000;
 const LIST_POLL_MS = 15_000;
+// While the live connection is up the server says when something arrives, so these timers are only a safety net.
+const THREAD_SLOW_POLL_MS = 60_000;
+const LIST_SLOW_POLL_MS = 120_000;
 
 function timeLabel(iso: string): string {
   const d = new Date(iso);
@@ -116,11 +120,17 @@ function Thread({ username }: { username: string }) {
   // The parent keys <Thread> by username, so this runs once per conversation.
   useEffect(() => {
     refresh(true);
-    const timer = setInterval(() => {
-      if (!document.hidden) refresh();
-    }, THREAD_POLL_MS);
-    return () => clearInterval(timer);
   }, [refresh]);
+  // A hint names who the message was with, so only this conversation reloads; the timer skips a tab nobody is looking at.
+  useLiveRefresh(
+    "message",
+    (hint) => {
+      if (hint ? hint.with !== username : document.hidden) return;
+      void refresh();
+    },
+    THREAD_POLL_MS,
+    THREAD_SLOW_POLL_MS
+  );
 
   useEffect(() => {
     if (stickToBottom.current) bottomRef.current?.scrollIntoView?.({ block: "end" });
@@ -281,32 +291,33 @@ export function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [listState, setListState] = useState<"loading" | "error" | "ready">("loading");
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load(first: boolean) {
-      try {
-        const { conversations } = await messagesApi.conversations();
-        if (!cancelled) {
-          setConversations(conversations);
-          setListState("ready");
-        }
-      } catch {
-        if (!cancelled && first) setListState("error");
-      }
+  const loadList = useCallback(async (first: boolean) => {
+    try {
+      const { conversations } = await messagesApi.conversations();
+      setConversations(conversations);
+      setListState("ready");
+    } catch {
+      if (first) setListState("error");
     }
-    load(true);
-    const timer = setInterval(() => {
-      if (!document.hidden) load(false);
-    }, LIST_POLL_MS);
-    // refresh right away when a thread is opened or a message sent
-    const onChange = () => load(false);
-    window.addEventListener(MESSAGES_CHANGED_EVENT, onChange);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-      window.removeEventListener(MESSAGES_CHANGED_EVENT, onChange);
-    };
   }, []);
+
+  useEffect(() => {
+    void loadList(true);
+    // refresh right away when a thread is opened or a message sent
+    const onChange = () => void loadList(false);
+    window.addEventListener(MESSAGES_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(MESSAGES_CHANGED_EVENT, onChange);
+  }, [loadList]);
+  // The list changes whenever any message does; the timer skips a tab nobody is looking at.
+  useLiveRefresh(
+    "message",
+    (hint) => {
+      if (!hint && document.hidden) return;
+      void loadList(false);
+    },
+    LIST_POLL_MS,
+    LIST_SLOW_POLL_MS
+  );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">

@@ -8,9 +8,12 @@ import { useAuth } from "../../context/AuthContext";
 import { notificationTarget } from "../../lib/notificationTarget";
 import { formatWhen } from "../../lib/when";
 import { REACTIONS } from "../../lib/reactions";
+import { useLiveRefresh } from "../../lib/liveUpdates";
 import type { Notification } from "../../types";
 
 const POLL_INTERVAL_MS = 30_000;
+// While the live connection is up the server says when something new arrives, so the timer is only a safety net.
+const SLOW_POLL_INTERVAL_MS = 300_000;
 
 function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -123,9 +126,8 @@ export function NotificationBell() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
   }, []);
+  useLiveRefresh("notification", () => void load(), POLL_INTERVAL_MS, SLOW_POLL_INTERVAL_MS);
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {

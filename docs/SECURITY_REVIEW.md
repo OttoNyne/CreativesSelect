@@ -1280,6 +1280,19 @@ Passwords are reused and guessed, and even a one-time code can be talked out of 
 
 Covered by 46 backend tests (adding, every refusal, managing, signing in, every way an answer can be wrong, taking an account back, what is never shown), 39 frontend tests (the settings panel and its steps, the login button, the browser-library wrapper and its error wording, the API calls) and 7 browser flows with a virtual device (add, sign in with it alone, both factors, password and code needed, rename and remove, a device that won't check the person, the endpoints) plus 3 contrast checks.
 
+### 5.71 Live updates: a connection that stays open, without becoming a way to listen in
+
+Notifications and messages used to appear at the next poll, up to half a minute later. A page that is told the moment something happens feels like a different site, but it means the server holds a connection open for every page that is open, and sends things to people without being asked. Both are new things to get wrong.
+
+- **Only hints go down it.** The stream carries the kind of thing that happened ("a notification", "a message") and, for a message, the username of the person the chat was with. It never carries a message, a notification's contents or anything else (tested by searching everything sent for the words of a private message). The page then asks the ordinary endpoints for the real thing, and those apply every check they always did (friends, blocks, private profiles), so the stream adds no new way to read anything.
+- **Only the person's own.** A hint goes to the pages of the person it is for and no one else (tested with two people, including that someone else's notification sends nothing to the other person's stream). It needs a sign-in (401 without one, tested with a forged cookie too).
+- **A sign-out ends it.** An open connection would otherwise go on receiving hints after the person had signed that device out. The sign-in each connection was opened with is checked again every minute, so signing a device out from the list, logging out, a password change, a suspension or deleting the account closes the stream (each tested), while the person's other devices keep theirs. The check treats a problem on our side (the database being down) as "still valid" so it can't look like a mass sign-out.
+- **It can't be used to exhaust the server.** At most 5 connections per person (the newest are kept), at most 1000 in all (a polite 503 with Retry-After beyond that), at most 90 opens per person per 15 minutes (a page stuck reconnecting can't hammer the server, tested), each connection is closed after 5 minutes and the page reconnects, dead ones are removed when a write fails or the page goes away (tested), and one shared timer does the keep-alives instead of one per connection.
+- **It fails back to the old behaviour.** The page's own polling continues at its old pace whenever the connection is not up, and slows to a safety net only while it is (tested for both, and in the browser with the connection blocked, where a message still arrives by polling). The headers tell proxies to pass each event on as it is written. The server keeps connections in its own memory, which suits one server: if the site were ever run on several, a hint made on one wouldn't reach pages connected to another, and those pages would be caught by the slower timer.
+- **Not covered:** this is a hint to look again, not a guarantee of delivery (a hint sent while the connection is down is not queued; the reload when it comes back is what catches up); the voice lives and the group chat still poll on their own timers; and typing indicators and read receipts are not part of it.
+
+Covered by 20 backend tests (the stream and its headers, every kind of hint and who gets it, edits and deletes, what is never sent, the limits, the keep-alive and the five-minute end, and each way a sign-in can stop counting) on a real HTTP server, 16 frontend tests (the connection manager and the refresh hook: one shared connection, retries, reconnects, fast and slow timers, no EventSource) and 5 browser flows on all three browsers (a message, an edit and a deletion appearing in an open chat, the list, the bell, the polling fallback with the stream blocked, and the stream's own access rules).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -1407,7 +1420,7 @@ its own.
 - **Messages are private from other users, not from the operator.** They are stored as plain text in
   MongoDB (encrypted at rest by the database host, not end-to-end), and there is no way to report a
   message or block from inside a conversation (blocking works from the profile). Messages arrive by
-  polling every few seconds while a thread is open, not by push.
+  a live connection (hints only, 5.71) with polling as the fallback, and by push notification when the site is closed.
 - **Older stored files aren't cleaned up automatically.** Files stored before the
   ledger existed (two AI images) have no ledger entry and are left alone by design.
 - **Test coverage has known gaps.** Real Cloudinary uploads (including the 30-second
