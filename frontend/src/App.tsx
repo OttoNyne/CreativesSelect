@@ -24,6 +24,7 @@ import { LivePage } from "./pages/LivePage";
 import { LiveRoomPage } from "./pages/LiveRoomPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
+import { ConfirmEmailChangePage, UndoEmailChangePage } from "./pages/EmailChangePages";
 import { AboutPage } from "./pages/AboutPage";
 import { BlogEntryPage } from "./pages/BlogEntryPage";
 import { BulletinsPage } from "./pages/BulletinsPage";
@@ -53,6 +54,8 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
+          <Route path="/undo-email-change" element={<UndoEmailChangePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />

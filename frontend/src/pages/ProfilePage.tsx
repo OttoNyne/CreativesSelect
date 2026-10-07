@@ -37,6 +37,7 @@ import { ChangePassword } from "../components/profile/ChangePassword";
 import { SignedInDevices } from "../components/profile/SignedInDevices";
 import { TwoFactorSettings } from "../components/profile/TwoFactorSettings";
 import { DownloadMyData } from "../components/profile/DownloadMyData";
+import { ChangeEmail } from "../components/profile/ChangeEmail";
 import { EmailStatus } from "../components/profile/EmailStatus";
 import { PushSettings } from "../components/profile/PushSettings";
 import { ProfileNames } from "../components/profile/ProfileNames";
@@ -417,6 +418,7 @@ export function ProfilePage() {
           </button>
           <div className="space-y-3 border-t border-white/10 pt-3">
             <EmailStatus />
+            <ChangeEmail />
             <PushSettings />
             <TwoFactorSettings />
             <SignedInDevices />

@@ -142,6 +142,37 @@ test.describe("text can be read on light and dark backgrounds", () => {
     });
   }
 
+  // the settings the owner opens: change email, on a dark and on a white profile, with an error showing
+  for (const bg of [{ name: "dark", theme: {} }, { name: "white", theme: { bgColor: "#ffffff", textColor: "#111111", accentColor: "#6d28d9" } }]) {
+    test(`change email is readable on a ${bg.name} profile`, async ({ page }) => {
+      const me = newUser("mailread");
+      await signUpViaUi(page, me);
+      expect((await page.request.patch("/api/profiles/me", { data: { theme: bg.theme } })).status()).toBe(200);
+      await page.goto(`/u/${me.username}`);
+      await page.getByRole("button", { name: "Edit profile" }).click();
+      await expectReadable(page, `the settings before change email (${bg.name})`);
+      await page.getByRole("button", { name: /Change email/ }).click();
+      await page.getByLabel("New email address").fill("fresh@example.com");
+      await page.getByLabel("Your password").fill("Not-the-password-1");
+      const send = page.getByRole("button", { name: "Send the link" });
+      await expect(send).toHaveCSS("opacity", "1");
+      await expectReadable(page, `change email (${bg.name})`);
+      await send.click();
+      await expect(page.getByRole("alert").filter({ hasText: "That password isn't right" })).toBeVisible();
+      await expect(send).toHaveCSS("opacity", "1");
+      await expectReadable(page, `change email, with an error (${bg.name})`);
+    });
+  }
+
+  test("the pages the emailed links open are readable, done and failed", async ({ page }) => {
+    await page.goto("/confirm-email-change");
+    await expect(page.getByRole("heading", { name: "Link needed" })).toBeVisible();
+    await expectReadable(page, "the confirm-email-change page without a link");
+    await page.goto("/undo-email-change#token=" + "f".repeat(64));
+    await expect(page.getByRole("heading", { name: "Couldn't put your old email back" })).toBeVisible();
+    await expectReadable(page, "the undo-email-change page, link refused");
+  });
+
   test("the code step of logging in is readable, with an error showing", async ({ page, browser, baseURL }) => {
     const me = newUser("twologin");
     await signUpViaUi(page, me);

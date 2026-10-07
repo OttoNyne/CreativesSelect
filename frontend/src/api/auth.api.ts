@@ -47,6 +47,12 @@ export const authApi = {
   verifyEmail: (token: string) => api.post<void>("/auth/verify-email", { token }),
   resendVerification: () => api.post<void>("/auth/resend-verification"),
   me: () => api.get<{ user: User }>("/auth/me"),
+  /** Asks to change the account's email: a link goes to the new address, and nothing changes until it is opened. */
+  requestEmailChange: (newEmail: string, password: string, code?: string) => api.post<void>("/auth/email/change", { newEmail, password, ...(code ? { code } : {}) }),
+  /** The link from the new address. */
+  confirmEmailChange: (token: string) => api.post<void>("/auth/email/confirm", { token }),
+  /** The link from the old address: puts it back and signs every device out. */
+  revertEmailChange: (token: string) => api.post<void>("/auth/email/revert", { token }),
   twoFactorStatus: () => api.get<TwoFactorStatus>("/auth/2fa"),
   twoFactorSetup: (password: string) => api.post<{ secret: string; otpauthUrl: string }>("/auth/2fa/setup", { password }),
   twoFactorEnable: (code: string) => api.post<{ recoveryCodes: string[] }>("/auth/2fa/enable", { code }),
