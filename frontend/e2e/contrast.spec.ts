@@ -101,7 +101,7 @@ test.describe("text can be read on light and dark backgrounds", () => {
       await expect(page.getByRole("button", { name: "Continue" })).toHaveCSS("opacity", "1");
       await expectReadable(page, `two-step sign-in, asking for the password (${bg.name})`);
       await page.getByRole("button", { name: "Continue" }).click();
-      const secret = ((await page.getByLabel("Setup key").textContent()) ?? "").replace(/s/g, "");
+      const secret = ((await page.getByLabel("Setup key").textContent()) ?? "").replace(/\s/g, "");
       await expectReadable(page, `two-step sign-in, the key and picture (${bg.name})`);
       await page.getByLabel("6-digit code").fill("000000");
       await page.getByRole("button", { name: "Turn on", exact: true }).click();
@@ -120,6 +120,25 @@ test.describe("text can be read on light and dark backgrounds", () => {
       await page.getByRole("button", { name: "Turn off" }).first().click();
       await expect(page.getByLabel("Code from your app")).toBeVisible();
       await expectReadable(page, `two-step sign-in, turning off (${bg.name})`);
+    });
+  }
+
+  // the settings the owner opens: download my data, on a dark and on a white profile, with an error showing
+  for (const bg of [{ name: "dark", theme: {} }, { name: "white", theme: { bgColor: "#ffffff", textColor: "#111111", accentColor: "#6d28d9" } }]) {
+    test(`download my data is readable on a ${bg.name} profile`, async ({ page }) => {
+      const me = newUser("exportread");
+      await signUpViaUi(page, me);
+      expect((await page.request.patch("/api/profiles/me", { data: { theme: bg.theme } })).status()).toBe(200);
+      await page.goto(`/u/${me.username}`);
+      await page.getByRole("button", { name: "Edit profile" }).click();
+      await page.getByRole("button", { name: /Download my data/ }).click();
+      await page.getByLabel("Your password").fill("Not-the-password-1");
+      await expect(page.getByRole("button", { name: "Download", exact: true })).toHaveCSS("opacity", "1");
+      await expectReadable(page, `download my data (${bg.name})`);
+      await page.getByRole("button", { name: "Download", exact: true }).click();
+      await expect(page.getByRole("alert")).toContainText("Incorrect password");
+      await expect(page.getByRole("button", { name: "Download", exact: true })).toHaveCSS("opacity", "1");
+      await expectReadable(page, `download my data, with an error (${bg.name})`);
     });
   }
 

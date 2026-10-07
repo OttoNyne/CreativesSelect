@@ -51,6 +51,19 @@ export const api = {
     request<T>(path, { method: "DELETE", body: body !== undefined ? JSON.stringify(body) : undefined }),
 };
 
+/** A POST whose answer is a file to save (the download of someone's own data): the file, and the name the server gave it. */
+export async function postForFile(path: string, body: unknown): Promise<{ blob: Blob; filename: string }> {
+  const res = await fetch(`${API_URL}/api${path}`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const data = await res.json().catch(() => undefined);
+    throw new ApiError(res.status, data?.error ?? res.statusText, data?.details, typeof data?.code === "string" ? data.code : undefined);
+  }
+  const named = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1];
+  // a name from a server is only ever used as a file name: nothing that could mean a folder
+  const filename = (named ?? "creativesselect-data.json").replace(/[^\w.-]/g, "_");
+  return { blob: await res.blob(), filename };
+}
+
 export function assetUrl(path: string | null | undefined): string | undefined {
   if (!path) return undefined;
   if (path.startsWith("http") || path.startsWith("data:")) return path;

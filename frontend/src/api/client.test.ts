@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, ApiError, assetUrl } from "./client";
+import { api, ApiError, assetUrl, postForFile } from "./client";
 
 function mockFetch(status: number, body?: unknown) {
   const fn = vi.fn().mockResolvedValue({
@@ -65,5 +65,43 @@ describe("assetUrl", () => {
 
   it("prefixes relative paths with the API origin", () => {
     expect(assetUrl("/uploads/a.png")).toMatch(/\/uploads\/a\.png$/);
+  });
+});
+
+describe("postForFile", () => {
+  function fileFetch(status: number, headers: Record<string, string>, body: unknown = "{}") {
+    const fn = vi.fn().mockResolvedValue({
+      status,
+      ok: status >= 200 && status < 300,
+      statusText: "Status text",
+      headers: { get: (name: string) => headers[name] ?? null },
+      blob: async () => new Blob([JSON.stringify(body)], { type: "application/json" }),
+      json: async () => body,
+    });
+    vi.stubGlobal("fetch", fn);
+    return fn;
+  }
+
+  it("sends the body as JSON with the cookies, and returns the file with the server's name for it", async () => {
+    const fn = fileFetch(200, { "Content-Disposition": 'attachment; filename="creativesselect-zoe-2026-10-07.json"' }, { hello: 1 });
+    const { blob, filename } = await postForFile("/profiles/me/export", { password: "pw" });
+    expect(filename).toBe("creativesselect-zoe-2026-10-07.json");
+    expect(await blob.text()).toBe('{"hello":1}');
+    expect(fn.mock.calls[0][0]).toMatch(/\/api\/profiles\/me\/export$/);
+    expect(fn.mock.calls[0][1]).toMatchObject({ method: "POST", credentials: "include", body: '{"password":"pw"}' });
+  });
+
+  it("uses a plain name when the server gave none, and never lets a name mean a folder", async () => {
+    fileFetch(200, {});
+    expect((await postForFile("/x", {})).filename).toBe("creativesselect-data.json");
+    fileFetch(200, { "Content-Disposition": 'attachment; filename="../../etc/passwd"' });
+    expect((await postForFile("/x", {})).filename).toBe(".._.._etc_passwd");
+  });
+
+  it("raises the server's own message, as the other calls do", async () => {
+    fileFetch(403, {}, { error: "Incorrect password" });
+    await expect(postForFile("/x", {})).rejects.toMatchObject({ status: 403, message: "Incorrect password" });
+    fileFetch(429, {}, { error: "Too many attempts" });
+    await expect(postForFile("/x", {})).rejects.toBeInstanceOf(ApiError);
   });
 });

@@ -36,6 +36,7 @@ import { DeleteAccount } from "../components/profile/DeleteAccount";
 import { ChangePassword } from "../components/profile/ChangePassword";
 import { SignedInDevices } from "../components/profile/SignedInDevices";
 import { TwoFactorSettings } from "../components/profile/TwoFactorSettings";
+import { DownloadMyData } from "../components/profile/DownloadMyData";
 import { EmailStatus } from "../components/profile/EmailStatus";
 import { PushSettings } from "../components/profile/PushSettings";
 import { ProfileNames } from "../components/profile/ProfileNames";
@@ -420,6 +421,7 @@ export function ProfilePage() {
             <TwoFactorSettings />
             <SignedInDevices />
             <ChangePassword />
+            <DownloadMyData />
             <DeleteAccount />
           </div>
         </div>

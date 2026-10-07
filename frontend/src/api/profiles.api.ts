@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, postForFile } from "./client";
 import type { Comment, ProfileTheme, User, WallpaperMotion } from "../types";
 import type { SectionKey } from "../lib/sections";
 
@@ -23,6 +23,8 @@ export interface UpdateProfileInput {
 }
 
 export const profilesApi = {
+  /** Everything the person has written or chosen, as a file to save. Asks for the password again. */
+  exportData: (password: string) => postForFile("/profiles/me/export", { password }),
   /** New public profiles, newest first, optionally only those with a tag. */
   discover: ({ tag, page }: { tag?: string; page?: number } = {}) => {
     const query = new URLSearchParams();
