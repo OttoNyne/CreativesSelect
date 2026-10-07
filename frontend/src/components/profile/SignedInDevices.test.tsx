@@ -5,10 +5,11 @@ import { SignedInDevices } from "./SignedInDevices";
 import { authApi, type SignedInDevice } from "../../api/auth.api";
 import { ApiError } from "../../api/client";
 
-vi.mock("../../api/auth.api", () => ({ authApi: { sessions: vi.fn(), endSession: vi.fn(), endOtherSessions: vi.fn() } }));
+vi.mock("../../api/auth.api", () => ({ authApi: { sessions: vi.fn(), endSession: vi.fn(), endOtherSessions: vi.fn(), setSignInAlerts: vi.fn() } }));
 const sessions = vi.mocked(authApi.sessions);
 const endSession = vi.mocked(authApi.endSession);
 const endOtherSessions = vi.mocked(authApi.endOtherSessions);
+const setSignInAlerts = vi.mocked(authApi.setSignInAlerts);
 
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
 const here: SignedInDevice = { id: "a1", device: "Chrome on Windows", current: true, createdAt: ago(3_600_000), lastSeenAt: ago(0) };
@@ -19,6 +20,7 @@ beforeEach(() => {
   sessions.mockReset();
   endSession.mockReset();
   endOtherSessions.mockReset();
+  setSignInAlerts.mockReset();
 });
 
 async function open() {
@@ -34,7 +36,7 @@ describe("SignedInDevices", () => {
   });
 
   it("lists each device in plain words, marks this one, and says when the others were last used", async () => {
-    sessions.mockResolvedValue({ sessions: [here, laptop, phone] });
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here, laptop, phone] });
     render(<SignedInDevices />);
     await open();
     const items = await screen.findAllByRole("listitem");
@@ -49,7 +51,7 @@ describe("SignedInDevices", () => {
   });
 
   it("signs one device out, and takes it off the list", async () => {
-    sessions.mockResolvedValue({ sessions: [here, laptop, phone] });
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here, laptop, phone] });
     endSession.mockResolvedValue(undefined);
     render(<SignedInDevices />);
     await open();
@@ -62,7 +64,7 @@ describe("SignedInDevices", () => {
   });
 
   it("signs every other device out in one go, keeping this one", async () => {
-    sessions.mockResolvedValue({ sessions: [here, laptop, phone] });
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here, laptop, phone] });
     endOtherSessions.mockResolvedValue({ ended: 2 });
     render(<SignedInDevices />);
     await open();
@@ -75,13 +77,13 @@ describe("SignedInDevices", () => {
   });
 
   it("words the button for one other device, and offers none when there are no others", async () => {
-    sessions.mockResolvedValue({ sessions: [here, phone] });
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here, phone] });
     const { unmount } = render(<SignedInDevices />);
     await open();
     expect(await screen.findByRole("button", { name: "Sign out the other device" })).toBeInTheDocument();
     unmount();
 
-    sessions.mockResolvedValue({ sessions: [here] });
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here] });
     render(<SignedInDevices />);
     await open();
     expect(await screen.findByText(/this device only/)).toBeInTheDocument();
@@ -89,7 +91,7 @@ describe("SignedInDevices", () => {
   });
 
   it("shows a problem with signing out, and keeps the device on the list", async () => {
-    sessions.mockResolvedValue({ sessions: [here, phone] });
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here, phone] });
     endSession.mockRejectedValue(new ApiError(429, "You've ended a lot of sign-ins — please wait a little and try again."));
     render(<SignedInDevices />);
     await open();
@@ -99,7 +101,7 @@ describe("SignedInDevices", () => {
   });
 
   it("refreshes the list when the device it was asked to sign out had already gone", async () => {
-    sessions.mockResolvedValueOnce({ sessions: [here, phone] }).mockResolvedValueOnce({ sessions: [here] });
+    sessions.mockResolvedValueOnce({ signInAlerts: true, sessions: [here, phone] }).mockResolvedValueOnce({ signInAlerts: true, sessions: [here] });
     endSession.mockRejectedValue(new ApiError(404, "That sign-in wasn't found"));
     render(<SignedInDevices />);
     await open();
@@ -110,7 +112,7 @@ describe("SignedInDevices", () => {
   });
 
   it("says when the list can't be loaded, and tries again on request", async () => {
-    sessions.mockRejectedValueOnce(new ApiError(500, "Internal server error")).mockResolvedValueOnce({ sessions: [here] });
+    sessions.mockRejectedValueOnce(new ApiError(500, "Internal server error")).mockResolvedValueOnce({ signInAlerts: true, sessions: [here] });
     render(<SignedInDevices />);
     await open();
     expect(await screen.findByRole("alert")).toHaveTextContent("Internal server error");
@@ -119,7 +121,7 @@ describe("SignedInDevices", () => {
   });
 
   it("can be closed again, and looks the list up afresh when reopened", async () => {
-    sessions.mockResolvedValue({ sessions: [here] });
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here] });
     render(<SignedInDevices />);
     await open();
     await screen.findByText("Chrome on Windows");
@@ -131,7 +133,7 @@ describe("SignedInDevices", () => {
   });
 
   it("only allows one sign-out at a time", async () => {
-    sessions.mockResolvedValue({ sessions: [here, laptop, phone] });
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here, laptop, phone] });
     endSession.mockImplementation(() => new Promise(() => {}));
     render(<SignedInDevices />);
     await open();
@@ -139,5 +141,62 @@ describe("SignedInDevices", () => {
     expect(screen.getByRole("button", { name: /Sign out Firefox on Linux/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: /Sign out all 2 other devices/ })).toBeDisabled();
     expect(screen.getByText("Signing out…", { selector: "button" })).toBeInTheDocument();
+  });
+});
+
+describe("SignedInDevices: emails about new devices", () => {
+  const box = () => screen.getByRole("checkbox", { name: /Email me when someone signs in from a browser or phone I haven't used before/ });
+
+  it("shows whether the emails are on, in plain words", async () => {
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here] });
+    render(<SignedInDevices />);
+    await open();
+    await screen.findByText("Chrome on Windows");
+    expect(box()).toBeChecked();
+    expect(screen.getByText(/never anything private/)).toBeInTheDocument();
+  });
+
+  it("shows them off when the owner has turned them off", async () => {
+    sessions.mockResolvedValue({ signInAlerts: false, sessions: [here] });
+    render(<SignedInDevices />);
+    await open();
+    await screen.findByText("Chrome on Windows");
+    expect(box()).not.toBeChecked();
+  });
+
+  it("turns them off and on, at once on the page and on the server", async () => {
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here, phone] });
+    setSignInAlerts.mockResolvedValue({ signInAlerts: false });
+    render(<SignedInDevices />);
+    await open();
+    await screen.findByText("Chrome on Windows");
+    await userEvent.click(box());
+    expect(box()).not.toBeChecked();
+    expect(setSignInAlerts).toHaveBeenLastCalledWith(false);
+    await userEvent.click(box());
+    expect(box()).toBeChecked();
+    expect(setSignInAlerts).toHaveBeenLastCalledWith(true);
+    expect(screen.getByText("Safari on iPhone")).toBeInTheDocument(); // the list is untouched
+  });
+
+  it("puts the box back and says so when the change couldn't be saved", async () => {
+    sessions.mockResolvedValue({ signInAlerts: true, sessions: [here] });
+    setSignInAlerts.mockRejectedValue(new ApiError(500, "Internal server error"));
+    render(<SignedInDevices />);
+    await open();
+    await screen.findByText("Chrome on Windows");
+    await userEvent.click(box());
+    expect(await screen.findByRole("alert")).toHaveTextContent("Internal server error");
+    expect(box()).toBeChecked();
+  });
+
+  it("keeps the choice when a device is signed out", async () => {
+    sessions.mockResolvedValue({ signInAlerts: false, sessions: [here, phone] });
+    endSession.mockResolvedValue(undefined);
+    render(<SignedInDevices />);
+    await open();
+    await userEvent.click(await screen.findByRole("button", { name: /Sign out Safari on iPhone/ }));
+    await screen.findByText("Safari on iPhone was signed out.");
+    expect(box()).not.toBeChecked();
   });
 });

@@ -1,5 +1,23 @@
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { fakeIpHeaders, logInViaUi, newUser, signUpViaUi, type TestUser } from "./helpers";
+
+// The API writes emails to this folder instead of sending them (MAIL_OUTBOX_DIR; CI sets it). Without it the tests that read the email are skipped.
+const OUTBOX = process.env.MAIL_OUTBOX_DIR;
+async function newDeviceEmails(address: string): Promise<string[]> {
+  const names = (await readdir(OUTBOX!).catch(() => [] as string[])).filter((n) => n.endsWith(".json")).sort();
+  const found: string[] = [];
+  for (const name of names) {
+    try {
+      const mail = JSON.parse(await readFile(path.join(OUTBOX!, name), "utf8"));
+      if (mail.to === address && /New sign-in/.test(mail.subject)) found.push(mail.text);
+    } catch {
+      // being written as we look: it will be there next time
+    }
+  }
+  return found;
+}
 
 test.use({ extraHTTPHeaders: fakeIpHeaders() });
 test.beforeEach(async ({ page }) => {
@@ -127,5 +145,65 @@ test.describe("where you're signed in", () => {
     await expect(panel.getByRole("listitem")).toHaveCount(1);
     await expect(panel.getByRole("listitem")).toContainText("This device");
     await phone.context.close();
+  });
+});
+
+test.describe("emails about sign-ins from somewhere new", () => {
+  test("a sign-in from a new browser is emailed once, saying what kind of device; the same browser again is not", async ({ page, browser, baseURL }) => {
+    test.skip(!OUTBOX, "set MAIL_OUTBOX_DIR (the folder the API writes emails to) to run this");
+    const me = newUser("newdevice");
+    await signUpViaUi(page, me);
+    expect(await newDeviceEmails(me.email)).toHaveLength(0); // signing up is not a "new device"
+
+    const phone = await secondDevice(browser, baseURL!, me);
+    await expect.poll(async () => (await newDeviceEmails(me.email)).length, { timeout: 20_000 }).toBe(1);
+    const [text] = await newDeviceEmails(me.email);
+    expect(text).toContain("Safari on iPhone");
+    expect(text).toMatch(/change your password right away/);
+    expect(text).not.toContain(me.password);
+
+    // the same phone signing in again is not new, and neither is the first browser
+    await phone.page.request.post("/api/auth/logout");
+    await logInViaUi(phone.page, me);
+    await expect(phone.page).toHaveURL("/");
+    await page.context().clearCookies({ name: "token" });
+    await logInViaUi(page, me);
+    await expect(page).toHaveURL("/");
+    await new Promise((r) => setTimeout(r, 1500));
+    expect(await newDeviceEmails(me.email)).toHaveLength(1);
+    await phone.context.close();
+  });
+
+  test("the owner can turn the emails off in the settings, it is remembered, and a new browser then sends none", async ({ page, browser, baseURL }) => {
+    test.skip(!OUTBOX, "set MAIL_OUTBOX_DIR (the folder the API writes emails to) to run this");
+    const me = newUser("alertsoff");
+    await signUpViaUi(page, me);
+    const panel = await openList(page, me.username);
+    const box = panel.getByRole("checkbox", { name: /Email me when someone signs in/ });
+    await expect(box).toBeChecked();
+    await box.uncheck();
+    await expect.poll(async () => (await (await page.request.get("/api/auth/sessions")).json()).signInAlerts).toBe(false);
+
+    await page.reload();
+    await page.getByRole("button", { name: "Edit profile" }).click();
+    await page.getByRole("button", { name: /Where you.re signed in/ }).click();
+    await expect(page.getByRole("checkbox", { name: /Email me when someone signs in/ })).not.toBeChecked();
+
+    const phone = await secondDevice(browser, baseURL!, me);
+    await new Promise((r) => setTimeout(r, 2000));
+    expect(await newDeviceEmails(me.email)).toHaveLength(0);
+    await phone.context.close();
+  });
+
+  test("the switch is for signed-in people, takes only true or false, and is the person's own", async ({ page, playwright, baseURL }) => {
+    const me = newUser("alertsapi");
+    await signUpViaUi(page, me);
+    const anon = await playwright.request.newContext({ baseURL, extraHTTPHeaders: fakeIpHeaders() });
+    expect((await anon.put("/api/auth/sign-in-alerts", { data: { enabled: false } })).status()).toBe(401);
+    await anon.dispose();
+    for (const bad of [{}, { enabled: "false" }, { enabled: 1 }]) expect((await page.request.put("/api/auth/sign-in-alerts", { data: bad })).status()).toBe(400);
+    expect((await page.request.put("/api/auth/sign-in-alerts", { data: { enabled: false } })).status()).toBe(200);
+    const profile = JSON.stringify(await (await page.request.get(`/api/profiles/${me.username}`)).json());
+    expect(profile).not.toMatch(/signInAlerts|knownDevices/);
   });
 });

@@ -52,7 +52,9 @@ export const authApi = {
   twoFactorEnable: (code: string) => api.post<{ recoveryCodes: string[] }>("/auth/2fa/enable", { code }),
   twoFactorDisable: (password: string, code: string) => api.post<void>("/auth/2fa/disable", { password, code }),
   twoFactorNewRecoveryCodes: (password: string, code: string) => api.post<{ recoveryCodes: string[] }>("/auth/2fa/recovery-codes", { password, code }),
-  sessions: () => api.get<{ sessions: SignedInDevice[] }>("/auth/sessions"),
+  sessions: () => api.get<{ sessions: SignedInDevice[]; signInAlerts: boolean }>("/auth/sessions"),
+  /** Whether to be emailed when someone signs in from a browser the person hasn't used before. */
+  setSignInAlerts: (enabled: boolean) => api.put<{ signInAlerts: boolean }>("/auth/sign-in-alerts", { enabled }),
   endSession: (id: string) => api.delete<void>(`/auth/sessions/${encodeURIComponent(id)}`),
   endOtherSessions: () => api.post<{ ended: number }>("/auth/sessions/end-others"),
 };
