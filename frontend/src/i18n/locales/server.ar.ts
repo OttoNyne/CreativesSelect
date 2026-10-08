@@ -390,4 +390,10 @@ export const serverAr: Record<string, string> = {
   "The note can be up to {v1} characters": "يمكن أن يصل طول الملاحظة إلى {v1} حرفًا",
   "Only people can be filtered by whether they are open to work": "لا يمكن التصفية حسب التوفر للعمل إلا للأشخاص",
   "open must be 1": "يجب أن تكون قيمة open هي 1",
+  "Choose a piece from your portfolio": "اختر عملًا من معرض أعمالك",
+  "Make your profile public to take part — the gallery is open to everyone": "اجعل ملفك الشخصي عامًا للمشاركة: المعرض مفتوح للجميع",
+  "You've already entered this week's challenge": "لقد شاركت بالفعل في تحدي هذا الأسبوع",
+  "You haven't entered this week's challenge": "لم تشارك في تحدي هذا الأسبوع",
+  "Challenge not found": "التحدي غير موجود",
+  "You've done that a lot — try again later.": "فعلت ذلك مرات كثيرة؛ حاول مرة أخرى لاحقًا.",
 };

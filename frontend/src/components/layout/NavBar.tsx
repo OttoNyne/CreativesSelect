@@ -19,6 +19,7 @@ const NAV_LINKS: { to: string; label: Key }[] = [
   { to: "/search", label: "nav.search" },
   { to: "/live", label: "nav.live" },
   { to: "/help-wanted", label: "nav.helpWanted" },
+  { to: "/challenge", label: "nav.challenge" },
 ];
 
 export function NavBar() {

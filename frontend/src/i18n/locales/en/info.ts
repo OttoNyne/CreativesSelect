@@ -48,4 +48,6 @@ export const info = {
   "info.workText": "Say you take commissions or collaborations, list what you offer and add a short note. People can find you by searching only those open to work, and send a request with a short brief (what they need, a budget hint, a deadline). You answer yes or no with a note, and nothing is paid or promised through the site: it only gets you talking.",
   "info.shareTitle": "Shareable profiles",
   "info.shareText": "Every profile has a link that shows a proper preview (name, picture and a line about you) when you send it in a message or post it on social media, and takes whoever opens it to your profile. A private profile shows nothing in a preview. Search engines such as Google only list your profile if you switch that on in your profile settings.",
+  "info.challengeTitle": "Weekly challenge",
+  "info.challengeText": "Every week has one short prompt, the same for everyone. Enter one piece from your portfolio, look through what others made, and react to the ones you love. Last week's most loved pieces are shown at the top of the next. Only public profiles can take part, because the gallery is open to everyone.",
 } as const;

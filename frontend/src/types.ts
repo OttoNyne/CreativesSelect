@@ -535,3 +535,19 @@ export interface WorkRequest {
   from?: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
   to?: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
 }
+
+/** One week of the weekly creative challenge: its key (like 2026-W41), when it opens and closes, and its prompt in the language asked for. */
+export interface ChallengeWeek {
+  key: string;
+  startsAt: string;
+  endsAt: string;
+  prompt: string;
+}
+
+/** A piece someone entered in a week's challenge. */
+export interface ChallengeEntry {
+  id: string;
+  item: MediaItem;
+  owner: MediaCredit["user"];
+  createdAt: string;
+}

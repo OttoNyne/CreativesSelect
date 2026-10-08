@@ -50,4 +50,6 @@ export const info: Translation<typeof en> = {
   "info.workText": "Indica que aceptas encargos o colaboraciones, enumera lo que ofreces y añade una nota breve. Pueden encontrarte buscando solo a quienes están disponibles para trabajar y enviarte una solicitud con un resumen breve (qué necesitan, una idea de presupuesto, una fecha límite). Respondes sí o no con una nota, y en el sitio no se paga ni se promete nada: solo os pone en contacto.",
   "info.shareTitle": "Perfiles para compartir",
   "info.shareText": "Cada perfil tiene un enlace que muestra una vista previa como es debido (nombre, foto y una línea sobre ti) cuando lo envías en un mensaje o lo publicas en redes sociales, y lleva a quien lo abre a tu perfil. Un perfil privado no muestra nada en la vista previa. Los buscadores como Google solo muestran tu perfil si lo activas en los ajustes de tu perfil.",
+  "info.challengeTitle": "Reto semanal",
+  "info.challengeText": "Cada semana hay un tema breve, el mismo para todos. Participa con una pieza de tu portafolio, mira lo que han hecho los demás y reacciona a las que más te gusten. Las piezas más queridas de la semana pasada se muestran arriba en la siguiente. Solo pueden participar los perfiles públicos, porque la galería está abierta a todo el mundo.",
 };

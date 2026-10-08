@@ -1369,6 +1369,17 @@ A link preview is a public page made from someone's profile, so the review asked
 - **A public list, deliberately.** A public profile's blog list can now be read without signing in (it already could for portfolio pieces); a private profile's list still asks for a friend (tested). Nothing was loosened for posts, comments or messages.
 - **Not covered:** a profile's picture is shown by its own address, so the preview can only be as safe as the picture host; the preview isn't translated beyond the one sentence (the bio is the person's own words).
 
+### 5.79 The weekly challenge: a public gallery of people's work
+
+The gallery can be read without signing in, so the review looked at who can be put in it and what it costs.
+
+- **Only your own pieces, only by choice.** An entry names a piece the signed-in person owns (another person's piece, or one that doesn't exist, is refused with the same answer), one entry per person per week, and a repeat is refused rather than replacing it (tested).
+- **Public profiles only.** The gallery is open to everyone, so a private profile can't enter, and if an owner goes private afterwards their entries drop out of the gallery at once. Suspended people and people the viewer has blocked, or been blocked by, are left out for that viewer, and so is an entry whose piece has been deleted (tested).
+- **Nothing new to leak.** The gallery returns what a profile already shows publicly (the piece, its caption and reactions, and the owner's name, username and picture), never an email or anything private (tested). Reactions use the existing, rate-limited reaction route.
+- **Inputs checked.** The week in the address must be a real ISO week of a year from 2020 to 2100 and not in the future, `sort`, `page` and `limit` are clamped, and the language must be one of the three or it is English (tested). Entering and withdrawing are limited to 30 an hour per person, and at most 500 entries of a week are read to build a page, so a busy week can't be used to load the database.
+- **Tidy.** Deleting a piece or an account removes the entries, and the data download lists them (tested).
+- **Not covered:** an entry can't be reported on its own (the piece itself can be reported through its owner's profile), and "most loved" counts every kind of reaction equally.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

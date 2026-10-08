@@ -21,6 +21,7 @@ const TITLES: [RegExp, Key | ""][] = [
   [/^\/search$/, "nav.search"],
   [/^\/posts\/[^/]+$/, "pageTitle.post"],
   [/^\/help-wanted$/, "nav.helpWanted"],
+  [/^\/challenge$/, "challenge.title"],
   [/^\/u\/([^/]+)$/, ""],
 ];
 

@@ -390,4 +390,10 @@ export const serverEs: Record<string, string> = {
   "The note can be up to {v1} characters": "La nota puede tener hasta {v1} caracteres",
   "Only people can be filtered by whether they are open to work": "Solo se puede filtrar a las personas según si están disponibles para trabajar",
   "open must be 1": "open debe ser 1",
+  "Choose a piece from your portfolio": "Elige una pieza de tu portafolio",
+  "Make your profile public to take part — the gallery is open to everyone": "Haz público tu perfil para participar: la galería está abierta a todo el mundo",
+  "You've already entered this week's challenge": "Ya has participado en el reto de esta semana",
+  "You haven't entered this week's challenge": "No has participado en el reto de esta semana",
+  "Challenge not found": "Reto no encontrado",
+  "You've done that a lot — try again later.": "Lo has hecho muchas veces; inténtalo de nuevo más tarde.",
 };
