@@ -5,11 +5,14 @@ import { ApiError } from "../api/client";
 import { EventCard } from "../components/events/EventCard";
 import { EventForm } from "../components/events/EventForm";
 import type { CommunityEvent } from "../types";
+import { t } from "../i18n";
+import { tRich } from "../i18n/rich";
 
-const TABS: { filter: EventFilter; label: string; empty: string }[] = [
-  { filter: "upcoming", label: "Coming up", empty: "Nothing is planned yet. Plan something, and your friends will be told." },
-  { filter: "going", label: "I'm going", empty: "You haven't answered any events. Say Going or Maybe on one to see it here." },
-  { filter: "mine", label: "Mine", empty: "You haven't planned an event." },
+// looked up when the page draws, so the text is in the language of the page
+const tabs = (): { filter: EventFilter; label: string; empty: string }[] => [
+  { filter: "upcoming", label: t("events.comingUp"), empty: t("events.nothingPlanned") },
+  { filter: "going", label: t("events.imGoing"), empty: t("events.notAnswered") },
+  { filter: "mine", label: t("events.mine"), empty: t("events.noneMine") },
 ];
 
 export function EventsPage() {
@@ -31,7 +34,7 @@ export function EventsPage() {
         setPage(1);
         setHasMore(hasMore);
       })
-      .catch((err) => current && setError(err instanceof ApiError ? err.message : "Couldn't load the events."));
+      .catch((err) => current && setError(err instanceof ApiError ? err.message : t("events.couldntLoadTheEvents")));
     return () => {
       current = false;
     };
@@ -53,7 +56,7 @@ export function EventsPage() {
       setPage(page + 1);
       setHasMore(next.hasMore);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't load more events.");
+      setError(err instanceof ApiError ? err.message : t("events.couldntLoadMoreEvents"));
     } finally {
       setLoadingMore(false);
     }
@@ -66,33 +69,34 @@ export function EventsPage() {
     setEvents((old) => [...(old ?? []), event].sort((a, b) => a.startsAt.localeCompare(b.startsAt)));
   }
 
-  const tab = TABS.find((t) => t.filter === filter)!;
+  const allTabs = tabs();
+  const tab = allTabs.find((x) => x.filter === filter)!;
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-white">Events</h1>
-          <p className="text-sm text-white/60">Meet-ups, shows and sessions. Say whether you're going, and get a reminder an hour before.</p>
+          <h1 className="text-xl font-semibold text-white">{t("nav.events")}</h1>
+          <p className="text-sm text-white/60">{t("events.meetUpsShowsAnd")}</p>
         </div>
         {!planning && (
           <button type="button" onClick={() => setPlanning(true)} className="shrink-0 rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500">
-            Plan an event
+            {t("events.planAnEvent")}
           </button>
         )}
       </div>
 
       {planning && <EventForm onSaved={planned} onCancel={() => setPlanning(false)} />}
 
-      <div role="group" aria-label="Which events" className="flex gap-2">
-        {TABS.map((t) => (
+      <div role="group" aria-label={t("events.whichEvents")} className="flex gap-2">
+        {allTabs.map((x) => (
           <button
-            key={t.filter}
+            key={x.filter}
             type="button"
-            onClick={() => choose(t.filter)}
-            aria-pressed={filter === t.filter}
-            className={`rounded-full border px-3 py-1 text-xs ${filter === t.filter ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/70 hover:bg-white/10"}`}
+            onClick={() => choose(x.filter)}
+            aria-pressed={filter === x.filter}
+            className={`rounded-full border px-3 py-1 text-xs ${filter === x.filter ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/70 hover:bg-white/10"}`}
           >
-            {t.label}
+            {x.label}
           </button>
         ))}
       </div>
@@ -102,7 +106,7 @@ export function EventsPage() {
           {error}
         </p>
       )}
-      {events === null && !error && <p className="text-sm text-white/60">Loading…</p>}
+      {events === null && !error && <p className="text-sm text-white/60">{t("common.loading")}</p>}
       {events?.length === 0 && <p className="text-sm text-white/60">{tab.empty}</p>}
       <div className="space-y-3">
         {events?.map((event) => (
@@ -111,16 +115,18 @@ export function EventsPage() {
       </div>
       {hasMore && (
         <button type="button" onClick={showMore} disabled={loadingMore} className="w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
-          {loadingMore ? "Loading…" : "Show more events"}
+          {loadingMore ? t("common.loading") : t("events.showMoreEvents")}
         </button>
       )}
 
       <p className="text-xs text-white/60">
-        Planning a live audio session? Schedule it on the{" "}
-        <Link to="/live" className="text-violet-300 hover:underline">
-          Live page
-        </Link>
-        .
+        {tRich("events.planLive", {
+          live: (c) => (
+            <Link to="/live" className="text-violet-300 hover:underline">
+              {c}
+            </Link>
+          ),
+        })}
       </p>
     </div>
   );

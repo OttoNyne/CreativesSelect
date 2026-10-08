@@ -8,6 +8,7 @@ import { EditBox } from "../common/EditBox";
 import { EditedMark } from "../common/EditedMark";
 import { formatDay } from "../../lib/when";
 import type { GroupReply, GroupTopic } from "../../types";
+import { t } from "../../i18n";
 
 const field = "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 const small = "rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10 disabled:opacity-50";
@@ -36,7 +37,7 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
       setHasMore(res.hasMore);
       setState("ready");
     } catch (err) {
-      setError(problemOf(err, "Couldn't load the board."));
+      setError(problemOf(err, t("groups.couldntLoadTheBoard")));
       setState("error");
     }
   }
@@ -53,7 +54,7 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
       setPage(page + 1);
       setHasMore(res.hasMore);
     } catch (err) {
-      setError(problemOf(err, "Couldn't load more topics."));
+      setError(problemOf(err, t("groups.couldntLoadMoreTopics")));
     } finally {
       setBusy(false);
     }
@@ -62,8 +63,8 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
   async function start(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (!title.trim()) return setFormError("Give your topic a title");
-    if (!body.trim()) return setFormError("Write something to start the topic");
+    if (!title.trim()) return setFormError(t("groups.giveYourTopicA"));
+    if (!body.trim()) return setFormError(t("groups.writeSomethingToStart"));
     setBusy(true);
     setFormError(null);
     try {
@@ -74,7 +75,7 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
       setComposing(false);
       setOpen(topic.id);
     } catch (err) {
-      setFormError(problemOf(err, "Couldn't start that topic."));
+      setFormError(problemOf(err, t("groups.couldntStartThatTopic")));
     } finally {
       setBusy(false);
     }
@@ -95,23 +96,23 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
   }
 
   return (
-    <section aria-label="Board" className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <section aria-label={t("groups.board")} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Board</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">{t("groups.board")}</h2>
         {!composing && (
           <button type="button" onClick={() => setComposing(true)} className={small}>
-            New topic
+            {t("groups.newTopic")}
           </button>
         )}
       </div>
 
       {composing && (
         <form onSubmit={start} className="mt-3 space-y-2">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_TOPIC_TITLE} placeholder="Topic title" aria-label="Topic title" className={field} />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX_TOPIC_BODY} rows={4} placeholder="What do you want to talk about?" aria-label="Topic text" className={field} />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_TOPIC_TITLE} placeholder={t("groups.topicTitle")} aria-label={t("groups.topicTitle")} className={field} />
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX_TOPIC_BODY} rows={4} placeholder={t("groups.whatDoYouWant")} aria-label={t("groups.topicText")} className={field} />
           <div className="flex items-center gap-2">
             <button type="submit" disabled={busy} className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
-              {busy ? "Posting…" : "Start topic"}
+              {busy ? t("composer.posting") : t("groups.startTopic")}
             </button>
             <button
               type="button"
@@ -121,7 +122,7 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
               }}
               className="text-sm text-white/70 hover:underline"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <span className="ms-auto text-xs text-white/60" aria-live="polite">
               {body.length} / {MAX_TOPIC_BODY}
@@ -135,23 +136,23 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
         </form>
       )}
 
-      {state === "loading" && <p className="mt-3 text-sm text-white/60">Loading…</p>}
+      {state === "loading" && <p className="mt-3 text-sm text-white/60">{t("common.loading")}</p>}
       {state === "error" && (
         <p role="alert" className="mt-3 text-sm text-red-400">
           {error}
         </p>
       )}
-      {state === "ready" && topics.length === 0 && <p className="mt-3 text-sm text-white/60">No topics yet. Start the first one.</p>}
+      {state === "ready" && topics.length === 0 && <p className="mt-3 text-sm text-white/60">{t("groups.noTopicsYetStart")}</p>}
       <ul className="mt-3 space-y-2">
-        {topics.map((t) => (
-          <li key={t.id}>
-            <button type="button" onClick={() => setOpen(t.id)} className="block w-full rounded-lg border border-white/10 p-3 text-start hover:bg-white/[0.05]">
+        {topics.map((item) => (
+          <li key={item.id}>
+            <button type="button" onClick={() => setOpen(item.id)} className="block w-full rounded-lg border border-white/10 p-3 text-start hover:bg-white/[0.05]">
               <span className="flex items-center gap-2">
-                {t.pinned && <span className="rounded-full bg-violet-500/25 px-2 py-0.5 text-[11px] text-violet-200">Pinned</span>}
-                <span className="font-medium text-white">{t.title}</span>
+                {item.pinned && <span className="rounded-full bg-violet-500/25 px-2 py-0.5 text-[11px] text-violet-200">{t("groups.pinned")}</span>}
+                <span className="font-medium text-white" dir="auto">{item.title}</span>
               </span>
               <span className="mt-0.5 block text-xs text-white/60">
-                {t.author?.displayName ?? "Someone"} · {t.replyCount} {t.replyCount === 1 ? "reply" : "replies"} · active {formatDay(t.lastActivityAt)}
+                {t("groups.topicMeta", { author: item.author?.displayName ?? t("common.someone"), replies: t("groups.replyCount", { n: item.replyCount }), day: formatDay(item.lastActivityAt) })}
               </span>
             </button>
           </li>
@@ -159,7 +160,7 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
       </ul>
       {hasMore && (
         <button type="button" onClick={showMore} disabled={busy} className="mt-3 w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
-          Show more topics
+          {t("groups.showMoreTopics")}
         </button>
       )}
     </section>
@@ -206,7 +207,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
       setTopic((t) => (t ? { ...t, replyCount: t.replyCount + 1 } : t));
       setDraft("");
     } catch (err) {
-      setError(problemOf(err, "Couldn't post that reply."));
+      setError(problemOf(err, t("groups.couldntPostThatReply")));
     } finally {
       setBusy(false);
     }
@@ -220,41 +221,41 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
       setPage(page + 1);
       setHasMore(res.hasMore);
     } catch (err) {
-      setError(problemOf(err, "Couldn't load more replies."));
+      setError(problemOf(err, t("groups.couldntLoadMoreReplies")));
     } finally {
       setBusy(false);
     }
   }
 
   async function removeTopic() {
-    if (!topic || !window.confirm(`Delete "${topic.title}" and all its replies?`)) return;
+    if (!topic || !window.confirm(t("groups.deleteTopicConfirm", { title: topic.title }))) return;
     try {
       await groupsApi.deleteTopic(groupId, topicId);
       onBack();
     } catch (err) {
-      setError(problemOf(err, "Couldn't delete that topic."));
+      setError(problemOf(err, t("groups.couldntDeleteThatTopic")));
     }
   }
 
   async function removeReply(reply: GroupReply) {
-    if (!window.confirm("Delete this reply?")) return;
+    if (!window.confirm(t("groups.deleteThisReply"))) return;
     try {
       await groupsApi.deleteReply(groupId, topicId, reply.id);
       setReplies((old) => old.filter((r) => r.id !== reply.id));
       setTopic((t) => (t ? { ...t, replyCount: Math.max(0, t.replyCount - 1) } : t));
     } catch (err) {
-      setError(problemOf(err, "Couldn't delete that reply."));
+      setError(problemOf(err, t("groups.couldntDeleteThatReply")));
     }
   }
 
   async function report(kind: "groupTopic" | "groupReply", id: string, what: string) {
-    const reason = prompt(`What's the issue with this ${what}?`);
+    const reason = prompt(t(what === "topic" ? "groups.reportTopicPrompt" : "groups.reportReplyPrompt"));
     if (!reason) return;
     try {
       await moderationApi.report(kind, id, reason);
-      alert("Report submitted. Thanks for helping keep this space safe.");
+      alert(t("profile.reportSubmittedThanksFor"));
     } catch (err) {
-      alert(problemOf(err, "Couldn't submit that report."));
+      alert(problemOf(err, t("profile.couldntSubmitThatReport")));
     }
   }
 
@@ -265,7 +266,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
       setEditingTopic(false);
       return null;
     } catch (err) {
-      return problemOf(err, "Couldn't save that change.");
+      return problemOf(err, t("common.saveChangeFailed"));
     }
   }
 
@@ -276,7 +277,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
       setEditingReply(null);
       return null;
     } catch (err) {
-      return problemOf(err, "Couldn't save that change.");
+      return problemOf(err, t("common.saveChangeFailed"));
     }
   }
 
@@ -286,30 +287,30 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
       const { topic: updated } = await groupsApi.pinTopic(groupId, topicId, !topic.pinned);
       setTopic((t) => (t ? { ...t, pinned: updated.pinned } : t));
     } catch (err) {
-      setError(problemOf(err, "Couldn't change that."));
+      setError(problemOf(err, t("groups.couldntChangeThat")));
     }
   }
 
   return (
-    <section aria-label="Topic" className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <section aria-label={t("groups.topic")} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <button type="button" onClick={onBack} className="text-sm text-violet-400 hover:underline">
-        ← Back to the board
+        {t("groups.backToTheBoard")}
       </button>
-      {state === "loading" && <p className="mt-3 text-sm text-white/60">Loading…</p>}
+      {state === "loading" && <p className="mt-3 text-sm text-white/60">{t("common.loading")}</p>}
       {state === "missing" && (
         <p role="alert" className="mt-3 text-sm text-white/70">
-          This topic isn&apos;t available. It may have been deleted.
+          {t("groups.thisTopicIsntAvailable")}
         </p>
       )}
       {state === "error" && (
         <p role="alert" className="mt-3 text-sm text-red-400">
-          Couldn&apos;t load this topic. Please try again.
+          {t("groups.couldntLoadThisTopic")}
         </p>
       )}
       {state === "ready" && topic && (
         <>
           <h2 className="mt-3 text-lg font-semibold text-white">
-            {topic.pinned && <span className="me-2 rounded-full bg-violet-500/25 px-2 py-0.5 align-middle text-[11px] font-normal text-violet-200">Pinned</span>}
+            {topic.pinned && <span className="me-2 rounded-full bg-violet-500/25 px-2 py-0.5 align-middle text-[11px] font-normal text-violet-200">{t("groups.pinned")}</span>}
             {topic.title} <EditedMark editedAt={topic.editedAt} />
           </h2>
           <div className="mt-1 flex items-center gap-2 text-xs text-white/60">
@@ -319,70 +320,70 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
                 {topic.author.displayName}
               </Link>
             ) : (
-              <span>Someone</span>
+              <span>{t("common.someone")}</span>
             )}
             <span aria-hidden="true">·</span>
             <time dateTime={topic.createdAt}>{formatDay(topic.createdAt)}</time>
           </div>
           {editingTopic ? (
-            <EditBox title={topic.title} maxTitle={MAX_TOPIC_TITLE} text={topic.body} maxText={MAX_TOPIC_BODY} label="Edit topic" onSave={saveTopic} onCancel={() => setEditingTopic(false)} />
+            <EditBox title={topic.title} maxTitle={MAX_TOPIC_TITLE} text={topic.body} maxText={MAX_TOPIC_BODY} label={t("groups.editTopic")} onSave={saveTopic} onCancel={() => setEditingTopic(false)} />
           ) : (
             <p className="mt-3 whitespace-pre-line break-words text-sm text-white/90">{topic.body}</p>
           )}
           <div className="mt-3 flex gap-2">
             {topic.mine && !editingTopic && (
               <button type="button" onClick={() => setEditingTopic(true)} className={small}>
-                Edit topic
+                {t("groups.editTopic")}
               </button>
             )}
             {canModerate && (
               <button type="button" onClick={togglePin} className={small}>
-                {topic.pinned ? "Unpin topic" : "Pin topic"}
+                {topic.pinned ? t("groups.unpinTopic") : t("groups.pinTopic")}
               </button>
             )}
             {!topic.mine && (
               <button type="button" onClick={() => report("groupTopic", topic.id, "topic")} className={small}>
-                Report topic
+                {t("groups.reportTopic")}
               </button>
             )}
             {(topic.mine || canModerate) && (
               <button type="button" onClick={removeTopic} className="rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/10">
-                Delete topic
+                {t("groups.deleteTopic")}
               </button>
             )}
           </div>
 
           <h3 className="mt-5 text-xs font-semibold uppercase tracking-wide text-white/60">
-            {topic.replyCount} {topic.replyCount === 1 ? "reply" : "replies"}
+            {topic.replyCount} {topic.replyCount === 1 ? t("groups.reply") : t("groups.replies")}
           </h3>
           <ul className="mt-2 space-y-2">
             {replies.map((r) => (
               <li key={r.id} className="rounded-lg border border-white/10 p-3">
                 <div className="flex items-center gap-2 text-xs text-white/60">
                   {r.author && <Avatar username={r.author.username} displayName={r.author.displayName} avatarUrl={r.author.avatarUrl} size={20} />}
-                  <span className="font-medium text-white/80">{r.mine ? "You" : (r.author?.displayName ?? "Someone")}</span>
+                  <span className="font-medium text-white/80">{r.mine ? t("groups.you") : (r.author?.displayName ?? t("common.someone"))}</span>
                   <span aria-hidden="true">·</span>
                   <time dateTime={r.createdAt}>{formatDay(r.createdAt)}</time>
                   <span className="ms-auto flex gap-3">
                     {r.mine && editingReply !== r.id && (
-                      <button type="button" onClick={() => setEditingReply(r.id)} aria-label="Edit your reply" className="text-white/60 hover:text-white">
-                        Edit
+                      <button type="button" onClick={() => setEditingReply(r.id)} aria-label={t("groups.editYourReply")} className="text-white/60 hover:text-white">
+                        {t("common.edit")}
                       </button>
                     )}
                     {!r.mine && (
-                      <button type="button" onClick={() => report("groupReply", r.id, "reply")} aria-label={`Report reply by ${r.author?.displayName ?? "someone"}`} className="text-white/60 hover:text-white">
-                        Report
+                      <button type="button" onClick={() => report("groupReply", r.id, "reply")} aria-label={t("groups.reportReplyAria", { name: r.author?.displayName ?? t("common.someone") })} className="text-white/60 hover:text-white">
+                        {t("common.report")}
                       </button>
                     )}
                     {(r.mine || canModerate) && (
-                      <button type="button" onClick={() => removeReply(r)} aria-label={`Delete reply by ${r.mine ? "you" : (r.author?.displayName ?? "someone")}`} className="text-white/60 hover:text-red-400">
-                        Delete
+                      <button type="button" onClick={() => removeReply(r)} aria-label={r.mine ? t("groups.deleteMyReplyAria") : t("groups.deleteReplyAria", { name: r.author?.displayName ?? t("common.someone") })} className="text-white/60 hover:text-red-400">
+                        {t("common.delete")}
                       </button>
                     )}
                   </span>
                 </div>
                 {editingReply === r.id ? (
-                  <EditBox text={r.body} maxText={MAX_REPLY_BODY} label="Edit reply" rows={3} onSave={({ text }) => saveReply(r, text)} onCancel={() => setEditingReply(null)} />
+                  <EditBox text={r.body} maxText={MAX_REPLY_BODY} label={t("groups.editReply")} rows={3} onSave={({ text }) => saveReply(r, text)} onCancel={() => setEditingReply(null)} />
                 ) : (
                   <p className="mt-1 whitespace-pre-line break-words text-sm text-white/90">
                     {r.body} <EditedMark editedAt={r.editedAt} />
@@ -393,15 +394,15 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
           </ul>
           {hasMore && (
             <button type="button" onClick={moreReplies} disabled={busy} className="mt-3 w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
-              Show more replies
+              {t("groups.showMoreReplies")}
             </button>
           )}
 
           <form onSubmit={sendReply} className="mt-4 space-y-2">
-            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={MAX_REPLY_BODY} rows={3} placeholder="Write a reply…" aria-label="Reply" className={field} />
+            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={MAX_REPLY_BODY} rows={3} placeholder={t("groups.writeAReply")} aria-label={t("groups.reply2")} className={field} />
             <div className="flex items-center gap-2">
               <button type="submit" disabled={busy || !draft.trim()} className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
-                {busy ? "Posting…" : "Reply"}
+                {busy ? t("composer.posting") : t("groups.reply2")}
               </button>
               <span className="ms-auto text-xs text-white/60" aria-live="polite">
                 {draft.length} / {MAX_REPLY_BODY}

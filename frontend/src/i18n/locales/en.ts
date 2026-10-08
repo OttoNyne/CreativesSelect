@@ -10,7 +10,12 @@ import { style } from "./en/style";
 import { sections } from "./en/sections";
 import { settings } from "./en/settings";
 import { media } from "./en/media";
+import { groups } from "./en/groups";
+import { events } from "./en/events";
+import { live } from "./en/live";
+import { misc } from "./en/misc";
+import { labels } from "./en/labels";
 
 // English is the source: every other language is checked against these keys, and anything not translated yet shows as it is here.
 // Each part of the site has its own file (en/, es/ and ar/ hold one per part).
-export const en = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media } satisfies Catalog;
+export const en = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels } satisfies Catalog;

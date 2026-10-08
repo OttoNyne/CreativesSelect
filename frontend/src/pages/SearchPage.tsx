@@ -7,8 +7,19 @@ import type { User } from "../types";
 import { PersonCard } from "../components/search/PersonCard";
 import { SearchResults } from "../components/search/SearchResults";
 import { isValidTag, normalizeTag } from "../lib/tags";
+import { t } from "../i18n";
 
-const CONNECTION_LABELS: Record<SearchConnection, string> = { any: "Anyone", friends: "My friends", mutual: "Friends of friends" };
+const CONNECTION_LABELS: Record<SearchConnection, string> = {
+  get any() {
+    return t("misc.anyone");
+  },
+  get friends() {
+    return t("misc.myFriends");
+  },
+  get mutual() {
+    return t("misc.friendsOfFriends");
+  },
+};
 const isConnection = (value: string | null): value is SearchConnection => value === "any" || value === "friends" || value === "mutual";
 
 /** Search people, blog entries, groups, group topics and Help wanted, or browse the tags people use and the newest to join. */
@@ -105,40 +116,40 @@ export function SearchPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search people, writing, groups…"
-          aria-label="Search"
+          placeholder={t("misc.searchPeopleWritingGroups")}
+          aria-label={t("nav.search")}
           className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <button type="submit" className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
-          Search
+          {t("nav.search")}
         </button>
       </form>
 
       {q ? (
-        <section aria-label="Search results" className="space-y-3">
+        <section aria-label={t("misc.searchResults")} className="space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <div role="tablist" aria-label="What to search" className="flex flex-wrap gap-1.5">
-              {SEARCH_TYPES.map((t) => (
+            <div role="tablist" aria-label={t("misc.whatToSearch")} className="flex flex-wrap gap-1.5">
+              {SEARCH_TYPES.map((x) => (
                 <button
-                  key={t.type}
+                  key={x.type}
                   type="button"
                   role="tab"
-                  aria-selected={type === t.type}
-                  onClick={() => change({ type: t.type, tag: t.type === "people" ? tag : "", connection: t.type === "people" ? connection : "" })}
-                  className={`rounded-full border px-3 py-1 text-sm ${type === t.type ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}
+                  aria-selected={type === x.type}
+                  onClick={() => change({ type: x.type, tag: x.type === "people" ? tag : "", connection: x.type === "people" ? connection : "" })}
+                  className={`rounded-full border px-3 py-1 text-sm ${type === x.type ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}
                 >
-                  {t.label}
+                  {x.label}
                 </button>
               ))}
             </div>
             <button type="button" onClick={() => { setQuery(""); setParams(tag ? { tag } : {}); }} className="shrink-0 text-xs text-violet-300 hover:underline">
-              Back to browsing
+              {t("misc.backToBrowsing")}
             </button>
           </div>
           {type === "people" && (
             <div className="flex flex-wrap items-center gap-3 text-sm text-white/80">
               <label className="flex items-center gap-2">
-                Show
+                {t("misc.show")}
                 <select value={connection} onChange={(e) => change({ connection: e.target.value })} className="rounded-md border border-white/10 bg-black/30 px-2 py-1 text-sm text-white focus:border-violet-500 focus:outline-none">
                   {(Object.keys(CONNECTION_LABELS) as SearchConnection[]).map((c) => (
                     <option key={c} value={c}>
@@ -148,7 +159,7 @@ export function SearchPage() {
                 </select>
               </label>
               {tag && (
-                <button type="button" onClick={() => chooseTag("")} aria-label={`Stop filtering by ${tag}`} className="rounded-full border border-violet-400 bg-violet-500/20 px-2.5 py-1 text-xs text-white">
+                <button type="button" onClick={() => chooseTag("")} aria-label={t("misc.stopFilteringBy", { tag })} className="rounded-full border border-violet-400 bg-violet-500/20 px-2.5 py-1 text-xs text-white">
                   #{tag} ✕
                 </button>
               )}
@@ -159,18 +170,18 @@ export function SearchPage() {
       ) : (
         <>
           {popular.length > 0 && (
-            <section aria-label="Browse by tag">
-              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Browse by tag</h2>
+            <section aria-label={t("misc.browseByTag")}>
+              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">{t("misc.browseByTag")}</h2>
               <ul className="flex flex-wrap gap-1.5">
-                {popular.map((t) => (
-                  <li key={t.tag}>
+                {popular.map((p) => (
+                  <li key={p.tag}>
                     <button
                       type="button"
-                      onClick={() => chooseTag(tag === t.tag ? "" : t.tag)}
-                      aria-pressed={tag === t.tag}
-                      className={`rounded-full border px-2.5 py-1 text-xs ${tag === t.tag ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}
+                      onClick={() => chooseTag(tag === p.tag ? "" : p.tag)}
+                      aria-pressed={tag === p.tag}
+                      className={`rounded-full border px-2.5 py-1 text-xs ${tag === p.tag ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}
                     >
-                      #{t.tag} <span className="text-white/60">{t.count}</span>
+                      #{p.tag} <span className="text-white/60">{p.count}</span>
                     </button>
                   </li>
                 ))}
@@ -178,19 +189,19 @@ export function SearchPage() {
             </section>
           )}
 
-          <section aria-label={tag ? `Creatives tagged ${tag}` : "New creatives"} className="space-y-2">
+          <section aria-label={tag ? t("misc.creativesTagged", { tag }) : t("misc.newCreatives")} className="space-y-2">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">{tag ? `Tagged #${tag}` : "New creatives"}</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">{tag ? t("misc.taggedHeading", { tag }) : t("misc.newCreatives")}</h2>
               {tag && (
                 <button type="button" onClick={() => chooseTag("")} className="text-xs text-violet-300 hover:underline">
-                  Show everyone
+                  {t("misc.showEveryone")}
                 </button>
               )}
             </div>
-            {people === null && <p className="text-sm text-white/60">Loading…</p>}
-            {browseError && <p className="text-sm text-red-400">Couldn&apos;t load creatives right now.</p>}
+            {people === null && <p className="text-sm text-white/60">{t("common.loading")}</p>}
+            {browseError && <p className="text-sm text-red-400">{t("misc.couldntLoadCreativesRight")}</p>}
             {people?.length === 0 && !browseError && (
-              <p className="text-sm text-white/60">{tag ? `No one has tagged themselves #${tag} yet.` : "No one to show yet — invite your friends."}</p>
+              <p className="text-sm text-white/60">{tag ? t("misc.noOneTagged", { tag }) : t("misc.noOneToShow")}</p>
             )}
             <ul className="space-y-2">
               {people?.map((u) => (
@@ -199,7 +210,7 @@ export function SearchPage() {
             </ul>
             {hasMore && (
               <button type="button" onClick={showMore} disabled={loadingMore} className="w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
-                {loadingMore ? "Loading…" : "Show more"}
+                {loadingMore ? t("common.loading") : t("events.showMore")}
               </button>
             )}
           </section>

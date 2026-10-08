@@ -7,16 +7,14 @@ import type { User } from "../../types";
 import { Highlight } from "../common/Highlight";
 import { PersonCard } from "./PersonCard";
 import { formatDay } from "../../lib/when";
+import { t, type Key } from "../../i18n";
+import { tRich } from "../../i18n/rich";
 
 type Result = PersonResult | BlogResult | GroupResult | TopicResult | HelpResult;
 
-const NOTHING: Record<SearchType, string> = {
-  people: "No creatives found.",
-  blog: "No blog entries found.",
-  groups: "No groups found.",
-  topics: "No group topics found. Only the groups you have joined are searched.",
-  help: "No open requests found.",
-};
+const nothingFound = (type: SearchType): string => t(({ people: "misc.noCreatives", blog: "misc.noBlog", groups: "misc.noGroups", topics: "misc.noTopics", help: "misc.noRequests" } as const)[type]);
+
+const PRIORITY_WORDS: Record<string, Key> = { low: "misc.priority.low", medium: "misc.priority.medium", high: "misc.priority.high" };
 
 const idOf = (r: Result) => (r as { id: string }).id;
 
@@ -24,7 +22,7 @@ function By({ author }: { author: User | null }) {
   if (!author) return null;
   return (
     <>
-      by{" "}
+      {t("misc.byAuthor")}{" "}
       <Link to={`/u/${author.username}`} className="hover:underline">
         {author.displayName}
       </Link>
@@ -62,7 +60,7 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
       .catch((err) => {
         if (cancelled) return;
         setItems([]);
-        setError(err instanceof ApiError ? err.message : "Couldn't search right now.");
+        setError(err instanceof ApiError ? err.message : t("misc.couldntSearchRightNow"));
       });
     return () => {
       cancelled = true;
@@ -77,7 +75,7 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
       setPage(page + 1);
       setHasMore(res.hasMore);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't load more.");
+      setError(err instanceof ApiError ? err.message : t("events.couldntLoadMore"));
     } finally {
       setLoadingMore(false);
     }
@@ -85,9 +83,9 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
 
   return (
     <div className="space-y-2">
-      {items === null && <p className="text-sm text-white/60">Searching…</p>}
+      {items === null && <p className="text-sm text-white/60">{t("profile.searching")}</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
-      {items?.length === 0 && !error && <p className="text-sm text-white/60">{NOTHING[type]}</p>}
+      {items?.length === 0 && !error && <p className="text-sm text-white/60">{nothingFound(type)}</p>}
       <ul className="space-y-2">
         {items?.map((r) => {
           if (type === "people") {
@@ -121,8 +119,8 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
                   <Highlight text={g.name} words={words} />
                 </Link>
                 <p className="mt-0.5 text-xs text-white/60">
-                  {g.memberCount} {g.memberCount === 1 ? "member" : "members"}
-                  {g.isMember && " · You are in this group"}
+                  {t("misc.memberCount", { n: g.memberCount })}
+                  {g.isMember && ` · ${t("misc.youAreInGroup")}`}
                 </p>
                 {(g.snippet || g.description) && (
                   <p className="mt-1 line-clamp-2 text-sm text-white/70">
@@ -133,18 +131,18 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
             );
           }
           if (type === "topics") {
-            const t = r as TopicResult;
+            const topic = r as TopicResult;
             return (
-              <Card key={t.id}>
-                <Link to={`/groups/${t.groupId}`} className="font-medium text-white hover:underline">
-                  <Highlight text={t.title} words={words} />
+              <Card key={topic.id}>
+                <Link to={`/groups/${topic.groupId}`} className="font-medium text-white hover:underline">
+                  <Highlight text={topic.title} words={words} />
                 </Link>
                 <p className="mt-0.5 text-xs text-white/60">
-                  in {t.groupName} · <By author={t.author} /> · {t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}
+                  {tRich("misc.topicMeta", { author: <By author={topic.author} /> }, { group: topic.groupName, replies: t("groups.replyCount", { n: topic.replyCount }) })}
                 </p>
-                {t.snippet && (
+                {topic.snippet && (
                   <p className="mt-1 text-sm text-white/70">
-                    <Highlight text={t.snippet} words={words} />
+                    <Highlight text={topic.snippet} words={words} />
                   </p>
                 )}
               </Card>
@@ -157,7 +155,7 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
                 <Highlight text={h.title} words={words} />
               </Link>
               <p className="mt-0.5 text-xs text-white/60">
-                <By author={h.author} /> · {h.priority} priority{h.dueDate ? ` · due ${formatDay(h.dueDate)}` : ""}
+                <By author={h.author} /> · {t("misc.priorityDue", { priority: PRIORITY_WORDS[h.priority] ? t(PRIORITY_WORDS[h.priority]) : h.priority })}{h.dueDate ? ` · ${t("misc.due", { day: formatDay(h.dueDate) })}` : ""}
               </p>
               {h.snippet && (
                 <p className="mt-1 text-sm text-white/70">
@@ -170,7 +168,7 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
       </ul>
       {hasMore && (
         <button type="button" onClick={showMore} disabled={loadingMore} className="w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
-          {loadingMore ? "Loading…" : "Show more"}
+          {loadingMore ? t("common.loading") : t("events.showMore")}
         </button>
       )}
     </div>

@@ -8,6 +8,7 @@ import { EditBox } from "../components/common/EditBox";
 import { EditedMark } from "../components/common/EditedMark";
 import { daysLeft, formatDay } from "../lib/when";
 import type { Bulletin } from "../types";
+import { t } from "../i18n";
 
 const field = "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 
@@ -44,8 +45,8 @@ export function BulletinsPage() {
   async function handlePost(e: React.FormEvent) {
     e.preventDefault();
     if (posting) return;
-    if (!title.trim()) return setError("Give your bulletin a title");
-    if (!body.trim()) return setError("Write something in your bulletin");
+    if (!title.trim()) return setError(t("misc.giveYourBulletinA"));
+    if (!body.trim()) return setError(t("misc.writeSomethingInYour"));
     setPosting(true);
     setError(null);
     try {
@@ -54,7 +55,7 @@ export function BulletinsPage() {
       setTitle("");
       setBody("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't post your bulletin.");
+      setError(err instanceof ApiError ? err.message : t("misc.couldntPostYourBulletin"));
     } finally {
       setPosting(false);
     }
@@ -67,50 +68,50 @@ export function BulletinsPage() {
       setEditing(null);
       return null;
     } catch (err) {
-      return err instanceof ApiError ? err.message : "Couldn't save that change.";
+      return err instanceof ApiError ? err.message : t("common.saveChangeFailed");
     }
   }
 
   async function handleDelete(bulletin: Bulletin) {
-    if (!window.confirm(`Take down "${bulletin.title}"?`)) return;
+    if (!window.confirm(t("misc.takeDownConfirm", { title: bulletin.title }))) return;
     try {
       await bulletinsApi.remove(bulletin.id);
       setBulletins((old) => old.filter((b) => b.id !== bulletin.id));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't take that down.");
+      alert(err instanceof ApiError ? err.message : t("misc.couldntTakeThatDown"));
     }
   }
 
   async function handleReport(bulletin: Bulletin) {
-    const reason = prompt("What's the issue with this bulletin?");
+    const reason = prompt(t("misc.whatsTheIssueWith"));
     if (!reason) return;
     try {
       await moderationApi.report("bulletin", bulletin.id, reason);
-      alert("Report submitted. Thanks for helping keep this space safe.");
+      alert(t("profile.reportSubmittedThanksFor"));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't submit that report.");
+      alert(err instanceof ApiError ? err.message : t("profile.couldntSubmitThatReport"));
     }
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
       <Link to="/" className="text-sm text-violet-400 hover:underline">
-        ← Back to your feed
+        {t("misc.backToYourFeed")}
       </Link>
       <div>
-        <h1 className="text-xl font-semibold text-white">Bulletins</h1>
-        <p className="text-sm text-white/60">A short message to all of your friends at once. Only your friends can read it, and it comes down after 10 days.</p>
+        <h1 className="text-xl font-semibold text-white">{t("bulletinsStrip.title")}</h1>
+        <p className="text-sm text-white/60">{t("misc.aShortMessageTo")}</p>
       </div>
 
       <form onSubmit={handlePost} className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-        <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_BULLETIN_TITLE} placeholder="Title" aria-label="Bulletin title" className={field} />
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX_BULLETIN_BODY} rows={4} placeholder="What do your friends need to know?" aria-label="Bulletin text" className={field} />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_BULLETIN_TITLE} placeholder={t("events.title")} aria-label={t("misc.bulletinTitle")} className={field} />
+        <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX_BULLETIN_BODY} rows={4} placeholder={t("misc.whatDoYourFriends")} aria-label={t("misc.bulletinText")} className={field} />
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-white/60" aria-live="polite">
             {body.length} / {MAX_BULLETIN_BODY}
           </span>
           <button type="submit" disabled={posting} className="rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
-            {posting ? "Posting…" : "Post bulletin"}
+            {posting ? t("composer.posting") : t("misc.postBulletin")}
           </button>
         </div>
         {error && (
@@ -120,14 +121,14 @@ export function BulletinsPage() {
         )}
       </form>
 
-      {state === "loading" && <p className="p-6 text-center text-white/60">Loading…</p>}
+      {state === "loading" && <p className="p-6 text-center text-white/60">{t("common.loading")}</p>}
       {state === "error" && (
         <p role="alert" className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-red-400">
-          Couldn&apos;t load the bulletins. Please try again.
+          {t("misc.couldntLoadTheBulletins")}
         </p>
       )}
       {state === "ready" && bulletins.length === 0 && (
-        <p className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-white/60">No bulletins yet. Post one, or add friends to see theirs.</p>
+        <p className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-white/60">{t("misc.noBulletinsYetPost")}</p>
       )}
       <ul className="space-y-3">
         {bulletins.map((b) => (
@@ -136,14 +137,14 @@ export function BulletinsPage() {
               <div className="flex items-center gap-2 text-sm text-white/70">
                 <Avatar username={b.author.username} displayName={b.author.displayName} avatarUrl={b.author.avatarUrl} size={28} />
                 <Link to={`/u/${b.author.username}`} className="font-medium text-white hover:underline">
-                  {b.isMine ? "You" : b.author.displayName}
+                  {b.isMine ? t("groups.you") : b.author.displayName}
                 </Link>
                 <span aria-hidden="true">·</span>
                 <time dateTime={b.createdAt}>{formatDay(b.createdAt)}</time>
                 <span className="ms-auto text-xs text-white/60">{daysLeft(b.expiresAt)}</span>
               </div>
               {editing === b.id ? (
-                <EditBox title={b.title} maxTitle={MAX_BULLETIN_TITLE} text={b.body} maxText={MAX_BULLETIN_BODY} label="Edit bulletin" onSave={(value) => saveEdit(b, value)} onCancel={() => setEditing(null)} />
+                <EditBox title={b.title} maxTitle={MAX_BULLETIN_TITLE} text={b.body} maxText={MAX_BULLETIN_BODY} label={t("misc.editBulletin")} onSave={(value) => saveEdit(b, value)} onCancel={() => setEditing(null)} />
               ) : (
                 <>
                   <h2 className="mt-2 font-semibold text-white">
@@ -155,16 +156,16 @@ export function BulletinsPage() {
               <div className="mt-3 flex gap-2">
                 {b.isMine && editing !== b.id && (
                   <button type="button" onClick={() => setEditing(b.id)} aria-label={`Edit ${b.title}`} className="rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10">
-                    Edit
+                    {t("common.edit")}
                   </button>
                 )}
                 {b.isMine ? (
-                  <button type="button" onClick={() => handleDelete(b)} aria-label={`Take down ${b.title}`} className="rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/10">
-                    Take down
+                  <button type="button" onClick={() => handleDelete(b)} aria-label={t("misc.takeDownAria", { title: b.title })} className="rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/10">
+                    {t("misc.takeDown")}
                   </button>
                 ) : (
                   <button type="button" onClick={() => handleReport(b)} aria-label={`Report ${b.title}`} className="rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10">
-                    Report
+                    {t("common.report")}
                   </button>
                 )}
               </div>

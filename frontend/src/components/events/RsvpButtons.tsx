@@ -2,6 +2,7 @@ import { useState } from "react";
 import { eventsApi } from "../../api/events.api";
 import { ApiError } from "../../api/client";
 import type { CommunityEvent, EventAnswer } from "../../types";
+import { t } from "../../i18n";
 
 /** Going / Maybe, and taking the answer back by choosing it again. Tells the page the new answer and counts. */
 export function RsvpButtons({ event, onAnswered }: { event: CommunityEvent; onAnswered: (change: Pick<CommunityEvent, "myStatus" | "goingCount" | "maybeCount">) => void }) {
@@ -15,7 +16,7 @@ export function RsvpButtons({ event, onAnswered }: { event: CommunityEvent; onAn
     try {
       onAnswered(await eventsApi.rsvp(event.id, event.myStatus === status ? "none" : status));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save your answer.");
+      setError(err instanceof ApiError ? err.message : t("events.couldntSaveYourAnswer"));
     } finally {
       setBusy(false);
     }
@@ -36,8 +37,8 @@ export function RsvpButtons({ event, onAnswered }: { event: CommunityEvent; onAn
   return (
     <div>
       <div className="flex gap-2">
-        {pill("going", "Going", "border-emerald-400/60 bg-emerald-500/20 text-emerald-200")}
-        {pill("maybe", "Maybe", "border-amber-400/60 bg-amber-500/20 text-amber-200")}
+        {pill("going", t("events.going"), "border-emerald-400/60 bg-emerald-500/20 text-emerald-200")}
+        {pill("maybe", t("events.maybe"), "border-amber-400/60 bg-amber-500/20 text-amber-200")}
       </div>
       {error && (
         <p role="alert" className="mt-1 text-xs text-red-400">

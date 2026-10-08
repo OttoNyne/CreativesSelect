@@ -3,6 +3,7 @@ import { Avatar } from "../common/Avatar";
 import { RsvpButtons } from "./RsvpButtons";
 import { formatWhen, untilText } from "../../lib/when";
 import type { CommunityEvent } from "../../types";
+import { t } from "../../i18n";
 
 /** How long after it began an event with no end time is still going (the same as the server's). */
 const OPEN_AFTER_START_MS = 6 * 60 * 60 * 1000;
@@ -15,7 +16,7 @@ export function isOver(event: CommunityEvent, now: Date = new Date()): boolean {
 
 /** "Where": the place, or "Online". */
 export function whereText(event: CommunityEvent): string {
-  return event.kind === "online" ? "Online" : event.place;
+  return event.kind === "online" ? t("events.online") : event.place;
 }
 
 export function EventCard({ event, onChange, now = new Date() }: { event: CommunityEvent; onChange: (event: CommunityEvent) => void; now?: Date }) {
@@ -34,24 +35,24 @@ export function EventCard({ event, onChange, now = new Date() }: { event: Commun
           </p>
           <p className="text-sm text-white/70">{whereText(event)}</p>
         </div>
-        <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-white/70">{event.audience === "friends" ? "Friends" : "Public"}</span>
+        <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-white/70">{event.audience === "friends" ? t("nav.friends") : t("events.public")}</span>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs text-white/70">
           <Link to={`/u/${event.host.username}`} className="flex items-center gap-1.5 hover:underline">
             <Avatar username={event.host.username} displayName={event.host.displayName} avatarUrl={event.host.avatarUrl} size={20} />
-            {event.isHost ? "You" : event.host.displayName}
+            {event.isHost ? t("groups.you") : event.host.displayName}
           </Link>
           <span aria-hidden>·</span>
           <span>
-            {event.goingCount} going{event.maybeCount > 0 ? `, ${event.maybeCount} maybe` : ""}
+            {event.maybeCount > 0 ? t("events.goingMaybe", { going: event.goingCount, maybe: event.maybeCount }) : t("events.goingOnly", { going: event.goingCount })}
           </span>
         </div>
         {!event.isHost && !over && <RsvpButtons event={event} onAnswered={(change) => onChange({ ...event, ...change })} />}
         {event.isHost && (
           <Link to={`/events/${event.id}`} className="text-xs text-violet-300 hover:underline">
-            Manage
+            {t("events.manage")}
           </Link>
         )}
       </div>

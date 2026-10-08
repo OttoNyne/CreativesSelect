@@ -5,6 +5,7 @@ import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
 import { formatWhen, untilText } from "../../lib/when";
 import type { ScheduledLive } from "../../types";
+import { t } from "../../i18n";
 
 /**
  * Lives people have planned. Anyone can ask to be reminded (toggle); the host can start theirs now, or cancel it.
@@ -34,31 +35,31 @@ export function UpcomingLives({
       const result = plan.reminding ? await scheduledApi.unremind(plan.id) : await scheduledApi.remind(plan.id);
       onChange((plans ?? []).map((p) => (p.id === plan.id ? { ...p, reminding: result.reminding, reminderCount: result.reminderCount } : p)));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "That didn't work — please try again.");
+      setError(err instanceof ApiError ? err.message : t("live.thatDidntWorkPlease"));
     } finally {
       setBusyId(null);
     }
   }
 
   async function cancel(plan: ScheduledLive) {
-    if (!window.confirm(`Cancel "${plan.title}"? The people who asked to be reminded won't be told.`)) return;
+    if (!window.confirm(t("live.cancelPlanConfirm", { title: plan.title }))) return;
     setBusyId(plan.id);
     setError(null);
     try {
       await scheduledApi.cancel(plan.id);
       onChange((plans ?? []).filter((p) => p.id !== plan.id));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't cancel that live.");
+      setError(err instanceof ApiError ? err.message : t("live.couldntCancelThatLive"));
     } finally {
       setBusyId(null);
     }
   }
 
   return (
-    <section aria-label="Upcoming lives">
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Upcoming</h2>
-      {plans === null && <p className="text-sm text-white/60">Loading…</p>}
-      {plans?.length === 0 && <p className="text-sm text-white/60">Nothing is scheduled yet. Plan one above and let your friends know.</p>}
+    <section aria-label={t("live.upcomingLives")}>
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">{t("live.upcoming")}</h2>
+      {plans === null && <p className="text-sm text-white/60">{t("common.loading")}</p>}
+      {plans?.length === 0 && <p className="text-sm text-white/60">{t("live.nothingIsScheduledYet")}</p>}
       {error && (
         <p role="alert" className="mb-2 text-sm text-red-400">
           {error}
@@ -72,19 +73,19 @@ export function UpcomingLives({
               <p className="truncate font-medium text-white">{p.title}</p>
               <p className="truncate text-xs text-white/70">
                 <Link to={`/u/${p.host.username}`} className="hover:underline">
-                  {p.isHost ? "You" : p.host.displayName}
+                  {p.isHost ? t("groups.you") : p.host.displayName}
                 </Link>{" "}
                 · {formatWhen(p.startsAt)} · <span>{untilText(p.startsAt, now)}</span>
-                {p.reminderCount > 0 && ` · ${p.reminderCount} reminding`}
+                {p.reminderCount > 0 && ` · ${t("live.reminding", { n: p.reminderCount })}`}
               </p>
             </div>
             {p.isHost ? (
               <div className="flex gap-2">
                 <button onClick={() => onStartNow(p)} disabled={starting} className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-50">
-                  Start now
+                  {t("live.startNow")}
                 </button>
                 <button onClick={() => cancel(p)} disabled={busyId === p.id} aria-label={`Cancel ${p.title}`} className="rounded-md border border-white/20 px-3 py-1.5 text-xs text-white hover:bg-white/10 disabled:opacity-50">
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             ) : (
@@ -92,12 +93,12 @@ export function UpcomingLives({
                 onClick={() => toggleReminder(p)}
                 disabled={busyId === p.id}
                 aria-pressed={p.reminding}
-                aria-label={`${p.reminding ? "Stop reminding me about" : "Remind me about"} ${p.title}`}
+                aria-label={t(p.reminding ? "live.stopRemindAria" : "live.remindAria", { title: p.title })}
                 className={`rounded-md border px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${
                   p.reminding ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white hover:bg-white/10"
                 }`}
               >
-                {p.reminding ? "✓ Reminding you" : "Remind me"}
+                {p.reminding ? t("live.remindingYou") : t("live.remindMe")}
               </button>
             )}
           </li>

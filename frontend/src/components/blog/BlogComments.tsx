@@ -3,6 +3,7 @@ import { moderationApi } from "../../api/moderation.api";
 import { ApiError } from "../../api/client";
 import { CommentThread } from "../common/CommentThread";
 import type { Comment } from "../../types";
+import { t } from "../../i18n";
 
 /** The comments on a blog entry. The author of the entry can take any of them down; anyone signed in can report one. */
 export function BlogComments({
@@ -17,13 +18,13 @@ export function BlogComments({
   highlightId?: string | null;
 }) {
   async function report(comment: Comment) {
-    const reason = prompt("What's the issue with this comment?");
+    const reason = prompt(t("profile.whatsTheIssueWith2"));
     if (!reason) return;
     try {
       await moderationApi.report("blogComment", comment.id, reason);
-      alert("Report submitted. Thanks for helping keep this space safe.");
+      alert(t("profile.reportSubmittedThanksFor"));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't submit that report.");
+      alert(err instanceof ApiError ? err.message : t("profile.couldntSubmitThatReport"));
     }
   }
 

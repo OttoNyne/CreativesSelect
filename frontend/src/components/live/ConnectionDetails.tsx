@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { describeNetwork } from "../../lib/live/networkInfo";
+import { t } from "../../i18n";
 
 /**
  * What the live connection has been doing, in plain lines, for a host whose live misbehaves (it drops, or goes quiet). It can
@@ -20,19 +21,19 @@ export function ConnectionDetails({ lines, open = false }: { lines: string[]; op
 
   return (
     <details open={open} className="mt-3 rounded-md border border-white/10 bg-black/20 p-2 text-xs text-white/80">
-      <summary className="cursor-pointer select-none text-white/80">Connection details</summary>
+      <summary className="cursor-pointer select-none text-white/80">{t("live.connectionDetails")}</summary>
       <p className="mt-2 text-white/70">{describeNetwork()}</p>
       {lines.length === 0 ? (
-        <p className="mt-1 text-white/60">Nothing to report yet.</p>
+        <p className="mt-1 text-white/60">{t("live.nothingToReportYet")}</p>
       ) : (
-        <ol aria-label="Connection events" className="mt-2 max-h-40 space-y-0.5 overflow-y-auto font-mono text-[11px] text-white/80">
+        <ol aria-label={t("live.connectionEvents")} className="mt-2 max-h-40 space-y-0.5 overflow-y-auto font-mono text-[11px] text-white/80">
           {lines.map((line, i) => (
             <li key={i}>{line}</li>
           ))}
         </ol>
       )}
       <button type="button" onClick={copy} className="mt-2 rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10">
-        {copied ? "Copied" : "Copy details"}
+        {copied ? t("live.copied") : t("live.copyDetails")}
       </button>
     </details>
   );

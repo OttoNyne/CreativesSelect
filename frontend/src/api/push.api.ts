@@ -1,16 +1,17 @@
 import { api } from "./client";
+import { t } from "../i18n";
 
 export type PushCategory = "messages" | "friends" | "comments" | "events" | "live" | "updates";
 export type PushPrefs = Record<PushCategory, boolean>;
 
 /** The kinds of notification a person can switch, in the order they are shown. */
 export const PUSH_CATEGORIES: { name: PushCategory; label: string; hint: string }[] = [
-  { name: "messages", label: "Messages", hint: "When a friend messages you" },
-  { name: "friends", label: "Friends", hint: "Friend requests, accepted requests, invites, group invites and birthdays" },
-  { name: "comments", label: "Comments", hint: "On your posts, profile, portfolio and blog entries, and emoji reactions to your posts and pictures" },
-  { name: "events", label: "Events and plans", hint: "Events you host or answered, and lives you asked to be reminded of" },
-  { name: "live", label: "Lives", hint: "When a friend goes live" },
-  { name: "updates", label: "Everything else", hint: "New blog entries, Help wanted offers, moderator notices and badges" },
+  { name: "messages", get label() { return t("messages.title"); }, get hint() { return t("labels.whenAFriendMessages"); } },
+  { name: "friends", get label() { return t("nav.friends"); }, get hint() { return t("labels.friendRequestsAcceptedRequests"); } },
+  { name: "comments", get label() { return t("misc.comments"); }, get hint() { return t("labels.onYourPostsProfile"); } },
+  { name: "events", get label() { return t("labels.eventsAndPlans"); }, get hint() { return t("labels.eventsYouHostOr"); } },
+  { name: "live", get label() { return t("labels.lives"); }, get hint() { return t("labels.whenAFriendGoes"); } },
+  { name: "updates", get label() { return t("labels.everythingElse"); }, get hint() { return t("labels.newBlogEntriesHelp"); } },
 ];
 
 /** What the browser hands over when it signs up for pushes. */

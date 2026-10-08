@@ -6,6 +6,7 @@ import type { Group, GroupMember } from "../types";
 import { Avatar } from "../components/common/Avatar";
 import { GroupChat } from "../components/group/GroupChat";
 import { GroupBoard } from "../components/group/GroupBoard";
+import { t } from "../i18n";
 
 export function GroupDetailPage() {
   const { id = "" } = useParams();
@@ -28,7 +29,7 @@ export function GroupDetailPage() {
       setMoreMembers(Boolean(members.hasMore));
       setStatus("ready");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load this group.");
+      setError(err instanceof ApiError ? err.message : t("groups.failedToLoadThis"));
       setStatus("error");
     }
   }
@@ -50,7 +51,7 @@ export function GroupDetailPage() {
       setMembersPage(membersPage + 1);
       setMoreMembers(Boolean(next.hasMore));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't load more members.");
+      setActionError(err instanceof ApiError ? err.message : t("groups.couldntLoadMoreMembers"));
     } finally {
       setLoadingMembers(false);
     }
@@ -62,7 +63,7 @@ export function GroupDetailPage() {
       await groupsApi.join(id);
       load();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't join that group.");
+      setActionError(err instanceof ApiError ? err.message : t("groups.couldntJoinThatGroup"));
     }
   }
 
@@ -72,11 +73,11 @@ export function GroupDetailPage() {
       await groupsApi.leave(id);
       load();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't leave that group.");
+      setActionError(err instanceof ApiError ? err.message : t("groups.couldntLeaveThatGroup"));
     }
   }
 
-  if (status === "loading") return <div className="p-8 text-center text-white/60">Loading…</div>;
+  if (status === "loading") return <div className="p-8 text-center text-white/60">{t("common.loading")}</div>;
   if (status === "error" || !group) return <div className="p-8 text-center text-red-400">{error}</div>;
 
   return (
@@ -85,14 +86,14 @@ export function GroupDetailPage() {
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
         <h1 className="text-xl font-bold text-white">{group.name}</h1>
         <p className="mt-1 text-sm text-white/60">{group.description}</p>
-        <p className="mt-2 text-xs text-white/60">{group.memberCount} members</p>
+        <p className="mt-2 text-xs text-white/60">{t("groups.memberCount", { n: group.memberCount })}</p>
         <button
           onClick={isMember ? handleLeave : handleJoin}
           className={`mt-3 rounded-md px-3 py-1.5 text-sm font-medium ${
             isMember ? "border border-white/15 text-white/70" : "bg-violet-600 text-white hover:bg-violet-500"
           }`}
         >
-          {isMember ? "Leave group" : "Join group"}
+          {isMember ? t("groups.leaveGroup") : t("groups.joinGroup")}
         </button>
       </div>
 
@@ -101,7 +102,7 @@ export function GroupDetailPage() {
       {isMember && <GroupChat groupId={id} canModerate={isAdmin} />}
 
       <div>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Members</h2>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">{t("groups.members")}</h2>
         <div className="space-y-2">
           {members.map((m) => (
             <div key={m.user.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
@@ -109,13 +110,13 @@ export function GroupDetailPage() {
               <Link to={`/u/${m.user.username}`} className="flex-1 font-medium text-white hover:underline">
                 {m.user.displayName}
               </Link>
-              {m.role === "admin" && <span className="text-xs text-violet-400">Admin</span>}
+              {m.role === "admin" && <span className="text-xs text-violet-400">{t("groups.admin")}</span>}
             </div>
           ))}
         </div>
         {moreMembers && (
           <button type="button" onClick={showMoreMembers} disabled={loadingMembers} className="mt-2 w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
-            {loadingMembers ? "Loading…" : "Show more members"}
+            {loadingMembers ? t("common.loading") : t("groups.showMoreMembers")}
           </button>
         )}
       </div>

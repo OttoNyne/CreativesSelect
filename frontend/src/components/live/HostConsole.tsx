@@ -8,6 +8,7 @@ import { ConnectionDetails } from "./ConnectionDetails";
 import { LiveChat } from "./LiveChat";
 import { HostStage } from "./StagePanel";
 import { StageTiles } from "./StageTiles";
+import { t } from "../../i18n";
 
 export interface HostConsoleProps {
   room: LiveRoom;
@@ -33,24 +34,24 @@ function Notices({ phoneOnline, connection, failure, mic }: Pick<HostConsoleProp
     <>
       {!phoneOnline && (
         <p role="alert" className="mt-3 text-sm text-amber-300">
-          Your phone has lost its internet connection, so listeners can&apos;t hear you. The live will pick up again by itself when it is back; stay on this page.
+          {t("live.yourPhoneHasLost")}
         </p>
       )}
       {phoneOnline && !failure && connection === "reconnecting" && (
         <p role="status" className="mt-3 text-sm text-amber-300">
-          Your connection dropped — reconnecting. Listeners may hear a short gap. Stay on this page.
+          {t("live.yourConnectionDroppedReconnecting")}
         </p>
       )}
       {!failure && mic !== "ok" && (
         <p role="alert" className="mt-3 text-sm text-amber-300">
           {mic === "ended"
-            ? "Your phone has stopped the microphone, so listeners can't hear you. Another app may have taken it. End this live and start again."
-            : "Your phone has paused the microphone, so listeners can't hear you right now. Keep this page open with the screen on (it pauses when the screen locks or you switch apps)."}
+            ? t("live.yourPhoneHasStopped")
+            : t("live.yourPhoneHasPaused")}
         </p>
       )}
       {failure && (
         <p role="alert" className="mt-3 text-sm text-red-400">
-          {/[.!?]$/.test(failure) ? failure : `${failure}.`} Listeners can&apos;t hear you — end this live and start a new one to try again.
+          {/[.!?]$/.test(failure) ? failure : `${failure}.`} {t("live.cantHearEnd")}
         </p>
       )}
     </>
@@ -62,7 +63,7 @@ function Footer({ room, details, failure, connection, mic, phoneOnline }: Pick<H
     <>
       <ConnectionDetails lines={details} open={Boolean(failure) || connection === "reconnecting" || mic !== "ok" || !phoneOnline} />
       <p className="mt-3 text-xs text-white/60">
-        Up to {room.maxListeners} people can listen. Leaving this page, or closing the tab, ends your live and turns your microphone off.
+        {t("live.maxListenersNote", { n: room.maxListeners })}
       </p>
     </>
   );
@@ -73,14 +74,14 @@ function Controls({ muted, onToggleMute, onEnd }: Pick<HostConsoleProps, "muted"
   return (
     <>
       <p role="status" className="text-sm text-white/80">
-        {muted ? "Your microphone is muted — listeners can't hear you." : "You're live — listeners can hear your microphone."}
+        {muted ? t("live.yourMicrophoneIsMuted") : t("live.youreLiveListenersCan")}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button onClick={onToggleMute} aria-pressed={muted} className={button}>
-          {muted ? "Unmute microphone" : "Mute microphone"}
+          {muted ? t("live.unmuteMicrophone") : t("live.muteMicrophone")}
         </button>
         <button onClick={onEnd} className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500">
-          End live
+          {t("live.endLive")}
         </button>
       </div>
     </>
@@ -101,18 +102,18 @@ function WideLayout(props: HostConsoleProps & { stage: LiveStage }) {
       await liveApi.removeGuest(room.id, user.id);
       onStageChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "That didn't work — please try again.");
+      setError(err instanceof ApiError ? err.message : t("live.thatDidntWorkPlease"));
     }
   }
 
   return (
     <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="space-y-4">
-        <section aria-label="Stage" className={card}>
+        <section aria-label={t("live.stage")} className={card}>
           <div className="mb-3 flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-white">On stage</h2>
+            <h2 className="text-sm font-semibold text-white">{t("live.onStage")}</h2>
             <span className="text-xs text-white/60" aria-live="polite">
-              {stage.guests.length + (stage.invited?.length ?? 0)} of {stage.maxGuests} guest places used
+              {t("live.guestPlaces", { n: stage.guests.length + (stage.invited?.length ?? 0), max: stage.maxGuests })}
             </span>
           </div>
           <StageTiles
@@ -130,14 +131,14 @@ function WideLayout(props: HostConsoleProps & { stage: LiveStage }) {
               {error}
             </p>
           )}
-          <p className="mt-3 text-xs text-white/60">Use headphones while guests are on stage so their voices don&apos;t echo back.</p>
+          <p className="mt-3 text-xs text-white/60">{t("live.useHeadphonesWhileGuests")}</p>
         </section>
 
         {((stage.requests?.length ?? 0) > 0 || (stage.invited?.length ?? 0) > 0) && (
-          <HostStage liveId={room.id} stage={stage} onChange={onStageChange} sections={["requests", "invited"]} heading={false} label="Asking to speak" />
+          <HostStage liveId={room.id} stage={stage} onChange={onStageChange} sections={["requests", "invited"]} heading={false} label={t("live.askingToSpeak")} />
         )}
 
-        <section aria-label="Your live" className={card}>
+        <section aria-label={t("live.yourLive")} className={card}>
           <Controls muted={props.muted} onToggleMute={props.onToggleMute} onEnd={props.onEnd} />
           <Notices phoneOnline={props.phoneOnline} connection={props.connection} failure={props.failure} mic={props.mic} />
           <Footer room={room} details={props.details} failure={props.failure} connection={props.connection} mic={props.mic} phoneOnline={props.phoneOnline} />
@@ -146,7 +147,7 @@ function WideLayout(props: HostConsoleProps & { stage: LiveStage }) {
 
       <div className="space-y-4">
         <div ref={listeners} tabIndex={-1}>
-          <HostStage liveId={room.id} stage={stage} onChange={onStageChange} sections={["listeners"]} heading={false} label="Listeners" />
+          <HostStage liveId={room.id} stage={stage} onChange={onStageChange} sections={["listeners"]} heading={false} label={t("live.listeners")} />
         </div>
         <LiveChat liveId={room.id} isHost open pollMs={room.commentPollMs} />
       </div>
@@ -169,36 +170,36 @@ function PhoneLayout(props: HostConsoleProps & { stage: LiveStage }) {
     if (next === "chat") setUnread(0);
   };
   const tabs: { id: Tab; label: string; badge: number }[] = [
-    { id: "stage", label: "Stage", badge: tab === "stage" ? 0 : requests },
-    { id: "listeners", label: "Listeners", badge: 0 },
-    { id: "chat", label: "Chat", badge: tab === "chat" ? 0 : unread },
+    { id: "stage", label: t("live.stage"), badge: tab === "stage" ? 0 : requests },
+    { id: "listeners", label: t("live.listeners"), badge: 0 },
+    { id: "chat", label: t("live.chatTab"), badge: tab === "chat" ? 0 : unread },
   ];
 
   return (
     <div className="space-y-3">
-      <section aria-label="Your live" className={card}>
+      <section aria-label={t("live.yourLive")} className={card}>
         <Controls muted={props.muted} onToggleMute={props.onToggleMute} onEnd={props.onEnd} />
         <Notices phoneOnline={props.phoneOnline} connection={props.connection} failure={props.failure} mic={props.mic} />
       </section>
 
-      <div role="tablist" aria-label="Live screen" className="flex border-b border-white/10">
-        {tabs.map((t) => (
+      <div role="tablist" aria-label={t("live.liveScreen")} className="flex border-b border-white/10">
+        {tabs.map((x) => (
           <button
-            key={t.id}
+            key={x.id}
             role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
-            onClick={() => pick(t.id)}
+            id={`tab-${x.id}`}
+            aria-selected={tab === x.id}
+            aria-controls={`panel-${x.id}`}
+            onClick={() => pick(x.id)}
             className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-sm ${
-              tab === t.id ? "border-white font-medium text-white" : "border-transparent text-white/70 hover:text-white"
+              tab === x.id ? "border-white font-medium text-white" : "border-transparent text-white/70 hover:text-white"
             }`}
           >
-            {t.label}
-            {t.id === "listeners" && <span className="text-xs text-white/60">({listeners})</span>}
-            {t.badge > 0 && (
-              <span className="rounded-full bg-amber-400 px-1.5 text-[11px] font-semibold text-black" aria-label={`${t.badge} new`}>
-                {t.badge}
+            {x.label}
+            {x.id === "listeners" && <span className="text-xs text-white/60">({listeners})</span>}
+            {x.badge > 0 && (
+              <span className="rounded-full bg-amber-400 px-1.5 text-[11px] font-semibold text-black" aria-label={t("bulletinsStrip.new", { count: x.badge })}>
+                {x.badge}
               </span>
             )}
           </button>
@@ -210,7 +211,7 @@ function PhoneLayout(props: HostConsoleProps & { stage: LiveStage }) {
         <Footer room={room} details={props.details} failure={props.failure} connection={props.connection} mic={props.mic} phoneOnline={props.phoneOnline} />
       </div>
       <div role="tabpanel" id="panel-listeners" aria-labelledby="tab-listeners" hidden={tab !== "listeners"}>
-        <HostStage liveId={room.id} stage={stage} onChange={onStageChange} sections={["listeners"]} heading={false} label="Listeners" />
+        <HostStage liveId={room.id} stage={stage} onChange={onStageChange} sections={["listeners"]} heading={false} label={t("live.listeners")} />
       </div>
       <div role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" hidden={tab !== "chat"}>
         <LiveChat liveId={room.id} isHost open pollMs={room.commentPollMs} onFresh={(n) => setUnread((u) => (tab === "chat" ? 0 : u + n))} />
@@ -223,7 +224,7 @@ function PhoneLayout(props: HostConsoleProps & { stage: LiveStage }) {
 function PlainLayout(props: HostConsoleProps) {
   return (
     <div className="space-y-4">
-      <section aria-label="Your live" className={card}>
+      <section aria-label={t("live.yourLive")} className={card}>
         <Controls muted={props.muted} onToggleMute={props.onToggleMute} onEnd={props.onEnd} />
         <Notices phoneOnline={props.phoneOnline} connection={props.connection} failure={props.failure} mic={props.mic} />
         <Footer room={props.room} details={props.details} failure={props.failure} connection={props.connection} mic={props.mic} phoneOnline={props.phoneOnline} />

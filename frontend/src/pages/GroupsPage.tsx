@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { groupsApi } from "../api/groups.api";
 import { ApiError } from "../api/client";
 import type { Group } from "../types";
+import { t } from "../i18n";
 
 export function GroupsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -26,7 +27,7 @@ export function GroupsPage() {
       setHasMore(Boolean(hasMore));
       setStatus("ready");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load groups.");
+      setError(err instanceof ApiError ? err.message : t("groups.failedToLoadGroups"));
       setStatus("error");
     }
   }
@@ -44,7 +45,7 @@ export function GroupsPage() {
       setPage(page + 1);
       setHasMore(Boolean(next.hasMore));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't load more groups.");
+      setActionError(err instanceof ApiError ? err.message : t("groups.couldntLoadMoreGroups"));
     } finally {
       setLoadingMore(false);
     }
@@ -66,7 +67,7 @@ export function GroupsPage() {
       setShowCreate(false);
       load();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't create that group.");
+      setActionError(err instanceof ApiError ? err.message : t("groups.couldntCreateThatGroup"));
     }
   }
 
@@ -76,7 +77,7 @@ export function GroupsPage() {
       await groupsApi.join(id);
       load(search);
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't join that group.");
+      setActionError(err instanceof ApiError ? err.message : t("groups.couldntJoinThatGroup"));
     }
   }
 
@@ -86,11 +87,11 @@ export function GroupsPage() {
       await groupsApi.leave(id);
       load(search);
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't leave that group.");
+      setActionError(err instanceof ApiError ? err.message : t("groups.couldntLeaveThatGroup"));
     }
   }
 
-  if (status === "loading") return <div className="p-8 text-center text-white/60">Loading…</div>;
+  if (status === "loading") return <div className="p-8 text-center text-white/60">{t("common.loading")}</div>;
   if (status === "error") return <div className="p-8 text-center text-red-400">{error}</div>;
 
   return (
@@ -100,18 +101,18 @@ export function GroupsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search groups…"
+            placeholder={t("groups.searchGroups")}
             className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <button type="submit" className="rounded-md border border-white/15 px-3 py-2 text-sm text-white/70">
-            Search
+            {t("nav.search")}
           </button>
         </form>
         <button
           onClick={() => setShowCreate((s) => !s)}
           className="rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500"
         >
-          + New group
+          {t("groups.newGroup")}
         </button>
       </div>
       {actionError && <p className="text-sm text-red-400">{actionError}</p>}
@@ -121,24 +122,24 @@ export function GroupsPage() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Group name"
+            placeholder={t("groups.groupName")}
             className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="What's this group about?"
+            placeholder={t("groups.whatsThisGroupAbout")}
             rows={2}
             className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <button type="submit" className="rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium text-white">
-            Create
+            {t("groups.create")}
           </button>
         </form>
       )}
 
       <div className="space-y-2">
-        {groups.length === 0 && <p className="text-sm text-white/60">No groups found.</p>}
+        {groups.length === 0 && <p className="text-sm text-white/60">{t("groups.noGroupsFound")}</p>}
         {groups.map((g) => (
           <div key={g.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
             <div className="flex-1">
@@ -146,28 +147,28 @@ export function GroupsPage() {
                 {g.name}
               </Link>
               <p className="text-xs text-white/60">{g.description}</p>
-              <p className="text-xs text-white/60">{g.memberCount} members</p>
+              <p className="text-xs text-white/60">{t("groups.memberCount", { n: g.memberCount })}</p>
             </div>
             {g.isMember ? (
               <button
                 onClick={() => handleLeave(g.id)}
                 className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
               >
-                Leave
+                {t("groups.leave")}
               </button>
             ) : (
               <button
                 onClick={() => handleJoin(g.id)}
                 className="rounded-md bg-violet-600 px-3 py-1 text-xs font-medium text-white hover:bg-violet-500"
               >
-                Join
+                {t("groups.join")}
               </button>
             )}
           </div>
         ))}
         {hasMore && (
           <button type="button" onClick={showMore} disabled={loadingMore} className="w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
-            {loadingMore ? "Loading…" : "Show more groups"}
+            {loadingMore ? t("common.loading") : t("groups.showMoreGroups")}
           </button>
         )}
       </div>

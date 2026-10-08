@@ -4,6 +4,7 @@ import { groupsApi, MAX_GROUP_MESSAGE_LENGTH } from "../../api/groups.api";
 import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
 import type { GroupChatMessage } from "../../types";
+import { t } from "../../i18n";
 
 const POLL_MS = 5_000;
 
@@ -41,7 +42,7 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
         setState("ready");
       } catch (err) {
         if (first) {
-          setError(err instanceof ApiError ? err.message : "Couldn't load the chat.");
+          setError(err instanceof ApiError ? err.message : t("groups.couldntLoadTheChat"));
           setState("error");
         }
         // a failed background poll just tries again next time
@@ -71,7 +72,7 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
       setMessages((prev) => [...res.messages, ...prev]);
       setHasMore(res.hasMore);
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't load earlier messages.");
+      setActionError(err instanceof ApiError ? err.message : t("messages.earlierFailed"));
     }
   }
 
@@ -87,38 +88,38 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
       setMessages((prev) => [...prev, message]);
       setDraft("");
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't send that message.");
+      setActionError(err instanceof ApiError ? err.message : t("messages.sendFailed"));
     } finally {
       setSending(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Delete this message for everyone in the group?")) return;
+    if (!window.confirm(t("groups.deleteThisMessageFor"))) return;
     setActionError(null);
     try {
       await groupsApi.deleteMessage(groupId, id);
       setMessages((prev) => prev.filter((m) => m.id !== id));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't delete that message.");
+      setActionError(err instanceof ApiError ? err.message : t("messages.deleteFailed"));
     }
   }
 
   return (
-    <section aria-label="Group chat" className="rounded-xl border border-white/10 bg-white/[0.03]">
-      <h2 className="border-b border-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white/60">Group chat</h2>
+    <section aria-label={t("groups.groupChat")} className="rounded-xl border border-white/10 bg-white/[0.03]">
+      <h2 className="border-b border-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white/60">{t("groups.groupChat")}</h2>
 
-      {state === "loading" && <p className="p-4 text-sm text-white/60">Loading…</p>}
+      {state === "loading" && <p className="p-4 text-sm text-white/60">{t("common.loading")}</p>}
       {state === "error" && <p className="p-4 text-sm text-red-400">{error}</p>}
       {state === "ready" && (
         <>
           <div ref={listRef} className="max-h-80 min-h-[8rem] space-y-3 overflow-y-auto px-4 py-3">
             {hasMore && (
               <button onClick={loadEarlier} className="mx-auto block text-xs text-violet-400 hover:underline">
-                Load earlier messages
+                {t("messages.loadEarlier")}
               </button>
             )}
-            {messages.length === 0 && <p className="py-4 text-center text-sm text-white/60">No messages yet — start the conversation.</p>}
+            {messages.length === 0 && <p className="py-4 text-center text-sm text-white/60">{t("groups.noMessagesYetStart")}</p>}
             {messages.map((m) => (
               <div key={m.id} className="flex items-start gap-2">
                 {m.sender && <Avatar username={m.sender.username} displayName={m.sender.displayName} avatarUrl={m.sender.avatarUrl} size={28} />}
@@ -126,15 +127,15 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
                   <div className="flex items-baseline gap-2 text-xs text-white/60">
                     {m.sender ? (
                       <Link to={`/u/${m.sender.username}`} className="font-medium text-white/80 hover:underline">
-                        {m.mine ? "You" : m.sender.displayName}
+                        {m.mine ? t("groups.you") : m.sender.displayName}
                       </Link>
                     ) : (
-                      <span>Former member</span>
+                      <span>{t("groups.formerMember")}</span>
                     )}
                     <span>{timeLabel(m.createdAt)}</span>
                     {(m.mine || canModerate) && (
-                      <button onClick={() => handleDelete(m.id)} aria-label="Delete message" className="hover:text-white">
-                        Delete
+                      <button onClick={() => handleDelete(m.id)} aria-label={t("messages.deleteLabel")} className="hover:text-white">
+                        {t("common.delete")}
                       </button>
                     )}
                   </div>
@@ -157,8 +158,8 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
               }}
               maxLength={MAX_GROUP_MESSAGE_LENGTH}
               rows={1}
-              placeholder="Message the group…"
-              aria-label="Group message"
+              placeholder={t("groups.messageTheGroup")}
+              aria-label={t("groups.groupMessage")}
               className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
             />
             <button
@@ -166,7 +167,7 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
               disabled={!draft.trim() || sending}
               className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
-              {sending ? "Sending…" : "Send"}
+              {sending ? t("common.sending") : t("messages.send")}
             </button>
           </form>
         </>

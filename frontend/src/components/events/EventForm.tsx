@@ -3,6 +3,7 @@ import { EVENT_LIMITS, eventsApi, type EventInput } from "../../api/events.api";
 import { ApiError } from "../../api/client";
 import { earliestStart, toLocalInput } from "../../lib/when";
 import type { CommunityEvent } from "../../types";
+import { t } from "../../i18n";
 
 const field = "w-full min-w-0 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 const label = "block text-xs font-medium text-white/70";
@@ -27,12 +28,12 @@ export function EventForm({ event, onSaved, onCancel }: { event?: CommunityEvent
     e.preventDefault();
     if (busy) return;
     const name = title.trim();
-    if (!name) return setError("Give your event a title");
-    if (kind === "in_person" && !place.trim()) return setError("Say where it is");
+    if (!name) return setError(t("events.giveYourEventA"));
+    if (kind === "in_person" && !place.trim()) return setError(t("events.sayWhereItIs"));
     const start = new Date(startsAt);
-    if (!startsAt || Number.isNaN(start.getTime())) return setError("Choose a start time");
+    if (!startsAt || Number.isNaN(start.getTime())) return setError(t("events.chooseAStartTime"));
     const end = endsAt ? new Date(endsAt) : null;
-    if (end && Number.isNaN(end.getTime())) return setError("Choose a valid end time, or leave it empty");
+    if (end && Number.isNaN(end.getTime())) return setError(t("events.chooseAValidEnd"));
 
     const input: EventInput = { title: name, kind, description, audience };
     if (kind === "in_person") input.place = place.trim();
@@ -60,50 +61,50 @@ export function EventForm({ event, onSaved, onCancel }: { event?: CommunityEvent
         setDescription("");
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save that event.");
+      setError(err instanceof ApiError ? err.message : t("events.couldntSaveThatEvent"));
     } finally {
       setBusy(false);
     }
   }
 
-  const heading = event ? "Change this event" : "Plan an event";
+  const heading = event ? t("events.changeEvent") : t("events.planAnEvent");
   return (
     <form onSubmit={submit} aria-label={heading} className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">{heading}</h2>
       <div>
         <label htmlFor="event-title" className={label}>
-          Title
+          {t("events.title")}
         </label>
-        <input id="event-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={EVENT_LIMITS.title} placeholder="Life drawing night" className={field} />
+        <input id="event-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={EVENT_LIMITS.title} placeholder={t("events.lifeDrawingNight")} className={field} />
       </div>
 
       <fieldset>
-        <legend className={label}>Where</legend>
+        <legend className={label}>{t("events.where")}</legend>
         <div className="mt-1 flex gap-4 text-sm text-white/80">
           <label className="flex items-center gap-1.5">
-            <input type="radio" name="event-kind" checked={kind === "in_person"} onChange={() => setKind("in_person")} /> In person
+            <input type="radio" name="event-kind" checked={kind === "in_person"} onChange={() => setKind("in_person")} /> {t("events.inPerson")}
           </label>
           <label className="flex items-center gap-1.5">
-            <input type="radio" name="event-kind" checked={kind === "online"} onChange={() => setKind("online")} /> Online
+            <input type="radio" name="event-kind" checked={kind === "online"} onChange={() => setKind("online")} /> {t("events.online")}
           </label>
         </div>
         {kind === "in_person" ? (
-          <input value={place} onChange={(e) => setPlace(e.target.value)} maxLength={EVENT_LIMITS.place} placeholder="The Old Mill, Leeds" aria-label="Place" className={`${field} mt-2`} />
+          <input value={place} onChange={(e) => setPlace(e.target.value)} maxLength={EVENT_LIMITS.place} placeholder={t("events.theOldMillLeeds")} aria-label={t("events.place")} className={`${field} mt-2`} />
         ) : (
-          <input value={link} onChange={(e) => setLink(e.target.value)} maxLength={EVENT_LIMITS.link} placeholder="https://… (a link to join, if you have one)" aria-label="Link to join" inputMode="url" className={`${field} mt-2`} />
+          <input value={link} onChange={(e) => setLink(e.target.value)} maxLength={EVENT_LIMITS.link} placeholder={t("events.httpsALinkTo")} aria-label={t("events.linkToJoin")} inputMode="url" className={`${field} mt-2`} />
         )}
       </fieldset>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="event-start" className={label}>
-            Starts
+            {t("events.starts")}
           </label>
           <input id="event-start" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} min={event ? undefined : earliestStart()} className={`${field} [color-scheme:dark]`} />
         </div>
         <div>
           <label htmlFor="event-end" className={label}>
-            Ends (optional)
+            {t("events.endsOptional")}
           </label>
           <input id="event-end" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} min={startsAt || undefined} className={`${field} [color-scheme:dark]`} />
         </div>
@@ -111,9 +112,9 @@ export function EventForm({ event, onSaved, onCancel }: { event?: CommunityEvent
 
       <div>
         <label htmlFor="event-description" className={label}>
-          Details (optional)
+          {t("events.detailsOptional")}
         </label>
-        <textarea id="event-description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={EVENT_LIMITS.description} rows={3} placeholder="What to bring, who it's for…" className={field} />
+        <textarea id="event-description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={EVENT_LIMITS.description} rows={3} placeholder={t("events.whatToBringWho")} className={field} />
         <p className="mt-1 text-end text-xs text-white/60">
           {description.length} / {EVENT_LIMITS.description}
         </p>
@@ -121,15 +122,15 @@ export function EventForm({ event, onSaved, onCancel }: { event?: CommunityEvent
 
       <div>
         <label htmlFor="event-audience" className={label}>
-          Who can see it
+          {t("events.whoCanSeeIt")}
         </label>
         <select id="event-audience" value={audience} onChange={(e) => setAudience(e.target.value as "friends" | "public")} className={field}>
-          <option value="friends">My friends</option>
-          <option value="public">Everyone who can see my profile</option>
+          <option value="friends">{t("events.myFriends")}</option>
+          <option value="public">{t("events.everyoneWhoCanSee")}</option>
         </select>
       </div>
 
-      <p className="text-xs text-white/60">{event ? "People who answered are told if the time or place changes." : "Your friends are told. Up to 10 events at a time."}</p>
+      <p className="text-xs text-white/60">{event ? t("events.peopleWhoAnsweredAre") : t("events.yourFriendsAreTold")}</p>
       {error && (
         <p role="alert" className="text-sm text-red-400">
           {error}
@@ -137,11 +138,11 @@ export function EventForm({ event, onSaved, onCancel }: { event?: CommunityEvent
       )}
       <div className="flex items-center gap-3">
         <button type="submit" disabled={busy} className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
-          {busy ? "Saving…" : event ? "Save changes" : "Plan event"}
+          {busy ? t("reset.saving") : event ? t("profile.saveChanges") : t("events.planEvent")}
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={busy} className="text-sm text-white/70 hover:underline disabled:opacity-50">
-            Cancel
+            {t("common.cancel")}
           </button>
         )}
       </div>

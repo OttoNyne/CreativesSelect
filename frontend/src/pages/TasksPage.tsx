@@ -4,16 +4,9 @@ import { tasksApi } from "../api/tasks.api";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
 import type { BoardTask, Task } from "../types";
+import { t } from "../i18n";
+import { shortAgo } from "../lib/when";
 
-function timeAgo(iso: string): string {
-  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 export function TasksPage() {
   const [mine, setMine] = useState<Task[]>([]);
@@ -36,7 +29,7 @@ export function TasksPage() {
       setBoard(tasks);
       setStatus("ready");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load help wanted posts.");
+      setError(err instanceof ApiError ? err.message : t("misc.failedToLoadHelp"));
       setStatus("error");
     }
   }
@@ -67,7 +60,7 @@ export function TasksPage() {
       });
       setNewTitle("");
       setNewDescription("");
-    }, "Failed to post your request.");
+    }, t("misc.failedToPostYour"));
     setCreating(false);
   }
 
@@ -79,12 +72,12 @@ export function TasksPage() {
       setOffering(null);
       setOfferMessage("");
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't send your offer.");
+      setActionError(err instanceof ApiError ? err.message : t("misc.couldntSendYourOffer"));
     }
   }
 
   if (status === "loading") {
-    return <div className="p-8 text-center text-white/60">Loading help wanted…</div>;
+    return <div className="p-8 text-center text-white/60">{t("misc.loadingHelpWanted")}</div>;
   }
 
   if (status === "error") {
@@ -97,41 +90,41 @@ export function TasksPage() {
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">
-          Help wanted ({board.length})
+          {t("misc.helpWantedHeading", { n: board.length })}
         </h2>
         <p className="text-xs text-white/60">
-          Open requests from other creatives. Offer to help and they'll get a notification.
+          {t("misc.openRequestsFromOther")}
         </p>
         {board.length === 0 && (
-          <p className="text-sm text-white/60">No open requests from others right now.</p>
+          <p className="text-sm text-white/60">{t("misc.noOpenRequestsFrom")}</p>
         )}
-        {board.map((t) => (
-          <div key={t._id} className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+        {board.map((item) => (
+          <div key={item._id} className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
             <div className="flex items-center gap-2">
-              <Link to={`/u/${t.author.username}`} className="shrink-0">
+              <Link to={`/u/${item.author.username}`} className="shrink-0">
                 <Avatar
-                  username={t.author.username}
-                  displayName={t.author.displayName}
-                  avatarUrl={t.author.avatarUrl}
+                  username={item.author.username}
+                  displayName={item.author.displayName}
+                  avatarUrl={item.author.avatarUrl}
                   size={28}
                 />
               </Link>
-              <Link to={`/u/${t.author.username}`} className="min-w-0 truncate text-sm font-medium text-white hover:underline">
-                {t.author.displayName}
+              <Link to={`/u/${item.author.username}`} className="min-w-0 truncate text-sm font-medium text-white hover:underline">
+                {item.author.displayName}
               </Link>
-              <span className="text-xs text-white/60">{timeAgo(t.createdAt)}</span>
+              <span className="text-xs text-white/60">{shortAgo(item.createdAt)}</span>
             </div>
-            <div className="font-medium text-white">{t.title}</div>
-            {t.description && <p className="whitespace-pre-wrap text-sm text-white/70">{t.description}</p>}
-            {offered.has(t._id) ? (
+            <div className="font-medium text-white">{item.title}</div>
+            {item.description && <p className="whitespace-pre-wrap text-sm text-white/70">{item.description}</p>}
+            {offered.has(item._id) ? (
               <button
                 type="button"
                 disabled
                 className="rounded-md bg-white/10 px-3 py-1 text-xs font-medium text-white/60"
               >
-                Offer sent ✓
+                {t("misc.offerSent")}
               </button>
-            ) : offering === t._id ? (
+            ) : offering === item._id ? (
               <div className="space-y-2">
                 <textarea
                   autoFocus
@@ -139,16 +132,16 @@ export function TasksPage() {
                   onChange={(e) => setOfferMessage(e.target.value)}
                   maxLength={300}
                   rows={2}
-                  placeholder="Add a note (optional) — how can you help?"
+                  placeholder={t("misc.addANoteOptional")}
                   className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
                 />
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => handleOffer(t._id)}
+                    onClick={() => handleOffer(item._id)}
                     className="rounded-md bg-violet-600 px-3 py-1 text-xs font-medium text-white hover:bg-violet-500"
                   >
-                    Send offer
+                    {t("misc.sendOffer")}
                   </button>
                   <button
                     type="button"
@@ -158,17 +151,17 @@ export function TasksPage() {
                     }}
                     className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                 </div>
               </div>
             ) : (
               <button
                 type="button"
-                onClick={() => setOffering(t._id)}
+                onClick={() => setOffering(item._id)}
                 className="rounded-md bg-violet-600 px-3 py-1 text-xs font-medium text-white hover:bg-violet-500"
               >
-                Offer help
+                {t("misc.offerHelp")}
               </button>
             )}
           </div>
@@ -177,14 +170,14 @@ export function TasksPage() {
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">
-          My requests ({mine.length})
+          {t("misc.myRequestsHeading", { n: mine.length })}
         </h2>
 
         <form onSubmit={handleCreate} className="space-y-2">
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="What do you need help with?"
+              placeholder={t("misc.whatDoYouNeed")}
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
@@ -194,11 +187,11 @@ export function TasksPage() {
               disabled={creating || !newTitle.trim()}
               className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
             >
-              {creating ? "Posting…" : "Post"}
+              {creating ? t("composer.posting") : t("composer.post")}
             </button>
           </div>
           <textarea
-            placeholder="Details (optional)"
+            placeholder={t("events.detailsOptional")}
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
             maxLength={1000}
@@ -207,12 +200,12 @@ export function TasksPage() {
           />
           <label className="flex items-center gap-1.5 text-xs text-white/60">
             <input type="checkbox" checked={onlyMe} onChange={(e) => setOnlyMe(e.target.checked)} />
-            Only me — keep this off the public board
+            {t("misc.onlyMeKeepThis")}
           </label>
         </form>
 
         {mine.length === 0 && (
-          <p className="text-sm text-white/60">Nothing here yet — post something you need help with.</p>
+          <p className="text-sm text-white/60">{t("misc.nothingHereYetPost")}</p>
         )}
 
         {mine.map((task) => (
@@ -222,31 +215,31 @@ export function TasksPage() {
                 {task.title}
               </span>
               <span className="rounded-md border border-white/15 px-2 py-0.5 text-xs text-white/60">
-                {task.isPublic ? "Public" : "Only me"}
+                {task.isPublic ? t("events.public") : t("misc.onlyMe")}
               </span>
             </div>
             {task.description && <p className="whitespace-pre-wrap text-sm text-white/60">{task.description}</p>}
             <div className="flex gap-3 text-xs">
               <button
                 type="button"
-                onClick={() => run(() => tasksApi.update(task._id, { done: !task.done }), "Couldn't update that request.")}
+                onClick={() => run(() => tasksApi.update(task._id, { done: !task.done }), t("misc.couldntUpdateThatRequest"))}
                 className="text-violet-400 hover:underline"
               >
-                {task.done ? "Reopen" : "Mark resolved"}
+                {task.done ? t("misc.reopen") : t("misc.markResolved")}
               </button>
               <button
                 type="button"
-                onClick={() => run(() => tasksApi.update(task._id, { isPublic: !task.isPublic }), "Couldn't update that request.")}
+                onClick={() => run(() => tasksApi.update(task._id, { isPublic: !task.isPublic }), t("misc.couldntUpdateThatRequest"))}
                 className="text-white/60 hover:text-white"
               >
-                {task.isPublic ? "Make private" : "Make public"}
+                {task.isPublic ? t("misc.makePrivate") : t("misc.makePublic")}
               </button>
               <button
                 type="button"
-                onClick={() => run(() => tasksApi.remove(task._id), "Couldn't delete that request.")}
+                onClick={() => run(() => tasksApi.remove(task._id), t("misc.couldntDeleteThatRequest"))}
                 className="ms-auto text-white/60 hover:text-red-400"
               >
-                Delete
+                {t("common.delete")}
               </button>
             </div>
           </div>

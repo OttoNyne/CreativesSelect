@@ -7,30 +7,32 @@ import { useAuth } from "../context/AuthContext";
 import { formatDay } from "../lib/when";
 import { CSBadge } from "../components/common/CSBadge";
 import type { AdminAction, ModerationCase, SuspendedAccount } from "../types";
+import { t, type Key } from "../i18n";
 
 type Tab = "open" | "handled" | "suspended" | "verified";
 
-const TYPE_LABEL: Record<string, string> = {
-  user: "Account",
-  post: "Post",
-  comment: "Comment",
-  profileComment: "Testimonial",
-  blogEntry: "Blog entry",
-  bulletin: "Bulletin",
-  groupTopic: "Group topic",
-  groupReply: "Group reply",
-  mediaComment: "Comment on a piece",
-  event: "Event",
-  blogComment: "Comment on a blog entry",
+const TYPE_KEY: Record<string, Key> = {
+  user: "misc.type.account",
+  post: "misc.type.post",
+  comment: "misc.type.comment",
+  profileComment: "misc.type.testimonial",
+  blogEntry: "misc.type.blogEntry",
+  bulletin: "misc.type.bulletin",
+  groupTopic: "misc.type.groupTopic",
+  groupReply: "misc.type.groupReply",
+  mediaComment: "misc.type.mediaComment",
+  event: "misc.type.event",
+  blogComment: "misc.type.blogComment",
 };
-const ACTION_LABEL: Record<string, string> = {
-  dismissed: "Dismissed",
-  removed: "Content removed",
-  suspended: "Account suspended",
-  removed_and_suspended: "Content removed, account suspended",
-  unsuspended: "Suspension lifted",
-  verified: "CSverified badge given",
-  unverified: "CSverified badge removed",
+const typeLabel = (type: string): string => (TYPE_KEY[type] ? t(TYPE_KEY[type]) : type);
+const ACTION_KEY: Record<string, Key> = {
+  dismissed: "misc.action.dismissed",
+  removed: "misc.action.removed",
+  suspended: "misc.action.suspended",
+  removed_and_suspended: "misc.action.removedSuspended",
+  unsuspended: "misc.action.lifted",
+  verified: "misc.action.badgeGiven",
+  unverified: "misc.action.badgeRemoved",
 };
 
 const button = "rounded-md border border-white/20 px-3 py-1.5 text-xs text-white hover:bg-white/10 disabled:opacity-50";
@@ -51,7 +53,7 @@ function CaseCard({ item, onDone }: { item: ModerationCase; onDone: (item: Moder
       await adminApi.resolve(item.targetType, item.targetId, action, note.trim() || undefined);
       onDone(item);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save that decision.");
+      setError(err instanceof ApiError ? err.message : t("misc.couldntSaveThatDecision"));
       setBusy(false);
     }
   }
@@ -59,11 +61,11 @@ function CaseCard({ item, onDone }: { item: ModerationCase; onDone: (item: Moder
   return (
     <li className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-        <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/80">{TYPE_LABEL[item.targetType] ?? item.targetType}</span>
+        <span className="rounded-full bg-white/10 px-2 py-0.5 text-white/80">{typeLabel(item.targetType)}</span>
         <span>
-          {item.count} {item.count === 1 ? "report" : "reports"}
+          {item.count} {item.count === 1 ? t("misc.report") : t("misc.reports")}
         </span>
-        {!item.exists && <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-amber-200">Already deleted</span>}
+        {!item.exists && <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-amber-200">{t("misc.alreadyDeleted")}</span>}
       </div>
 
       {item.target ? (
@@ -79,48 +81,48 @@ function CaseCard({ item, onDone }: { item: ModerationCase; onDone: (item: Moder
           )}
           {item.target.title && <p className="mt-2 font-medium text-white">{item.target.title}</p>}
           {item.target.text && <p className="mt-1 whitespace-pre-line break-words text-sm text-white/85">{item.target.text}</p>}
-          {item.target.image && <p className="mt-1 break-all text-xs text-white/60">Picture: {item.target.image}</p>}
+          {item.target.image && <p className="mt-1 break-all text-xs text-white/60">{t("misc.picture")} {item.target.image}</p>}
           {item.target.link && (
             <Link to={item.target.link} className="mt-2 inline-block text-xs text-violet-300 hover:underline">
-              Open it (you see what you are allowed to see)
+              {t("misc.openItYouSee")}
             </Link>
           )}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-white/60">The reported content is gone, so there is nothing left to review. You can dismiss these reports.</p>
+        <p className="mt-3 text-sm text-white/60">{t("misc.theReportedContentIs")}</p>
       )}
 
-      <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Why it was reported</h3>
+      <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">{t("misc.whyItWasReported")}</h3>
       <ul className="mt-1 space-y-1">
         {item.reports.map((r) => (
           <li key={r.id} className="text-sm text-white/80">
-            “{r.reason}” <span className="text-xs text-white/60">— {r.reporter?.displayName ?? "someone"}, {formatDay(r.createdAt)}</span>
+            <span dir="auto">{t("misc.reportedBy", { reason: r.reason, name: r.reporter?.displayName ?? t("misc.someone"), day: formatDay(r.createdAt) })}</span>
           </li>
         ))}
-        {item.count > item.reports.length && <li className="text-xs text-white/60">…and {item.count - item.reports.length} more</li>}
+        {item.count > item.reports.length && <li className="text-xs text-white/60">{t("misc.andMoreReports", { n: item.count - item.reports.length })}</li>}
       </ul>
 
       <label className="mt-3 block text-xs text-white/70">
-        Note for the record (optional)
+        {t("misc.noteForTheRecord")}
         <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={MAX_NOTE} rows={2} className="mt-1 w-full rounded-md border border-white/10 bg-black/30 px-2 py-1.5 text-sm text-white focus:border-violet-500 focus:outline-none" />
       </label>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" disabled={busy} onClick={() => decide("dismiss")} className={button}>
-          Dismiss
+          {t("common.dismiss")}
         </button>
         {!isAccount && item.exists && (
-          <button type="button" disabled={busy} onClick={() => decide("remove", "Remove this content? The author will be told it was removed.")} className={danger}>
-            Remove content
+          <button type="button" disabled={busy} onClick={() => decide("remove", t("misc.removeThisContentThe"))} className={danger}>
+            {t("misc.removeContent")}
           </button>
         )}
         {hasAuthor && (
-          <button type="button" disabled={busy} onClick={() => decide("suspend", `Suspend ${item.target?.author?.displayName}? They will be signed out and unable to sign in, and their profile will be hidden.`)} className={danger}>
-            Suspend {isAccount ? "account" : "author"}
+          <button type="button" disabled={busy} onClick={() => decide("suspend", t("misc.suspendConfirm", { name: item.target?.author?.displayName ?? "" }))} className={danger}>
+            {t("misc.suspend")} {isAccount ? t("misc.account") : t("misc.author")}
           </button>
         )}
         {hasAuthor && !isAccount && item.exists && (
           <button type="button" disabled={busy} onClick={() => decide("remove_and_suspend", `Remove this content and suspend ${item.target?.author?.displayName}?`)} className={danger}>
-            Remove and suspend
+            {t("misc.removeAndSuspend")}
           </button>
         )}
       </div>
@@ -171,7 +173,7 @@ export function ModerationPage() {
       setPage(p);
       setState("ready");
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 404 ? "notfound" : "Couldn't load this.");
+      setError(err instanceof ApiError && err.status === 404 ? "notfound" : t("misc.couldntLoadThis"));
       setState("error");
     }
   }, []);
@@ -183,18 +185,18 @@ export function ModerationPage() {
   if (!user?.isAdmin || error === "notfound") {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10 text-center text-white/70">
-        <p role="alert">There&apos;s nothing here.</p>
+        <p role="alert">{t("misc.theresNothingHere")}</p>
       </div>
     );
   }
 
   async function lift(account: SuspendedAccount) {
-    if (!window.confirm(`Let ${account.user.displayName} back in?`)) return;
+    if (!window.confirm(t("misc.letBackIn", { name: account.user.displayName }))) return;
     try {
       await adminApi.unsuspend(account.user.id);
       setSuspended((old) => old.filter((s) => s.user.id !== account.user.id));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't lift that suspension.");
+      alert(err instanceof ApiError ? err.message : t("misc.couldntLiftThatSuspension"));
     }
   }
 
@@ -205,26 +207,26 @@ export function ModerationPage() {
     setBadgeMessage(null);
     try {
       const { given, user: person } = await adminApi.giveBadge(username);
-      setBadgeMessage({ text: given ? `${person.displayName} now has the CSverified badge.` : `${person.displayName} already has the badge from an administrator.`, error: false });
+      setBadgeMessage({ text: given ? t("misc.nowHasBadge", { name: person.displayName }) : t("misc.alreadyHasBadge", { name: person.displayName }), error: false });
       setBadgeName("");
       load("verified", 1);
     } catch (err) {
-      setBadgeMessage({ text: err instanceof ApiError ? err.message : "Couldn't give the badge.", error: true });
+      setBadgeMessage({ text: err instanceof ApiError ? err.message : t("misc.couldntGiveTheBadge"), error: true });
     }
   }
 
   async function removeBadge(person: VerifiedPerson) {
-    if (!window.confirm(`Take the CSverified badge away from ${person.user.displayName}?`)) return;
+    if (!window.confirm(t("misc.removeBadgeConfirm", { name: person.user.displayName }))) return;
     try {
       await adminApi.removeBadge(person.user.username);
       setVerified((old) => old.filter((v) => v.user.id !== person.user.id));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't take the badge away.");
+      alert(err instanceof ApiError ? err.message : t("misc.couldntTakeTheBadge"));
     }
   }
 
-  const tabButton = (t: Tab, label: string) => (
-    <button type="button" onClick={() => setTab(t)} aria-pressed={tab === t} className={`rounded-full border px-3 py-1 text-sm ${tab === t ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}>
+  const tabButton = (which: Tab, label: string) => (
+    <button type="button" onClick={() => setTab(which)} aria-pressed={tab === which} className={`rounded-full border px-3 py-1 text-sm ${tab === which ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}>
       {label}
     </button>
   );
@@ -232,24 +234,24 @@ export function ModerationPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Moderation</h1>
-        <p className="text-sm text-white/60">Reports from members, grouped by what was reported. Every decision is recorded.</p>
+        <h1 className="text-xl font-semibold text-white">{t("nav.moderation")}</h1>
+        <p className="text-sm text-white/60">{t("misc.reportsFromMembersGrouped")}</p>
       </div>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Moderation views">
-        {tabButton("open", "Open reports")}
-        {tabButton("handled", "Handled")}
-        {tabButton("suspended", "Suspended accounts")}
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t("misc.moderationViews")}>
+        {tabButton("open", t("misc.openReports"))}
+        {tabButton("handled", t("misc.handled"))}
+        {tabButton("suspended", t("misc.suspendedAccounts"))}
         {tabButton("verified", "CSverified")}
       </div>
 
-      {state === "loading" && page === 1 && <p className="p-6 text-center text-white/60">Loading…</p>}
+      {state === "loading" && page === 1 && <p className="p-6 text-center text-white/60">{t("common.loading")}</p>}
       {state === "error" && error !== "notfound" && (
         <p role="alert" className="text-sm text-red-400">
           {error}
         </p>
       )}
 
-      {tab === "open" && state === "ready" && cases.length === 0 && <p className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-white/60">Nothing waiting. All reports have been handled.</p>}
+      {tab === "open" && state === "ready" && cases.length === 0 && <p className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-white/60">{t("misc.nothingWaitingAllReports")}</p>}
       {tab === "open" && (
         <ul className="space-y-3">
           {cases.map((c) => (
@@ -258,31 +260,31 @@ export function ModerationPage() {
         </ul>
       )}
 
-      {tab === "handled" && state === "ready" && actions.length === 0 && <p className="text-sm text-white/60">No decisions yet.</p>}
+      {tab === "handled" && state === "ready" && actions.length === 0 && <p className="text-sm text-white/60">{t("misc.noDecisionsYet")}</p>}
       {tab === "handled" && (
         <ul className="space-y-2">
           {actions.map((a) => (
             <li key={a.id} className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm text-white/80">
-              <span className="font-medium text-white">{ACTION_LABEL[a.action] ?? a.action}</span> · {TYPE_LABEL[a.targetType] ?? a.targetType}
-              {a.reportCount > 0 && ` · ${a.reportCount} ${a.reportCount === 1 ? "report" : "reports"}`}
+              <span className="font-medium text-white">{ACTION_KEY[a.action] ? t(ACTION_KEY[a.action]) : a.action}</span> · {typeLabel(a.targetType)}
+              {a.reportCount > 0 && ` · ${t("misc.reportCount", { n: a.reportCount })}`}
               <div className="mt-0.5 text-xs text-white/60">
-                {a.subject ? `About ${a.subject.displayName} · ` : ""}by {a.admin?.displayName ?? "a moderator"} · {formatDay(a.createdAt)}
+                {a.subject ? `${t("misc.aboutSubject", { name: a.subject.displayName })} ` : ""}{t("misc.byAdmin", { name: a.admin?.displayName ?? t("misc.aModerator"), day: formatDay(a.createdAt) })}
               </div>
-              {a.note && <p className="mt-1 whitespace-pre-line text-xs text-white/70">Note: {a.note}</p>}
+              {a.note && <p className="mt-1 whitespace-pre-line text-xs text-white/70">{t("misc.note")} {a.note}</p>}
             </li>
           ))}
         </ul>
       )}
 
       {tab === "verified" && (
-        <section aria-label="CSverified badges" className="space-y-3">
+        <section aria-label={t("misc.csverifiedBadges")} className="space-y-3">
           <p className="text-sm text-white/60">
-            The badge is also earned automatically by anyone with 1,000 active friends (confirmed, not suspended, seen in the last 30 days). Here you give it to someone else, or take away one you gave. A badge someone earned with friends is not touched.
+            {t("misc.theBadgeIsAlso")}
           </p>
           <form onSubmit={giveBadge} className="flex gap-2">
-            <input value={badgeName} onChange={(e) => setBadgeName(e.target.value)} placeholder="Username" aria-label="Username to give the badge to" className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none" />
+            <input value={badgeName} onChange={(e) => setBadgeName(e.target.value)} placeholder={t("register.username")} aria-label={t("misc.usernameToGiveThe")} className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none" />
             <button type="submit" disabled={!badgeName.trim()} className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
-              Give badge
+              {t("misc.giveBadge")}
             </button>
           </form>
           {badgeMessage && (
@@ -290,7 +292,7 @@ export function ModerationPage() {
               {badgeMessage.text}
             </p>
           )}
-          {state === "ready" && verified.length === 0 && <p className="text-sm text-white/60">You haven&apos;t given the badge to anyone yet.</p>}
+          {state === "ready" && verified.length === 0 && <p className="text-sm text-white/60">{t("misc.youHaventGivenThe")}</p>}
           <ul className="space-y-2">
             {verified.map((v) => (
               <li key={v.user.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
@@ -302,10 +304,10 @@ export function ModerationPage() {
                     </Link>
                     <CSBadge verified size={14} className="ms-1" /> <span className="font-normal text-white/60">@{v.user.username}</span>
                   </p>
-                  <p className="text-xs text-white/60">Given {formatDay(v.givenAt)}</p>
+                  <p className="text-xs text-white/60">{t("misc.given", { day: formatDay(v.givenAt) })}</p>
                 </div>
                 <button type="button" onClick={() => removeBadge(v)} className={button}>
-                  Remove badge
+                  {t("misc.removeBadge")}
                 </button>
               </li>
             ))}
@@ -313,7 +315,7 @@ export function ModerationPage() {
         </section>
       )}
 
-      {tab === "suspended" && state === "ready" && suspended.length === 0 && <p className="text-sm text-white/60">No accounts are suspended.</p>}
+      {tab === "suspended" && state === "ready" && suspended.length === 0 && <p className="text-sm text-white/60">{t("misc.noAccountsAreSuspended")}</p>}
       {tab === "suspended" && (
         <ul className="space-y-2">
           {suspended.map((s) => (
@@ -324,12 +326,12 @@ export function ModerationPage() {
                   {s.user.displayName} <span className="font-normal text-white/60">@{s.user.username}</span>
                 </p>
                 <p className="text-xs text-white/60">
-                  Suspended {formatDay(s.suspendedAt)}
+                  {t("misc.suspendedOn", { day: formatDay(s.suspendedAt) })}
                   {s.note ? ` · ${s.note}` : ""}
                 </p>
               </div>
               <button type="button" onClick={() => lift(s)} className={button}>
-                Lift suspension
+                {t("misc.liftSuspension")}
               </button>
             </li>
           ))}
@@ -338,7 +340,7 @@ export function ModerationPage() {
 
       {state === "ready" && hasMore && (
         <button type="button" onClick={() => load(tab, page + 1)} className="w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10">
-          Show more
+          {t("events.showMore")}
         </button>
       )}
     </div>

@@ -20,6 +20,7 @@ import { SfuListener } from "../lib/live/sfuListener";
 import { liveAudioSupported, UNSUPPORTED_MESSAGE } from "../lib/live/rtc";
 import { clearStreamFor, getStreamFor, MIC_CONSTRAINTS, micErrorMessage } from "../lib/live/hostStream";
 import type { LiveRoom } from "../types";
+import { t } from "../i18n";
 
 function Header({ room, listening }: { room: LiveRoom; listening: number }) {
   return (
@@ -29,32 +30,33 @@ function Header({ room, listening }: { room: LiveRoom; listening: number }) {
         <h1 className="truncate text-lg font-bold text-white">{room.title}</h1>
         <p className="text-sm text-white/60">
           <Link to={`/u/${room.host.username}`} className="hover:underline">
-            {room.isHost ? "You" : room.host.displayName}
+            {room.isHost ? t("groups.you") : room.host.displayName}
           </Link>{" "}
-          · <span aria-live="polite">{listening} listening</span>
+          · <span aria-live="polite">{t("live.listeningCount", { n: listening })}</span>
         </p>
       </div>
       <ShareButton
         url={() => liveUrl(room.id)}
-        title="Share this live"
-        description="Scan the code, or send the link. People need to be signed in to listen."
+        title={t("live.shareThisLive")}
+        description={t("live.scanTheCodeOr")}
         className="rounded-md border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10"
       >
-        Share
+        {t("profile.share")}
       </ShareButton>
-      <span className="rounded bg-red-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">Live</span>
+      <span className="rounded bg-red-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">{t("nav.live")}</span>
     </div>
   );
 }
 
-function Ended({ message = "This live has ended." }: { message?: string }) {
+function Ended({ message }: { message?: string }) {
+  message ??= t("live.endedMsg");
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center">
       <p role="status" className="text-white">
         {message}
       </p>
       <Link to="/live" className="mt-3 inline-block text-sm text-violet-400 hover:underline">
-        Back to live
+        {t("live.backToLive")}
       </Link>
     </div>
   );
@@ -199,7 +201,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
   }
 
   async function handleEnd() {
-    if (!window.confirm("End your live for everyone?")) return;
+    if (!window.confirm(t("live.endYourLiveFor"))) return;
     hostRef.current?.stop();
     hostRef.current = null;
     clearStreamFor(id);
@@ -207,7 +209,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
     navigate("/live");
   }
 
-  if (ended) return <Ended message="Your live has ended." />;
+  if (ended) return <Ended message={t("live.hostEnded")} />;
 
   return (
     <div className="space-y-4">
@@ -230,13 +232,13 @@ function HostRoom({ room }: { room: LiveRoom }) {
         />
       ) : (
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-          <p className="text-sm text-white/80">Your microphone isn&apos;t on, so no one can hear you. Allow it to carry on with this live.</p>
+          <p className="text-sm text-white/80">{t("live.yourMicrophoneIsntOn")}</p>
           <div className="mt-3 flex gap-2">
             <button onClick={handleResume} className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
-              Allow microphone
+              {t("live.allowMicrophone")}
             </button>
             <button onClick={handleEnd} className="rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
-              End live
+              {t("live.endLive")}
             </button>
           </div>
           {micError && (
@@ -248,7 +250,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
       )}
       {stream && guestsNeedTap && (
         <button onClick={() => void guestAudioRef.current?.play().then(() => setGuestsNeedTap(false))} className="block rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
-          Tap to hear your guests
+          {t("live.tapToHearYour")}
         </button>
       )}
       {!stream && <LiveChat liveId={id} isHost open pollMs={room.commentPollMs} />}
@@ -257,11 +259,8 @@ function HostRoom({ room }: { room: LiveRoom }) {
 }
 
 // ---- Someone listening -------------------------------------------------------
-const STATE_TEXT: Record<Exclude<ListenerState, "ended" | "failed">, string> = {
-  connecting: "Connecting…",
-  live: "Listening live",
-  reconnecting: "Reconnecting…",
-};
+const stateText = (state: Exclude<ListenerState, "ended" | "failed">): string =>
+  t(state === "connecting" ? "live.stateConnecting" : state === "live" ? "live.stateLive" : "live.stateReconnecting");
 
 function ListenerRoom({ room }: { room: LiveRoom }) {
   const navigate = useNavigate();
@@ -301,7 +300,7 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
       setMicStarted(true);
       setMicOn(true);
     } catch (err) {
-      setStageError(err instanceof Error ? err.message : "Couldn't start your microphone.");
+      setStageError(err instanceof Error ? err.message : t("live.couldntStartYourMicrophone"));
     }
   }
 
@@ -318,7 +317,7 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
       await run();
       await refreshStage();
     } catch (err) {
-      setStageError(err instanceof ApiError ? err.message : "That didn't work — please try again.");
+      setStageError(err instanceof ApiError ? err.message : t("live.thatDidntWorkPlease"));
     } finally {
       setStageBusy(false);
     }
@@ -351,7 +350,7 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
       void listenerRef.current?.stopSpeaking?.();
       setMicStarted(false);
       setMicOn(false);
-      setStageError("The host moved you back to listening.");
+      setStageError(t("live.theHostMovedYou"));
     }
   }, [micStarted, placeOnStage]);
 
@@ -388,7 +387,7 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
       listenerRef.current = null;
       setAdmitted(false);
       setState("idle");
-      setError(err instanceof ApiError ? err.message : "Couldn't join this live.");
+      setError(err instanceof ApiError ? err.message : t("live.couldntJoinThisLive"));
     }
   }
 
@@ -420,7 +419,7 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
           {state === "idle" ? (
             <>
-              <p className="text-sm text-white/70">Tap to start listening. You&apos;ll hear the host, and you can chat along.</p>
+              <p className="text-sm text-white/70">{t("live.tapToStartListening")}</p>
               {!supported && (
                 <p role="alert" className="mt-2 text-sm text-red-400">
                   {UNSUPPORTED_MESSAGE}
@@ -431,24 +430,24 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
                 disabled={full || !supported}
                 className="mt-3 rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
               >
-                {full ? "This live is full" : "Listen"}
+                {full ? t("live.thisLiveIsFull") : t("live.listen")}
               </button>
             </>
           ) : state === "failed" ? (
             <>
               <p role="alert" className="text-sm text-red-400">
-                Couldn&apos;t connect the audio. Your network may be blocking live audio.
+                {t("live.couldntConnectTheAudio")}
               </p>
               <button
                 onClick={() => void listenerRef.current?.retry()}
                 className="mt-3 rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
               >
-                Try again
+                {t("common.tryAgain")}
               </button>
             </>
           ) : (
             <p role="status" className="text-sm text-white/80">
-              {STATE_TEXT[state as keyof typeof STATE_TEXT]}
+              {stateText(state as Parameters<typeof stateText>[0])}
             </p>
           )}
           {error && (
@@ -458,16 +457,16 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
           )}
           {needsTap && (
             <button onClick={playAudio} className="mt-3 block rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
-              Tap to play audio
+              {t("live.tapToPlayAudio")}
             </button>
           )}
           {joined && (
             <div className="mt-3 flex flex-wrap gap-2">
               <button onClick={toggleMute} aria-pressed={muted} className="rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
-                {muted ? "Unmute" : "Mute"}
+                {muted ? t("live.unmute") : t("live.mute")}
               </button>
               <button onClick={handleLeave} className="rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
-                Leave
+                {t("groups.leave")}
               </button>
             </div>
           )}
@@ -511,7 +510,7 @@ export function LiveRoomPage() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof ApiError && err.status === 404 ? "This live isn't available." : "Couldn't load this live.");
+        setError(err instanceof ApiError && err.status === 404 ? t("live.notAvailable") : t("live.loadFailed"));
         setStatus("error");
       });
     return () => {
@@ -521,9 +520,9 @@ export function LiveRoomPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      {status === "loading" && <p className="p-8 text-center text-white/60">Loading…</p>}
-      {status === "error" && <Ended message={error ?? "This live isn't available."} />}
-      {status === "ready" && room && (room.isHost ? room.status === "live" ? <HostRoom key={room.id} room={room} /> : <Ended message="Your live has ended." /> : <ListenerRoom key={room.id} room={room} />)}
+      {status === "loading" && <p className="p-8 text-center text-white/60">{t("common.loading")}</p>}
+      {status === "error" && <Ended message={error ?? t("live.notAvailable")} />}
+      {status === "ready" && room && (room.isHost ? room.status === "live" ? <HostRoom key={room.id} room={room} /> : <Ended message={t("live.hostEnded")} /> : <ListenerRoom key={room.id} room={room} />)}
     </div>
   );
 }

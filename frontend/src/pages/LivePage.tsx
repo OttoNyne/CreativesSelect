@@ -9,6 +9,7 @@ import { Avatar } from "../components/common/Avatar";
 import { liveAudioSupported, UNSUPPORTED_MESSAGE } from "../lib/live/rtc";
 import { holdStreamFor, MIC_CONSTRAINTS, micErrorMessage } from "../lib/live/hostStream";
 import type { LiveRoom, ScheduledLive } from "../types";
+import { t } from "../i18n";
 
 const POLL_MS = 10_000;
 
@@ -90,7 +91,7 @@ export function LivePage() {
       navigate(`/live/${live.id}`);
     } catch (err) {
       stream.getTracks().forEach((t) => t.stop());
-      setStartError(err instanceof ApiError ? err.message : "Couldn't start your live.");
+      setStartError(err instanceof ApiError ? err.message : t("live.couldntStartYourLive"));
       setStarting(false);
     }
   }
@@ -98,19 +99,19 @@ export function LivePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
       <div>
-        <h1 className="text-xl font-bold text-white">Live</h1>
-        <p className="mt-1 text-sm text-white/60">Voice-only live rooms. Listen in, chat along, or go live yourself.</p>
+        <h1 className="text-xl font-bold text-white">{t("nav.live")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("live.voiceOnlyLiveRooms")}</p>
       </div>
 
       <form onSubmit={handleGoLive} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Go live</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">{t("live.goLive")}</h2>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={MAX_LIVE_TITLE_LENGTH}
-            placeholder="What's your live about?"
-            aria-label="Live title"
+            placeholder={t("live.whatsYourLiveAbout")}
+            aria-label={t("live.liveTitle")}
             className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <button
@@ -118,11 +119,11 @@ export function LivePage() {
             disabled={!title.trim() || starting}
             className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
           >
-            {starting ? "Starting…" : "Go live"}
+            {starting ? t("settings.starting") : t("live.goLive")}
           </button>
         </div>
         <p className="mt-2 text-xs text-white/60">
-          Uses your microphone. {maxListeners ? `Up to ${maxListeners} people can listen at once` : "Listeners can join while there's room"}, and your live ends when you leave the room.
+          {t("live.hostNote", { limit: maxListeners ? t("live.upToListeners", { n: maxListeners }) : t("live.listenersCanJoinWhile") })}
         </p>
         {startError && (
           <p role="alert" className="mt-2 text-sm text-red-400">
@@ -135,11 +136,11 @@ export function LivePage() {
 
       <UpcomingLives plans={plans} onChange={setPlans} onStartNow={(plan) => void startLive(plan.title, plan.id)} starting={starting} />
 
-      <section aria-label="Live now">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Live now</h2>
-        {lives === null && !loadError && <p className="text-sm text-white/60">Loading…</p>}
-        {loadError && lives === null && <p className="text-sm text-red-400">Couldn&apos;t load the lives.</p>}
-        {lives?.length === 0 && <p className="text-sm text-white/60">No one is live right now — be the first.</p>}
+      <section aria-label={t("live.liveNow")}>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">{t("live.liveNow")}</h2>
+        {lives === null && !loadError && <p className="text-sm text-white/60">{t("common.loading")}</p>}
+        {loadError && lives === null && <p className="text-sm text-red-400">{t("live.couldntLoadTheLives")}</p>}
+        {lives?.length === 0 && <p className="text-sm text-white/60">{t("live.noOneIsLive")}</p>}
         <div className="space-y-2">
           {lives?.map((l) => (
             <Link
@@ -151,10 +152,10 @@ export function LivePage() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium text-white">{l.title}</span>
                 <span className="block truncate text-xs text-white/60">
-                  {l.isHost ? "You" : l.host.displayName} · {l.listenerCount} listening
+                  {l.isHost ? t("groups.you") : l.host.displayName} · {t("live.listeningCount", { n: l.listenerCount })}
                 </span>
               </span>
-              <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Live</span>
+              <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">{t("nav.live")}</span>
             </Link>
           ))}
         </div>

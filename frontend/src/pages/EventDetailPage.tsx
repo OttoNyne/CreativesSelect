@@ -11,6 +11,7 @@ import { RsvpButtons } from "../components/events/RsvpButtons";
 import { isOver } from "../components/events/EventCard";
 import { formatWhen, untilText } from "../lib/when";
 import type { CommunityEvent, EventAnswer, User } from "../types";
+import { t } from "../i18n";
 
 /** One group of guests (going, or maybe), fifty at a time. */
 function Guests({ eventId, status, total }: { eventId: string; status: EventAnswer; total: number }) {
@@ -31,7 +32,7 @@ function Guests({ eventId, status, total }: { eventId: string; status: EventAnsw
         setPage(1);
         setHasMore(hasMore);
       })
-      .catch((err) => current && setError(err instanceof ApiError ? err.message : "Couldn't load the guest list."))
+      .catch((err) => current && setError(err instanceof ApiError ? err.message : t("events.couldntLoadTheGuest")))
       .finally(() => current && setLoading(false));
     return () => {
       current = false;
@@ -45,18 +46,18 @@ function Guests({ eventId, status, total }: { eventId: string; status: EventAnsw
       setPage(page + 1);
       setHasMore(next.hasMore);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't load more.");
+      setError(err instanceof ApiError ? err.message : t("events.couldntLoadMore"));
     }
   }
 
-  const title = status === "going" ? "Going" : "Maybe";
+  const title = status === "going" ? t("events.going") : t("events.maybe");
   return (
-    <section aria-label={`${title} (${total})`}>
+    <section aria-label={t("events.listAria", { title, n: total })}>
       <h2 className="text-sm font-semibold text-white/80">
         {title} <span className="text-white/60">({total})</span>
       </h2>
-      {loading && <p className="mt-1 text-xs text-white/60">Loading…</p>}
-      {!loading && guests.length === 0 && !error && <p className="mt-1 text-xs text-white/60">Nobody yet.</p>}
+      {loading && <p className="mt-1 text-xs text-white/60">{t("common.loading")}</p>}
+      {!loading && guests.length === 0 && !error && <p className="mt-1 text-xs text-white/60">{t("events.nobodyYet")}</p>}
       <ul className="mt-2 flex flex-wrap gap-2">
         {guests.map((g) => (
           <li key={g.id}>
@@ -69,7 +70,7 @@ function Guests({ eventId, status, total }: { eventId: string; status: EventAnsw
       </ul>
       {hasMore && (
         <button type="button" onClick={showMore} className="mt-2 text-xs text-violet-300 hover:underline">
-          Show more
+          {t("events.showMore")}
         </button>
       )}
       {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
@@ -90,36 +91,36 @@ export function EventDetailPage() {
     eventsApi
       .get(id)
       .then(({ event }) => current && setEvent(event))
-      .catch((err) => current && setError(err instanceof ApiError ? err.message : "Couldn't load this event."));
+      .catch((err) => current && setError(err instanceof ApiError ? err.message : t("events.couldntLoadThisEvent")));
     return () => {
       current = false;
     };
   }, [id]);
 
   async function cancelEvent(e: CommunityEvent) {
-    if (!window.confirm(`Cancel "${e.title}"? The people who answered will be told.`)) return;
+    if (!window.confirm(t("events.cancelConfirm", { title: e.title }))) return;
     try {
       await eventsApi.cancel(e.id);
       navigate("/events");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't cancel that event.");
+      setError(err instanceof ApiError ? err.message : t("events.couldntCancelThatEvent"));
     }
   }
 
   async function report(e: CommunityEvent) {
-    const reason = prompt("What's the issue with this event?");
+    const reason = prompt(t("events.whatsTheIssueWith"));
     if (!reason) return;
     try {
       await moderationApi.report("event", e.id, reason);
-      alert("Report submitted. Thanks for helping keep this space safe.");
+      alert(t("profile.reportSubmittedThanksFor"));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't submit that report.");
+      alert(err instanceof ApiError ? err.message : t("profile.couldntSubmitThatReport"));
     }
   }
 
   const back = (
     <Link to="/events" className="text-sm text-violet-400 hover:underline">
-      ← All events
+      {t("events.allEvents")}
     </Link>
   );
 
@@ -133,7 +134,7 @@ export function EventDetailPage() {
       </div>
     );
   }
-  if (!event) return <div className="mx-auto max-w-2xl px-4 py-6 text-sm text-white/60">Loading…</div>;
+  if (!event) return <div className="mx-auto max-w-2xl px-4 py-6 text-sm text-white/60">{t("common.loading")}</div>;
 
   const over = isOver(event);
   return (
@@ -154,31 +155,31 @@ export function EventDetailPage() {
             <h1 className="min-w-0 break-words text-xl font-semibold text-white">
               {event.title} <EditedMark editedAt={event.editedAt} />
             </h1>
-            <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-white/70">{event.audience === "friends" ? "Friends" : "Public"}</span>
+            <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-white/70">{event.audience === "friends" ? t("nav.friends") : t("events.public")}</span>
           </div>
 
           <dl className="space-y-1 text-sm">
             <div className="flex gap-2">
-              <dt className="w-16 shrink-0 text-white/60">When</dt>
+              <dt className="w-16 shrink-0 text-white/60">{t("events.when")}</dt>
               <dd className="text-white/90">
                 {formatWhen(event.startsAt)}
                 {event.endsAt ? ` – ${formatWhen(event.endsAt)}` : ""} {!over && <span className="text-white/60">({untilText(event.startsAt)})</span>}
               </dd>
             </div>
             <div className="flex gap-2">
-              <dt className="w-16 shrink-0 text-white/60">Where</dt>
+              <dt className="w-16 shrink-0 text-white/60">{t("events.where")}</dt>
               <dd className="min-w-0 break-words text-white/90">
                 {event.kind === "online" ? (
                   event.link ? (
                     <>
-                      Online —{" "}
+                      {t("events.onlinePrefix")}{" "}
                       <a href={event.link} target="_blank" rel="noopener noreferrer nofollow" className="text-violet-300 hover:underline">
-                        Join link
+                        {t("events.joinLink")}
                       </a>{" "}
-                      <span className="text-xs text-white/60">(opens another site)</span>
+                      <span className="text-xs text-white/60">{t("events.opensAnotherSite")}</span>
                     </>
                   ) : (
-                    "Online (link to come)"
+                    t("events.onlineLinkToCome")
                   )
                 ) : (
                   event.place
@@ -186,39 +187,39 @@ export function EventDetailPage() {
               </dd>
             </div>
             <div className="flex gap-2">
-              <dt className="w-16 shrink-0 text-white/60">Host</dt>
+              <dt className="w-16 shrink-0 text-white/60">{t("events.host")}</dt>
               <dd>
                 <Link to={`/u/${event.host.username}`} className="flex items-center gap-1.5 text-white/90 hover:underline">
                   <Avatar username={event.host.username} displayName={event.host.displayName} avatarUrl={event.host.avatarUrl} size={20} />
-                  {event.isHost ? "You" : event.host.displayName}
+                  {event.isHost ? t("groups.you") : event.host.displayName}
                 </Link>
               </dd>
             </div>
           </dl>
 
           {event.description && <p className="whitespace-pre-line break-words text-sm text-white/80">{event.description}</p>}
-          {over && <p className="text-sm text-amber-300">This event is over.</p>}
+          {over && <p className="text-sm text-amber-300">{t("events.thisEventIsOver")}</p>}
 
           <div className="flex flex-wrap items-center gap-3 border-t border-white/5 pt-3">
             {!event.isHost && !over && <RsvpButtons event={event} onAnswered={(change) => setEvent({ ...event, ...change })} />}
             {!over && (
               <a href={eventsApi.calendarUrl(event.id)} download="event.ics" className="text-xs text-violet-300 hover:underline">
-                Add to calendar
+                {t("events.addToCalendar")}
               </a>
             )}
             {event.isHost && !over && (
               <button type="button" onClick={() => setEditing(true)} className="rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10">
-                Edit
+                {t("common.edit")}
               </button>
             )}
             {event.isHost && (
               <button type="button" onClick={() => cancelEvent(event)} className="rounded-md border border-red-400/40 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/10">
-                Cancel event
+                {t("events.cancelEvent")}
               </button>
             )}
             {!event.isHost && user && (
               <button type="button" onClick={() => report(event)} className="ms-auto text-xs text-white/60 hover:text-white hover:underline">
-                Report
+                {t("common.report")}
               </button>
             )}
           </div>

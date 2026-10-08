@@ -10,7 +10,12 @@ import { style } from "./es/style";
 import { sections } from "./es/sections";
 import { settings } from "./es/settings";
 import { media } from "./es/media";
+import { groups } from "./es/groups";
+import { events } from "./es/events";
+import { live } from "./es/live";
+import { misc } from "./es/misc";
+import { labels } from "./es/labels";
 
 // Spanish. Each part of the site has its own file in es/; the server's own (English) messages, shown on the page, are in server.es.ts.
-export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media };
+export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels };
 export { serverEs as server } from "./server.es";

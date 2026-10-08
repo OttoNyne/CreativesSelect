@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { blogApi, MAX_BLOG_BODY, MAX_BLOG_TITLE } from "../api/blog.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { t } from "../i18n";
 
 const field = "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 
@@ -39,27 +40,27 @@ export function BlogEditorPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
-    if (!title.trim()) return setError("Give your entry a title");
-    if (!body.trim()) return setError("Write something in your entry");
+    if (!title.trim()) return setError(t("misc.giveYourEntryA"));
+    if (!body.trim()) return setError(t("misc.writeSomethingInYour2"));
     setSaving(true);
     setError(null);
     try {
       const { entry } = id ? await blogApi.update(id, { title, body }) : await blogApi.create({ title, body });
       navigate(`/blog/${entry.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save your entry.");
+      setError(err instanceof ApiError ? err.message : t("misc.couldntSaveYourEntry"));
       setSaving(false);
     }
   }
 
   const back = id ? `/blog/${id}` : user ? `/u/${user.username}#blog` : "/";
 
-  if (state === "loading") return <p className="p-8 text-center text-white/60">Loading…</p>;
+  if (state === "loading") return <p className="p-8 text-center text-white/60">{t("common.loading")}</p>;
   if (state === "missing") {
     return (
       <div className="mx-auto max-w-2xl px-4 py-6">
         <p role="alert" className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-white/70">
-          This entry isn&apos;t available to change.
+          {t("misc.thisEntryIsntAvailable2")}
         </p>
       </div>
     );
@@ -68,19 +69,19 @@ export function BlogEditorPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-3 px-4 py-6">
       <Link to={back} className="text-sm text-violet-400 hover:underline">
-        ← Back
+        {t("misc.back")}
       </Link>
-      <h1 className="text-xl font-semibold text-white">{id ? "Edit entry" : "New entry"}</h1>
+      <h1 className="text-xl font-semibold text-white">{id ? t("misc.editEntry") : t("misc.newEntry")}</h1>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_BLOG_TITLE} placeholder="Title" aria-label="Entry title" className={field} />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_BLOG_TITLE} placeholder={t("events.title")} aria-label={t("misc.entryTitle")} className={field} />
         <div>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             maxLength={MAX_BLOG_BODY}
             rows={14}
-            placeholder="Write here. Leave a blank line between paragraphs."
-            aria-label="Entry text"
+            placeholder={t("misc.writeHereLeaveA")}
+            aria-label={t("misc.entryText")}
             className={`${field} leading-relaxed`}
           />
           <p className="mt-1 text-end text-xs text-white/60" aria-live="polite">
@@ -94,10 +95,10 @@ export function BlogEditorPage() {
         )}
         <div className="flex gap-2">
           <button type="submit" disabled={saving} className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
-            {saving ? "Saving…" : id ? "Save changes" : "Publish"}
+            {saving ? t("reset.saving") : id ? t("profile.saveChanges") : t("misc.publish")}
           </button>
           <Link to={back} className="rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
-            Cancel
+            {t("common.cancel")}
           </Link>
         </div>
       </form>

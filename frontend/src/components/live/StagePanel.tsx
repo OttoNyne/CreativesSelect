@@ -3,6 +3,7 @@ import { liveApi } from "../../api/live.api";
 import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
 import type { LiveStage, User } from "../../types";
+import { t } from "../../i18n";
 
 function Person({ user, children }: { user: User; children?: React.ReactNode }) {
   return (
@@ -54,15 +55,15 @@ export function HostStage({
       await run();
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "That didn't work — please try again.");
+      setError(err instanceof ApiError ? err.message : t("live.thatDidntWorkPlease"));
     } finally {
       setBusy(false);
     }
   }
 
   const invite = (user: User) => (
-    <button onClick={() => act(() => liveApi.inviteGuest(liveId, user.id))} disabled={busy || full} className={primaryButton} aria-label={`Invite ${user.displayName} to speak`}>
-      Invite to speak
+    <button onClick={() => act(() => liveApi.inviteGuest(liveId, user.id))} disabled={busy || full} className={primaryButton} aria-label={t("live.inviteAria", { name: user.displayName })}>
+      {t("live.inviteToSpeak")}
     </button>
   );
 
@@ -71,12 +72,12 @@ export function HostStage({
       {heading && (
         <>
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-white">On stage</h2>
+            <h2 className="text-sm font-semibold text-white">{t("live.onStage")}</h2>
             <span className="text-xs text-white/60" aria-live="polite">
-              {taken} of {stage.maxGuests} guest places used
+              {t("live.guestPlaces", { n: taken, max: stage.maxGuests })}
             </span>
           </div>
-          <p className="mt-1 text-xs text-white/60">Invite listeners to speak. Use headphones while guests are on stage so their voices don&apos;t echo back.</p>
+          <p className="mt-1 text-xs text-white/60">{t("live.inviteListenersToSpeak")}</p>
         </>
       )}
       {error && (
@@ -87,12 +88,12 @@ export function HostStage({
 
       {show("speaking") && stage.guests.length > 0 && (
         <>
-          <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Speaking</h3>
+          <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">{t("live.speaking")}</h3>
           <ul className="divide-y divide-white/5">
             {stage.guests.map(({ user }) => (
               <Person key={user.id} user={user}>
-                <button onClick={() => act(() => liveApi.removeGuest(liveId, user.id))} disabled={busy} className={smallButton} aria-label={`Remove ${user.displayName} from the stage`}>
-                  Remove
+                <button onClick={() => act(() => liveApi.removeGuest(liveId, user.id))} disabled={busy} className={smallButton} aria-label={t("live.removeFromStage", { name: user.displayName })}>
+                  {t("common.remove")}
                 </button>
               </Person>
             ))}
@@ -102,13 +103,13 @@ export function HostStage({
 
       {show("invited") && invited.length > 0 && (
         <>
-          <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Invited</h3>
+          <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">{t("live.invited")}</h3>
           <ul className="divide-y divide-white/5">
             {invited.map(({ user }) => (
               <Person key={user.id} user={user}>
-                <span className="text-xs text-white/60">waiting for an answer</span>
-                <button onClick={() => act(() => liveApi.removeGuest(liveId, user.id))} disabled={busy} className={smallButton} aria-label={`Withdraw the invitation to ${user.displayName}`}>
-                  Withdraw
+                <span className="text-xs text-white/60">{t("live.waitingForAnAnswer")}</span>
+                <button onClick={() => act(() => liveApi.removeGuest(liveId, user.id))} disabled={busy} className={smallButton} aria-label={t("live.withdrawAria", { name: user.displayName })}>
+                  {t("live.withdraw")}
                 </button>
               </Person>
             ))}
@@ -118,13 +119,13 @@ export function HostStage({
 
       {show("requests") && requests.length > 0 && (
         <>
-          <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Asking to speak</h3>
+          <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">{t("live.askingToSpeak")}</h3>
           <ul className="divide-y divide-white/5">
             {requests.map(({ user }) => (
               <Person key={user.id} user={user}>
                 {invite(user)}
-                <button onClick={() => act(() => liveApi.removeGuest(liveId, user.id))} disabled={busy} className={smallButton} aria-label={`Dismiss ${user.displayName}'s request`}>
-                  Dismiss
+                <button onClick={() => act(() => liveApi.removeGuest(liveId, user.id))} disabled={busy} className={smallButton} aria-label={t("live.dismissAria", { name: user.displayName })}>
+                  {t("common.dismiss")}
                 </button>
               </Person>
             ))}
@@ -134,9 +135,9 @@ export function HostStage({
 
       {show("listeners") && (
         <>
-        <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">Listening ({listeners.length})</h3>
+        <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-white/60">{t("live.listeningHeading", { n: listeners.length })}</h3>
         {listeners.length === 0 ? (
-          <p className="mt-1 text-sm text-white/60">No one else is listening yet.</p>
+          <p className="mt-1 text-sm text-white/60">{t("live.noOneElseIs")}</p>
         ) : (
           <ul className="mt-1 max-h-56 divide-y divide-white/5 overflow-y-auto pe-1">
             {listeners.map(({ user }) => (
@@ -148,7 +149,7 @@ export function HostStage({
         )}
         </>
       )}
-      {full && <p className="mt-2 text-xs text-white/60">The stage is full. Remove a guest to invite someone else.</p>}
+      {full && <p className="mt-2 text-xs text-white/60">{t("live.theStageIsFull")}</p>}
     </section>
   );
 }
@@ -174,18 +175,18 @@ export interface ListenerStageProps {
 export function ListenerStage({ stage, busy, error, micOn, micStarted, onRequest, onLeave, onAccept, onToggleMute, onStartMic }: ListenerStageProps) {
   const me = stage.me ?? "listener";
   return (
-    <section aria-label="Speaking in this live" className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <section aria-label={t("live.speakingInThisLive")} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       {stage.guests.length > 0 && (
         <p className="mb-3 text-sm text-white/70">
-          On stage with the host: <span className="text-white">{stage.guests.map((g) => g.user.displayName).join(", ")}</span>
+          {t("live.onStageWithHostLabel")} <span className="text-white">{stage.guests.map((g) => g.user.displayName).join(", ")}</span>
         </p>
       )}
 
       {me === "listener" && (
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-white/70">Want to say something? Ask the host to bring you on stage.</p>
+          <p className="text-sm text-white/70">{t("live.wantToSaySomething")}</p>
           <button onClick={onRequest} disabled={busy} className={primaryButton}>
-            Ask to speak
+            {t("live.askToSpeak")}
           </button>
         </div>
       )}
@@ -193,10 +194,10 @@ export function ListenerStage({ stage, busy, error, micOn, micStarted, onRequest
       {me === "requested" && (
         <div className="flex flex-wrap items-center gap-3">
           <p role="status" className="text-sm text-white/80">
-            You asked to speak. Waiting for the host…
+            {t("live.youAskedToSpeak")}
           </p>
           <button onClick={onLeave} disabled={busy} className={smallButton}>
-            Cancel
+            {t("common.cancel")}
           </button>
         </div>
       )}
@@ -204,15 +205,15 @@ export function ListenerStage({ stage, busy, error, micOn, micStarted, onRequest
       {me === "invited" && (
         <div>
           <p role="status" className="text-sm font-medium text-white">
-            The host invited you to speak!
+            {t("live.theHostInvitedYou")}
           </p>
-          <p className="mt-1 text-xs text-white/60">Everyone in the live will hear your microphone. Use headphones to avoid an echo.</p>
+          <p className="mt-1 text-xs text-white/60">{t("live.everyoneInTheLive")}</p>
           <div className="mt-2 flex gap-2">
             <button onClick={onAccept} disabled={busy} className={primaryButton}>
-              Join the stage
+              {t("live.joinTheStage")}
             </button>
             <button onClick={onLeave} disabled={busy} className={smallButton}>
-              Not now
+              {t("live.notNow")}
             </button>
           </div>
         </div>
@@ -221,20 +222,20 @@ export function ListenerStage({ stage, busy, error, micOn, micStarted, onRequest
       {me === "speaking" && (
         <div>
           <p role="status" className="text-sm font-medium text-white">
-            {!micStarted ? "You're on stage, but your microphone is off." : micOn ? "You're on stage — everyone can hear you." : "You're on stage, muted."}
+            {!micStarted ? t("live.youreOnStageBut") : micOn ? t("live.youreOnStageEveryone") : t("live.youreOnStageMuted")}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {!micStarted ? (
               <button onClick={onStartMic} disabled={busy} className={primaryButton}>
-                Turn on microphone
+                {t("live.turnOnMicrophone")}
               </button>
             ) : (
               <button onClick={onToggleMute} aria-pressed={!micOn} className={smallButton}>
-                {micOn ? "Mute my microphone" : "Unmute my microphone"}
+                {micOn ? t("live.muteMyMicrophone") : t("live.unmuteMyMicrophone")}
               </button>
             )}
             <button onClick={onLeave} disabled={busy} className={smallButton}>
-              Leave the stage
+              {t("live.leaveTheStage")}
             </button>
           </div>
         </div>

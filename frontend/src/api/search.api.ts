@@ -1,15 +1,16 @@
 import { api } from "./client";
 import type { Group, User } from "../types";
+import { t } from "../i18n";
 
 export type SearchType = "people" | "blog" | "groups" | "topics" | "help";
 export type SearchConnection = "any" | "friends" | "mutual";
 
 export const SEARCH_TYPES: { type: SearchType; label: string }[] = [
-  { type: "people", label: "People" },
-  { type: "blog", label: "Blog entries" },
-  { type: "groups", label: "Groups" },
-  { type: "topics", label: "Group topics" },
-  { type: "help", label: "Help wanted" },
+  { type: "people", get label() { return t("labels.people"); } },
+  { type: "blog", get label() { return t("labels.blogEntries"); } },
+  { type: "groups", get label() { return t("nav.groups"); } },
+  { type: "topics", get label() { return t("labels.groupTopics"); } },
+  { type: "help", get label() { return t("nav.helpWanted"); } },
 ];
 
 export const isSearchType = (value: string | null): value is SearchType => SEARCH_TYPES.some((t) => t.type === value);
