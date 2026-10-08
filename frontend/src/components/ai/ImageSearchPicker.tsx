@@ -2,10 +2,11 @@ import { useState } from "react";
 import { aiApi } from "../../api/ai.api";
 import { ApiError } from "../../api/client";
 import type { ImageSearchResult } from "../../types";
+import { t } from "../../i18n";
 
 export function ImageSearchPicker({
   onSelect,
-  label = "🔍 Search photos",
+  label,
 }: {
   onSelect: (url: string) => void;
   label?: string;
@@ -27,7 +28,7 @@ export function ImageSearchPicker({
       setResults(results);
       setSearched(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't search right now, try again.");
+      setError(err instanceof ApiError ? err.message : t("profile.couldntSearchRightNow"));
     } finally {
       setLoading(false);
     }
@@ -45,7 +46,7 @@ export function ImageSearchPicker({
         onClick={() => setOpen((o) => !o)}
         className="rounded-md border border-sky-500/40 bg-sky-500/10 px-3 py-1.5 text-xs font-medium text-sky-300 hover:bg-sky-500/20"
       >
-        {label}
+        {label ?? t("profile.searchPhotos")}
       </button>
 
       {open && (
@@ -54,7 +55,7 @@ export function ImageSearchPicker({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Describe the image you want…"
+              placeholder={t("profile.describeTheImageYou")}
               className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-sky-500 focus:outline-none"
             />
             <button
@@ -62,14 +63,14 @@ export function ImageSearchPicker({
               disabled={loading}
               className="rounded-md bg-sky-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
             >
-              {loading ? "Searching…" : "Search"}
+              {loading ? t("profile.searching") : t("nav.search")}
             </button>
           </form>
 
           {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
           {searched && !loading && results.length === 0 && !error && (
-            <p className="mt-2 text-xs text-white/60">No photos found for that.</p>
+            <p className="mt-2 text-xs text-white/60">{t("profile.noPhotosFoundFor")}</p>
           )}
 
           {results.length > 0 && (
@@ -87,7 +88,7 @@ export function ImageSearchPicker({
               ))}
             </div>
           )}
-          <p className="mt-2 text-[10px] text-white/60">Openly-licensed photos via Openverse.</p>
+          <p className="mt-2 text-[10px] text-white/60">{t("profile.openlyLicensedPhotosVia")}</p>
         </div>
       )}
     </div>

@@ -1,77 +1,78 @@
 import type { ProfileTheme } from "../types";
+import { t } from "../i18n";
 
 // How a person can style their profile: a handful of choices from fixed lists (the server checks them too), plus colours and a font.
 // There is no custom CSS: whatever someone picks, the text stays readable and nothing on the page can be hidden or covered.
 
 export const FONT_OPTIONS = [
-  { label: "System sans-serif", value: "system-ui, sans-serif" },
-  { label: "Serif (Georgia)", value: "Georgia, serif" },
-  { label: "Monospace", value: "'Courier New', monospace" },
-  { label: "Rounded (Trebuchet)", value: "'Trebuchet MS', sans-serif" },
-  { label: "Wide (Verdana)", value: "Verdana, Geneva, sans-serif" },
-  { label: "Classic serif (Palatino)", value: "'Palatino Linotype', Palatino, 'Book Antiqua', serif" },
-  { label: "Friendly (Gill Sans)", value: "'Gill Sans', 'Gill Sans MT', Calibri, sans-serif" },
-  { label: "Playful (Comic Sans)", value: "'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive" },
-  { label: "Poster (Impact)", value: "Impact, 'Arial Narrow Bold', sans-serif" },
-  { label: "Terminal (Lucida)", value: "'Lucida Console', Monaco, monospace" },
+  { get label() { return t("style.systemSansSerif"); }, value: "system-ui, sans-serif" },
+  { get label() { return t("style.serifGeorgia"); }, value: "Georgia, serif" },
+  { get label() { return t("style.monospace"); }, value: "'Courier New', monospace" },
+  { get label() { return t("style.roundedTrebuchet"); }, value: "'Trebuchet MS', sans-serif" },
+  { get label() { return t("style.wideVerdana"); }, value: "Verdana, Geneva, sans-serif" },
+  { get label() { return t("style.classicSerifPalatino"); }, value: "'Palatino Linotype', Palatino, 'Book Antiqua', serif" },
+  { get label() { return t("style.friendlyGillSans"); }, value: "'Gill Sans', 'Gill Sans MT', Calibri, sans-serif" },
+  { get label() { return t("style.playfulComicSans"); }, value: "'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive" },
+  { get label() { return t("style.posterImpact"); }, value: "Impact, 'Arial Narrow Bold', sans-serif" },
+  { get label() { return t("style.terminalLucida"); }, value: "'Lucida Console', Monaco, monospace" },
 ];
 
 export type StyleKey = "cardStyle" | "corners" | "density" | "headings" | "avatarShape" | "width";
 
 export const STYLE_OPTIONS: Record<StyleKey, { label: string; default: string; choices: { value: string; label: string }[] }> = {
   cardStyle: {
-    label: "Boxes",
+    get label() { return t("style.boxes"); },
     default: "solid",
     choices: [
-      { value: "solid", label: "Solid" },
-      { value: "outline", label: "Outline" },
-      { value: "glass", label: "Glass" },
-      { value: "flat", label: "Flat (no box)" },
+      { value: "solid", get label() { return t("style.solid"); } },
+      { value: "outline", get label() { return t("style.outline"); } },
+      { value: "glass", get label() { return t("style.glass"); } },
+      { value: "flat", get label() { return t("style.flatNoBox"); } },
     ],
   },
   corners: {
-    label: "Corners",
+    get label() { return t("style.corners"); },
     default: "rounded",
     choices: [
-      { value: "square", label: "Square" },
-      { value: "rounded", label: "Rounded" },
-      { value: "soft", label: "Very round" },
+      { value: "square", get label() { return t("adjust.square"); } },
+      { value: "rounded", get label() { return t("style.rounded"); } },
+      { value: "soft", get label() { return t("style.veryRound"); } },
     ],
   },
   density: {
-    label: "Spacing",
+    get label() { return t("style.spacing"); },
     default: "comfortable",
     choices: [
-      { value: "compact", label: "Tight" },
-      { value: "comfortable", label: "Comfortable" },
-      { value: "roomy", label: "Roomy" },
+      { value: "compact", get label() { return t("style.tight"); } },
+      { value: "comfortable", get label() { return t("style.comfortable"); } },
+      { value: "roomy", get label() { return t("style.roomy"); } },
     ],
   },
   headings: {
-    label: "Headings",
+    get label() { return t("style.headings"); },
     default: "caps",
     choices: [
-      { value: "caps", label: "Small capitals" },
-      { value: "plain", label: "Plain" },
-      { value: "serif", label: "Large serif" },
+      { value: "caps", get label() { return t("style.smallCapitals"); } },
+      { value: "plain", get label() { return t("style.plain"); } },
+      { value: "serif", get label() { return t("style.largeSerif"); } },
     ],
   },
   avatarShape: {
-    label: "Picture",
+    get label() { return t("style.picture"); },
     default: "circle",
     choices: [
-      { value: "circle", label: "Circle" },
-      { value: "rounded", label: "Rounded square" },
-      { value: "square", label: "Square" },
+      { value: "circle", get label() { return t("style.circle"); } },
+      { value: "rounded", get label() { return t("style.roundedSquare"); } },
+      { value: "square", get label() { return t("adjust.square"); } },
     ],
   },
   width: {
-    label: "Page width",
+    get label() { return t("style.pageWidth"); },
     default: "standard",
     choices: [
-      { value: "narrow", label: "Narrow" },
-      { value: "standard", label: "Standard" },
-      { value: "wide", label: "Wide" },
+      { value: "narrow", get label() { return t("style.narrow"); } },
+      { value: "standard", get label() { return t("style.standard"); } },
+      { value: "wide", get label() { return t("adjust.wide"); } },
     ],
   },
 };
@@ -115,11 +116,11 @@ export interface StylePreset {
 }
 
 export const PRESETS: StylePreset[] = [
-  { name: "default", label: "Default", hint: "Solid rounded boxes", settings: {} },
-  { name: "minimal", label: "Minimal", hint: "No boxes, plain headings, lots of room", settings: { cardStyle: "flat", density: "roomy", headings: "plain", width: "narrow", corners: "square" } },
-  { name: "classic", label: "Classic", hint: "Square outlined boxes, tight and wide, like an old profile page", settings: { cardStyle: "outline", corners: "square", density: "compact", avatarShape: "square", width: "wide", fontFamily: "Verdana, Geneva, sans-serif" } },
-  { name: "gallery", label: "Gallery", hint: "Glass boxes, very round, a wide page for your work", settings: { cardStyle: "glass", corners: "soft", headings: "plain", width: "wide" } },
-  { name: "journal", label: "Journal", hint: "Outlined, serif headings, a narrow page for reading", settings: { cardStyle: "outline", density: "roomy", headings: "serif", avatarShape: "rounded", width: "narrow", fontFamily: "Georgia, serif" } },
+  { name: "default", get label() { return t("style.default"); }, get hint() { return t("style.solidRoundedBoxes"); }, settings: {} },
+  { name: "minimal", get label() { return t("style.minimal"); }, get hint() { return t("style.noBoxesPlainHeadings"); }, settings: { cardStyle: "flat", density: "roomy", headings: "plain", width: "narrow", corners: "square" } },
+  { name: "classic", get label() { return t("style.classic"); }, get hint() { return t("style.squareOutlinedBoxesTight"); }, settings: { cardStyle: "outline", corners: "square", density: "compact", avatarShape: "square", width: "wide", fontFamily: "Verdana, Geneva, sans-serif" } },
+  { name: "gallery", get label() { return t("style.gallery"); }, get hint() { return t("style.glassBoxesVeryRound"); }, settings: { cardStyle: "glass", corners: "soft", headings: "plain", width: "wide" } },
+  { name: "journal", get label() { return t("style.journal"); }, get hint() { return t("style.outlinedSerifHeadingsA"); }, settings: { cardStyle: "outline", density: "roomy", headings: "serif", avatarShape: "rounded", width: "narrow", fontFamily: "Georgia, serif" } },
 ];
 
 /** A preset applied to a theme: its look replaces every style setting (and the font), and the colours stay as they are. */

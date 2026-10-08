@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { WallpaperCloseness } from "../../api/ai.api";
+import { t } from "../../i18n";
 
 export const CLOSENESS_CHOICES: { value: WallpaperCloseness; label: string }[] = [
-  { value: "close", label: "Stay close to my photo" },
-  { value: "balanced", label: "Balanced" },
-  { value: "loose", label: "Just inspired by it" },
+  { value: "close", get label() { return t("style.stayCloseToMy"); } },
+  { value: "balanced", get label() { return t("style.balanced"); } },
+  { value: "loose", get label() { return t("style.justInspiredByIt"); } },
 ];
 
 const chip = (on: boolean) =>
@@ -20,7 +21,7 @@ export function ReferencePhotoField({
   closeness,
   onCloseness,
   disabled = false,
-  label = "📷 Add a reference photo (optional)",
+  label,
 }: {
   file: File | null;
   onFile: (file: File | null) => void;
@@ -45,7 +46,7 @@ export function ReferencePhotoField({
     const chosen = e.target.files?.[0];
     e.target.value = "";
     if (!chosen) return;
-    if (!chosen.type.startsWith("image/")) return setProblem("Choose a picture (JPEG, PNG or WebP) for the reference.");
+    if (!chosen.type.startsWith("image/")) return setProblem(t("profile.chooseAPictureJpeg"));
     setProblem(null);
     onFile(chosen);
   }
@@ -54,14 +55,14 @@ export function ReferencePhotoField({
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => input.current?.click()} disabled={disabled} className={chip(false)}>
-          {file ? "Change reference photo" : label}
+          {file ? t("profile.changeReferencePhoto") : label ?? t("profile.addReference")}
         </button>
-        <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/*" aria-label="Reference photo" className="hidden" onChange={pick} />
+        <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/*" aria-label={t("profile.referencePhoto")} className="hidden" onChange={pick} />
         {file && preview && (
           <>
-            <img src={preview} alt="Your reference photo" className="h-10 w-16 rounded object-cover" />
+            <img src={preview} alt={t("profile.yourReferencePhoto")} className="h-10 w-16 rounded object-cover" />
             <button type="button" onClick={() => onFile(null)} disabled={disabled} className="text-xs text-white/70 hover:text-red-400">
-              Remove photo
+              {t("profile.removePhoto")}
             </button>
           </>
         )}
@@ -73,7 +74,7 @@ export function ReferencePhotoField({
       )}
       {file && (
         <fieldset disabled={disabled}>
-          <legend className="text-xs text-white/70">How closely should it follow your photo?</legend>
+          <legend className="text-xs text-white/70">{t("profile.howCloselyShouldIt")}</legend>
           <div className="mt-1 flex flex-wrap gap-2">
             {CLOSENESS_CHOICES.map((c) => (
               <label key={c.value} className={`${chip(closeness === c.value)} cursor-pointer`}>

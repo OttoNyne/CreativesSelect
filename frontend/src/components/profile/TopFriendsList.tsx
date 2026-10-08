@@ -5,6 +5,7 @@ import { friendsApi } from "../../api/friends.api";
 import { ApiError } from "../../api/client";
 import type { User } from "../../types";
 import { Avatar } from "../common/Avatar";
+import { t } from "../../i18n";
 
 export function TopFriendsList({ username, isOwner }: { username: string; isOwner: boolean }) {
   const [topFriends, setTopFriends] = useState<User[]>([]);
@@ -32,7 +33,7 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
       setAllFriends(friends);
       setEditing(true);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't load your friends.");
+      alert(err instanceof ApiError ? err.message : t("profile.couldntLoadYourFriends"));
     }
   }
 
@@ -52,7 +53,7 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
     next.splice(to, 0, moved);
     setSelected(next);
     const person = allFriends.find((f) => f.username === moved);
-    setAnnouncement(`Moved ${person?.displayName ?? moved} to position ${to + 1} of ${next.length}.`);
+    setAnnouncement(t("profile.topFriendsMoved", { name: person?.displayName ?? moved, pos: to + 1, total: next.length }));
   }
 
   async function save() {
@@ -62,7 +63,7 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
       setTopFriends(topFriends);
       setEditing(false);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't save your top friends.");
+      alert(err instanceof ApiError ? err.message : t("profile.couldntSaveYourTop"));
     } finally {
       setSaving(false);
     }
@@ -71,17 +72,17 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
   return (
     <div className="profile-card rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Top Friends</h2>
+        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">{t("profile.topFriends")}</h2>
         {isOwner && !editing && (
           <button onClick={startEditing} className="text-xs text-[var(--profile-accent-text)] hover:underline">
-            Edit
+            {t("common.edit")}
           </button>
         )}
       </div>
 
       {!editing && (
         <div className="mt-3 grid grid-cols-4 gap-3">
-          {topFriends.length === 0 && <p className="col-span-4 text-xs text-white/60">No top friends picked yet.</p>}
+          {topFriends.length === 0 && <p className="col-span-4 text-xs text-white/60">{t("profile.noTopFriendsPicked")}</p>}
           {topFriends.map((f) => (
             <Link key={f.id} to={`/u/${f.username}`} className="flex flex-col items-center gap-1 text-center">
               <Avatar username={f.username} displayName={f.displayName} avatarUrl={f.avatarUrl} size={56} />
@@ -93,9 +94,9 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
 
       {editing && (
         <div className="mt-3">
-          <p className="text-xs text-white/60">Pick up to 8 friends ({selected.length}/8), then put them in the order you like</p>
+          <p className="text-xs text-white/60">{t("profile.pickFriends", { n: selected.length })}</p>
           {selected.length > 0 && (
-            <ol aria-label="Your top friends, in order" className="mt-2 space-y-1">
+            <ol aria-label={t("profile.yourTopFriendsIn")} className="mt-2 space-y-1">
               {selected.map((u, i) => {
                 const person = allFriends.find((f) => f.username === u);
                 const name = person?.displayName ?? u;
@@ -117,15 +118,15 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
                     onDragEnd={() => setDragging(null)}
                     className={`flex items-center gap-2 rounded-md border border-white/10 bg-black/20 px-2 py-1 text-xs ${dragging === i ? "opacity-50" : ""}`}
                   >
-                    <span aria-hidden="true" title="Drag to rearrange" className="cursor-grab select-none text-white/60">
+                    <span aria-hidden="true" title={t("profile.dragToRearrange")} className="cursor-grab select-none text-white/60">
                       ⠿
                     </span>
                     <span className="w-4 text-white/60">{i + 1}.</span>
                     <span className="min-w-0 flex-1 truncate text-white/80">{name}</span>
-                    <button type="button" onClick={() => moveSelected(i, i - 1)} disabled={i === 0} aria-label={`Move ${name} up`} className="px-1.5 text-white/70 hover:text-white disabled:opacity-30">
+                    <button type="button" onClick={() => moveSelected(i, i - 1)} disabled={i === 0} aria-label={t("profile.moveUpName", { name })} className="px-1.5 text-white/70 hover:text-white disabled:opacity-30">
                       ▲
                     </button>
-                    <button type="button" onClick={() => moveSelected(i, i + 1)} disabled={i === selected.length - 1} aria-label={`Move ${name} down`} className="px-1.5 text-white/70 hover:text-white disabled:opacity-30">
+                    <button type="button" onClick={() => moveSelected(i, i + 1)} disabled={i === selected.length - 1} aria-label={t("profile.moveDownName", { name })} className="px-1.5 text-white/70 hover:text-white disabled:opacity-30">
                       ▼
                     </button>
                   </li>
@@ -150,7 +151,7 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
                 <span className="text-xs text-white/80">{f.displayName}</span>
               </button>
             ))}
-            {allFriends.length === 0 && <p className="col-span-4 text-xs text-white/60">No friends yet.</p>}
+            {allFriends.length === 0 && <p className="col-span-4 text-xs text-white/60">{t("profile.noFriendsYet")}</p>}
           </div>
           <div className="mt-3 flex gap-2">
             <button
@@ -158,10 +159,10 @@ export function TopFriendsList({ username, isOwner }: { username: string; isOwne
               disabled={saving}
               className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("reset.saving") : t("common.save")}
             </button>
             <button onClick={() => setEditing(false)} className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/70">
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>

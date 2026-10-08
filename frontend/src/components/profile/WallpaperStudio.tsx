@@ -6,6 +6,7 @@ import { ReferencePhotoField } from "../ai/ReferencePhotoField";
 import { WALLPAPER_MOTIONS } from "../../lib/wallpaperMotion";
 import { shrinkForUpload } from "../../lib/resizeImage";
 import type { WallpaperMotion } from "../../types";
+import { t } from "../../i18n";
 
 const MAX_PROMPT = 500;
 const button = "rounded-md border px-3 py-1.5 text-xs font-medium";
@@ -68,7 +69,7 @@ export function WallpaperStudio({
       const sent = reference ? await shrinkForUpload(reference) : undefined;
       setResult(await aiApi.generateWallpaper({ prompt, reference: sent, closeness }));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't make a wallpaper, try again.");
+      setError(err instanceof ApiError ? err.message : t("profile.couldntMakeAWallpaper"));
     } finally {
       setBusy(false);
     }
@@ -83,7 +84,7 @@ export function WallpaperStudio({
       resultUrl.current = null; // it is the wallpaper now; don't remove it
       setResult(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save that wallpaper, try again.");
+      setError(err instanceof ApiError ? err.message : t("profile.couldntSaveThatWallpaper"));
     } finally {
       setApplying(false);
     }
@@ -92,20 +93,20 @@ export function WallpaperStudio({
   const canGenerate = prompt.trim().length > 0 && !busy;
 
   return (
-    <section aria-label="AI wallpaper" className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-3">
+    <section aria-label={t("profile.aiWallpaper")} className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-3">
       <div>
-        <h3 className="text-sm font-semibold text-white">✨ Live wallpaper with AI</h3>
-        <p className="text-xs text-white/70">Describe it, or start from one of your own photos, then choose how it moves.</p>
+        <h3 className="text-sm font-semibold text-white">{t("profile.liveWallpaperWithAi")}</h3>
+        <p className="text-xs text-white/70">{t("profile.describeItOrStart")}</p>
       </div>
 
       <label className="block text-xs text-white/70">
-        What should it look like?
+        {t("profile.whatShouldItLook")}
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           maxLength={MAX_PROMPT}
           rows={2}
-          placeholder="A rainy neon street at night, glowing puddles…"
+          placeholder={t("profile.aRainyNeonStreet")}
           className="mt-1 w-full rounded-md border border-white/10 bg-black/30 px-2 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
       </label>
@@ -113,7 +114,7 @@ export function WallpaperStudio({
       <ReferencePhotoField file={reference} onFile={setReference} closeness={closeness} onCloseness={setCloseness} disabled={busy} />
 
       <fieldset>
-        <legend className="text-xs text-white/70">How should it move?</legend>
+        <legend className="text-xs text-white/70">{t("profile.howShouldItMove")}</legend>
         <div className="mt-1 flex flex-wrap gap-2">
           {WALLPAPER_MOTIONS.map((m) => {
             const current = result || !hasWallpaper || !isPicture ? newMotion : motion;
@@ -136,7 +137,7 @@ export function WallpaperStudio({
             );
           })}
         </div>
-        {!result && hasWallpaper && isPicture && <p className="mt-1 text-xs text-white/60">This changes your current wallpaper straight away.</p>}
+        {!result && hasWallpaper && isPicture && <p className="mt-1 text-xs text-white/60">{t("profile.thisChangesYourCurrent")}</p>}
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -144,12 +145,12 @@ export function WallpaperStudio({
           type="button"
           onClick={generate}
           disabled={!canGenerate}
-          title={prompt.trim() ? undefined : "Type a description first"}
+          title={prompt.trim() ? undefined : t("ai.typeDescription")}
           className="rounded-md border border-fuchsia-500/40 bg-fuchsia-500/10 px-3 py-1.5 text-xs font-medium text-fuchsia-300 hover:bg-fuchsia-500/20 disabled:opacity-50"
         >
-          {busy ? "Creating your wallpaper…" : result ? "✨ Try again" : "✨ Generate live wallpaper"}
+          {busy ? t("profile.creatingYourWallpaper") : result ? t("profile.tryAgain") : t("profile.generateLiveWallpaper")}
         </button>
-        {busy && <span role="status" className="text-xs text-white/70">This can take up to a minute{reference ? " with a photo" : ""}.</span>}
+        {busy && <span role="status" className="text-xs text-white/70">{reference ? t("profile.wallpaperWaitPhoto") : t("profile.wallpaperWait")}</span>}
       </div>
 
       {error && (
@@ -159,26 +160,26 @@ export function WallpaperStudio({
       )}
 
       {result && (
-        <div className="space-y-2" aria-label="Your new wallpaper">
+        <div className="space-y-2" aria-label={t("profile.yourNewWallpaper")}>
           <div className="relative h-40 overflow-hidden rounded-lg border border-white/10">
             {newMotion === "none" ? (
-              <img src={result.url} alt="Your new wallpaper" className="h-full w-full object-cover" />
+              <img src={result.url} alt={t("profile.yourNewWallpaper")} className="h-full w-full object-cover" />
             ) : (
               <>
                 <MovingWallpaper url={result.url} position="50% 50%" motion={newMotion} className="absolute inset-0" />
-                <img src={result.url} alt="Your new wallpaper" className="sr-only" />
+                <img src={result.url} alt={t("profile.yourNewWallpaper")} className="sr-only" />
               </>
             )}
           </div>
           <p className="text-xs text-white/70">
-            {result.usedReference ? "Made from your photo and description." : "Made from your description."} Like it? Use it, or try again.
+            {result.usedReference ? t("profile.madeFromYourPhoto") : t("profile.madeFromYourDescription")} {t("profile.likeIt")}
           </p>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={use} disabled={applying} className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-500 disabled:opacity-50">
-              {applying ? "Saving…" : "Use this wallpaper"}
+              {applying ? t("reset.saving") : t("profile.useThisWallpaper")}
             </button>
             <button type="button" onClick={discardResult} disabled={applying} className={`${button} border-white/15 text-white/70 hover:bg-white/10`}>
-              Discard
+              {t("profile.discard")}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import type { User } from "../types";
+import { t } from "../i18n";
 
 // The parts of a profile below the introduction. The owner can put them in any order and hide any of them; the server
 // keeps the same list (utils/profileSections.js).
@@ -6,12 +7,12 @@ export const SECTION_KEYS = ["about", "friends", "music", "portfolio", "blog", "
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
 export const SECTION_LABELS: Record<SectionKey, string> = {
-  about: "About me",
-  friends: "Top friends",
-  music: "Music",
-  portfolio: "Portfolio",
-  blog: "Blog",
-  testimonials: "Testimonials",
+  get about() { return t("profile.aboutMe"); },
+  get friends() { return t("sections.topFriends"); },
+  get music() { return t("sections.music"); },
+  get portfolio() { return t("sections.portfolio"); },
+  get blog() { return t("profile.blog"); },
+  get testimonials() { return t("profile.testimonials"); },
 };
 
 const known = (key: unknown): key is SectionKey => SECTION_KEYS.includes(key as SectionKey);

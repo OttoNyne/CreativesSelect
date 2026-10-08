@@ -2,8 +2,9 @@ import { useState } from "react";
 import { profilesApi } from "../../api/profiles.api";
 import { ApiError } from "../../api/client";
 import type { User } from "../../types";
+import { t } from "../../i18n";
 
-const USERNAME_HINT = "3–30 letters, numbers or underscores";
+const usernameHint = () => t("profile.usernameHint");
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,30}$/;
 
 // Edit panel: change your display name and your @username. Both save on their
@@ -23,16 +24,16 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
   async function saveName(e: React.FormEvent) {
     e.preventDefault();
     if (!nameChanged || nameBusy) return;
-    if (!displayName.trim()) return setNameMsg({ ok: false, text: "Display name can't be empty." });
+    if (!displayName.trim()) return setNameMsg({ ok: false, text: t("profile.displayNameEmpty") });
     setNameBusy(true);
     setNameMsg(null);
     try {
       const { user } = await profilesApi.updateMe({ displayName: displayName.trim() });
       setDisplayName(user.displayName);
       onChanged(user);
-      setNameMsg({ ok: true, text: "Display name updated ✓" });
+      setNameMsg({ ok: true, text: t("profile.displayNameUpdated") });
     } catch (err) {
-      setNameMsg({ ok: false, text: err instanceof ApiError ? err.message : "Couldn't change your display name." });
+      setNameMsg({ ok: false, text: err instanceof ApiError ? err.message : t("profile.couldntChangeYourDisplay") });
     } finally {
       setNameBusy(false);
     }
@@ -41,14 +42,14 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
   async function saveUsername(e: React.FormEvent) {
     e.preventDefault();
     if (!userChanged || userBusy) return;
-    if (!USERNAME_PATTERN.test(username.trim())) return setUserMsg({ ok: false, text: `Username must be ${USERNAME_HINT}.` });
+    if (!USERNAME_PATTERN.test(username.trim())) return setUserMsg({ ok: false, text: t("profile.usernameMustBe", { hint: usernameHint() }) });
     setUserBusy(true);
     setUserMsg(null);
     try {
       const { user } = await profilesApi.changeUsername(username.trim());
       onChanged(user); // the page moves to the new /u/… address
     } catch (err) {
-      setUserMsg({ ok: false, text: err instanceof ApiError ? err.message : "Couldn't change your username." });
+      setUserMsg({ ok: false, text: err instanceof ApiError ? err.message : t("profile.couldntChangeYourUsername") });
       setUserBusy(false);
     }
   }
@@ -62,7 +63,7 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
     <div className="space-y-3 rounded-md border border-white/10 bg-black/20 p-3">
       <form onSubmit={saveName} className="space-y-1">
         <label className="block text-xs text-white/60" htmlFor="display-name">
-          Display name
+          {t("register.displayName")}
         </label>
         <div className="flex gap-2">
           <input
@@ -73,7 +74,7 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
             className={input}
           />
           <button type="submit" disabled={!nameChanged || nameBusy} className={button}>
-            {nameBusy ? "Saving…" : "Save name"}
+            {nameBusy ? t("reset.saving") : t("profile.saveName")}
           </button>
         </div>
         {nameMsg && <p className={`text-xs ${nameMsg.ok ? "text-emerald-400" : "text-red-400"}`}>{nameMsg.text}</p>}
@@ -81,7 +82,7 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
 
       <form onSubmit={saveUsername} className="space-y-1">
         <label className="block text-xs text-white/60" htmlFor="username">
-          Username <span className="text-white/60">— your profile address (/u/{username.trim().toLowerCase() || "…"})</span>
+          {t("profile.usernameLabel")} <span className="text-white/60">{t("profile.usernameAddress", { address: username.trim().toLowerCase() || "…" })}</span>
         </label>
         <div className="flex gap-2">
           <div className="flex min-w-0 flex-1 items-center rounded-md border border-white/10 bg-black/30 ps-3 focus-within:border-white/30">
@@ -98,12 +99,11 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
             />
           </div>
           <button type="submit" disabled={!userChanged || userBusy} className={button}>
-            {userBusy ? "Changing…" : "Change username"}
+            {userBusy ? t("profile.changing") : t("profile.changeUsername")}
           </button>
         </div>
         <p className="text-[11px] text-white/60">
-          {USERNAME_HINT}. Old links to your profile stop working, you can change it 3 times a day, and your old name stays
-          reserved for you for 30 days.
+          {t("profile.usernameRules", { hint: usernameHint() })}
         </p>
         {userMsg && <p className={`text-xs ${userMsg.ok ? "text-emerald-400" : "text-red-400"}`}>{userMsg.text}</p>}
       </form>

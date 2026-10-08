@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { t } from "../../i18n";
 
 function clampPercent(value: number): number {
   return Math.min(100, Math.max(0, Math.round(value)));
@@ -93,7 +94,7 @@ export function ImagePositioner({
           style={{ left: posX, top: posY }}
         />
       </div>
-      <p className="text-[11px] text-white/60">Click or drag to set the focal point.</p>
+      <p className="text-[11px] text-white/60">{t("profile.clickOrDragTo")}</p>
     </div>
   );
 }

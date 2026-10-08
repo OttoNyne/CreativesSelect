@@ -11,6 +11,7 @@ import { EditedMark } from "../common/EditedMark";
 import { Linkified } from "../common/Linkified";
 import { CommentPicture } from "../common/CommentPicture";
 import { CommentPicturePicker } from "../common/CommentPicturePicker";
+import { t } from "../../i18n";
 
 const MAX_COMMENT = 1000;
 
@@ -53,7 +54,7 @@ export function ProfileComments({ username }: { username: string }) {
       setDraft("");
       setPicture(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't post that comment.");
+      setError(err instanceof ApiError ? err.message : t("comments.postFailed"));
     }
   }
 
@@ -67,7 +68,7 @@ export function ProfileComments({ username }: { username: string }) {
       setComments((old) => [...old, ...next.comments.filter((c) => !old.some((o) => o.id === c.id))]);
       setHasMore(Boolean(next.hasMore));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't load more testimonials.");
+      setError(err instanceof ApiError ? err.message : t("profile.couldntLoadMoreTestimonials"));
     } finally {
       setLoadingMore(false);
     }
@@ -80,7 +81,7 @@ export function ProfileComments({ username }: { username: string }) {
       setEditing(null);
       return null;
     } catch (err) {
-      return err instanceof ApiError ? err.message : "Couldn't save that change.";
+      return err instanceof ApiError ? err.message : t("common.saveChangeFailed");
     }
   }
 
@@ -90,7 +91,7 @@ export function ProfileComments({ username }: { username: string }) {
       const { comment } = await profilesApi.removeCommentPicture(commentId);
       setComments((list) => list.map((c) => (c.id === commentId ? comment : c)));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't take that picture off.");
+      setError(err instanceof ApiError ? err.message : t("comments.pictureOffFailed"));
     }
   }
 
@@ -100,13 +101,13 @@ export function ProfileComments({ username }: { username: string }) {
       await profilesApi.deleteComment(commentId);
       setComments((c) => c.filter((comment) => comment.id !== commentId));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't delete that comment.");
+      setError(err instanceof ApiError ? err.message : t("comments.deleteFailed"));
     }
   }
 
   return (
     <div id="testimonials" className="profile-card scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
-      <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Testimonials</h2>
+      <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">{t("profile.testimonials")}</h2>
 
       {user && (
         <form onSubmit={handleSubmit} className="mt-3 space-y-1">
@@ -115,11 +116,11 @@ export function ProfileComments({ username }: { username: string }) {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               maxLength={MAX_COMMENT}
-              placeholder="Leave a comment on this profile…"
+              placeholder={t("profile.leaveACommentOn")}
               className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
             />
             <button type="submit" className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1.5 text-xs font-medium text-[var(--profile-on-accent)]">
-              Post
+              {t("composer.post")}
             </button>
           </div>
           <CommentPicturePicker url={picture} onChange={setPicture} />
@@ -128,8 +129,8 @@ export function ProfileComments({ username }: { username: string }) {
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
       <div className="mt-3 space-y-3">
-        {loading && <p className="text-xs text-white/60">Loading…</p>}
-        {!loading && comments.length === 0 && <p className="text-xs text-white/60">No testimonials yet.</p>}
+        {loading && <p className="text-xs text-white/60">{t("common.loading")}</p>}
+        {!loading && comments.length === 0 && <p className="text-xs text-white/60">{t("profile.noTestimonialsYet")}</p>}
         {comments.map((c) => (
           <div key={c.id} className="flex gap-2 text-sm">
             <Link to={`/u/${c.author.username}`}>
@@ -141,7 +142,7 @@ export function ProfileComments({ username }: { username: string }) {
                 <CSBadge verified={c.author.csVerified} size={12} className="ms-1" />
               </Link>
               {editing === c.id ? (
-                <EditBox text={c.content} maxText={MAX_COMMENT} label="Edit testimonial" rows={3} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
+                <EditBox text={c.content} maxText={MAX_COMMENT} label={t("profile.editTestimonial")} rows={3} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
               ) : (
                 <>
                   <p className="whitespace-pre-line break-words text-white/70">
@@ -154,17 +155,17 @@ export function ProfileComments({ username }: { username: string }) {
             {user && editing !== c.id && (
               <div className="flex shrink-0 gap-2 self-start text-xs">
                 {user.id === c.author.id && (
-                  <button onClick={() => setEditing(c.id)} aria-label="Edit your testimonial" className="text-white/60 hover:text-white">
-                    Edit
+                  <button onClick={() => setEditing(c.id)} aria-label={t("profile.editYourTestimonial")} className="text-white/60 hover:text-white">
+                    {t("common.edit")}
                   </button>
                 )}
                 {user.id === c.author.id && c.imageUrl && (
-                  <button onClick={() => takePictureOff(c.id)} aria-label="Remove the picture from your testimonial" className="text-white/60 hover:text-white">
-                    Remove picture
+                  <button onClick={() => takePictureOff(c.id)} aria-label={t("profile.removeThePictureFrom")} className="text-white/60 hover:text-white">
+                    {t("composer.removePicture")}
                   </button>
                 )}
                 {(user.id === c.author.id || user.username === username) && (
-                  <button onClick={() => handleDelete(c.id)} aria-label="Delete testimonial" className="text-white/60 hover:text-red-400">
+                  <button onClick={() => handleDelete(c.id)} aria-label={t("profile.deleteTestimonial")} className="text-white/60 hover:text-red-400">
                     ✕
                   </button>
                 )}
@@ -174,7 +175,7 @@ export function ProfileComments({ username }: { username: string }) {
         ))}
         {hasMore && (
           <button type="button" onClick={showMore} disabled={loadingMore} className="text-xs text-[var(--profile-accent-text)] hover:underline disabled:opacity-50">
-            {loadingMore ? "Loading…" : "Show more testimonials"}
+            {loadingMore ? t("common.loading") : t("profile.showMoreTestimonials")}
           </button>
         )}
       </div>

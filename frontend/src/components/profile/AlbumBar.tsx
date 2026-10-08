@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MAX_ALBUM_TITLE, MAX_ALBUMS } from "../../api/albums.api";
 import type { Album } from "../../types";
+import { t } from "../../i18n";
 
 export const ALL = "all";
 
@@ -54,10 +55,10 @@ export function AlbumBar({ albums, counts, total, selected, onSelect, isOwner, o
 
   return (
     <div className="mt-3">
-      <ul aria-label="Albums" className="flex flex-wrap items-center gap-1.5">
+      <ul aria-label={t("profile.albums")} className="flex flex-wrap items-center gap-1.5">
         <li>
           <button type="button" onClick={() => onSelect(ALL)} aria-pressed={selected === ALL} className={chip(selected === ALL)}>
-            All pieces ({total})
+            {t("profile.allPieces", { n: total })}
           </button>
         </li>
         {albums.map((a) => (
@@ -77,7 +78,7 @@ export function AlbumBar({ albums, counts, total, selected, onSelect, isOwner, o
               }}
               className="text-xs text-[var(--profile-accent-text)] hover:underline"
             >
-              + New album
+              {t("profile.newAlbum")}
             </button>
           </li>
         )}
@@ -89,16 +90,16 @@ export function AlbumBar({ albums, counts, total, selected, onSelect, isOwner, o
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             maxLength={MAX_ALBUM_TITLE}
-            placeholder="Album name"
-            aria-label={renaming ? "New name for this album" : "Album name"}
+            placeholder={t("profile.albumName")}
+            aria-label={renaming ? t("profile.newNameForThis") : t("profile.albumName")}
             className={`${field} w-48`}
             autoFocus
           />
           <button type="submit" disabled={!draft.trim()} className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent)] disabled:opacity-50">
-            {renaming ? "Rename" : "Create album"}
+            {renaming ? t("profile.rename") : t("profile.createAlbum")}
           </button>
           <button type="button" onClick={close} className="text-xs text-white/70 hover:underline">
-            Cancel
+            {t("common.cancel")}
           </button>
         </form>
       )}
@@ -112,17 +113,17 @@ export function AlbumBar({ albums, counts, total, selected, onSelect, isOwner, o
             }}
             className="text-[var(--profile-accent-text)] hover:underline"
           >
-            Rename this album
+            {t("profile.renameThisAlbum")}
           </button>
           <button
             type="button"
             onClick={async () => {
-              if (!window.confirm(`Delete the album "${current.title}"? Its pieces stay in your portfolio.`)) return;
+              if (!window.confirm(t("profile.confirmDeleteAlbum", { title: current.title }))) return;
               await onDelete(current.id);
             }}
             className="text-red-300 hover:underline"
           >
-            Delete this album
+            {t("profile.deleteThisAlbum")}
           </button>
         </div>
       )}

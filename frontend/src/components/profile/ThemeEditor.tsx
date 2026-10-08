@@ -2,6 +2,7 @@ import type { ProfileTheme } from "../../types";
 import { readableTheme, resolveTheme } from "../../theme/applyProfileTheme";
 import { parseColor, toHex } from "../../theme/contrast";
 import { FONT_OPTIONS, PRESETS, STYLE_KEYS, STYLE_OPTIONS, applyPreset, matchingPreset, styleValue, type StyleKey } from "../../lib/profileStyle";
+import { t } from "../../i18n";
 
 const select = "h-8 rounded border border-white/10 bg-black/50 px-1 text-xs text-white";
 
@@ -28,19 +29,19 @@ export function ThemeEditor({
     <div className="space-y-4 rounded-xl border border-white/10 bg-black/30 p-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <label className="flex flex-col gap-1 text-xs text-white/60">
-          Background
+          {t("profile.background")}
           <input type="color" value={theme.bgColor ?? "#12121a"} onChange={(e) => set("bgColor", e.target.value)} className="h-8 w-full cursor-pointer rounded" />
         </label>
         <label className="flex flex-col gap-1 text-xs text-white/60">
-          Text
+          {t("profile.text")}
           <input type="color" value={theme.textColor ?? "#f5f5f7"} onChange={(e) => set("textColor", e.target.value)} className="h-8 w-full cursor-pointer rounded" />
         </label>
         <label className="flex flex-col gap-1 text-xs text-white/60">
-          Accent
+          {t("profile.accent")}
           <input type="color" value={theme.accentColor ?? "#8b5cf6"} onChange={(e) => set("accentColor", e.target.value)} className="h-8 w-full cursor-pointer rounded" />
         </label>
         <label className="flex flex-col gap-1 text-xs text-white/60">
-          Font
+          {t("profile.font")}
           <select value={theme.fontFamily ?? FONT_OPTIONS[0].value} onChange={(e) => set("fontFamily", e.target.value)} className={select}>
             {FONT_OPTIONS.map((f) => (
               <option key={f.value} value={f.value}>
@@ -52,12 +53,12 @@ export function ThemeEditor({
       </div>
       {textAdjusted && (
         <p role="status" className="text-xs text-amber-300">
-          That text colour is too close to the background to read, so visitors will see a slightly lighter or darker shade of it.
+          {t("profile.thatTextColourIs")}
         </p>
       )}
 
       <fieldset className="space-y-2">
-        <legend className="text-xs text-white/60">Start from a look</legend>
+        <legend className="text-xs text-white/60">{t("profile.startFromALook")}</legend>
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((p) => (
             <button
@@ -72,7 +73,7 @@ export function ThemeEditor({
             </button>
           ))}
         </div>
-        {preset && <p className="text-[11px] text-white/60">{preset.hint}. Change any of the choices below to make it your own.</p>}
+        {preset && <p className="text-[11px] text-white/60">{t("profile.presetHint", { hint: preset.hint })}</p>}
       </fieldset>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -89,7 +90,7 @@ export function ThemeEditor({
           </label>
         ))}
       </div>
-      <p className="text-[11px] text-white/60">However you style it, the text is kept readable, and on a wallpaper every box keeps a dark tint.</p>
+      <p className="text-[11px] text-white/60">{t("profile.howeverYouStyleIt")}</p>
     </div>
   );
 }

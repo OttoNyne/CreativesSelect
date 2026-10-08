@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { SECTION_LABELS, type SectionKey } from "../../lib/sections";
+import { t } from "../../i18n";
 
 interface Props {
   section: SectionKey;
@@ -17,21 +18,21 @@ export function SectionFrame({ section, position, total, hidden, disabled, onMov
   const label = SECTION_LABELS[section];
   const button = "rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40";
   return (
-    <div role="group" aria-label={`${label} section`} className={`rounded-xl border border-dashed border-white/25 p-2 ${hidden ? "opacity-60" : ""}`}>
+    <div role="group" aria-label={t("profile.sectionAria", { label })} className={`rounded-xl border border-dashed border-white/25 p-2 ${hidden ? "opacity-60" : ""}`}>
       <div className="mb-2 flex flex-wrap items-center gap-2 px-1">
         <span className="text-xs font-semibold uppercase tracking-wide text-white/70">
-          {label} <span className="font-normal normal-case text-white/60">({position} of {total})</span>
+          {label} <span className="font-normal normal-case text-white/60">{t("profile.positionOf", { position, total })}</span>
         </span>
-        {hidden && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/80">Hidden from visitors</span>}
+        {hidden && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/80">{t("profile.hiddenFromVisitors")}</span>}
         <span className="ms-auto flex gap-1.5">
-          <button type="button" onClick={() => onMove(-1)} disabled={disabled || position === 1} aria-label={`Move ${label} up`} className={button}>
-            ↑ Up
+          <button type="button" onClick={() => onMove(-1)} disabled={disabled || position === 1} aria-label={t("profile.moveSectionUp", { label })} className={button}>
+            {t("profile.up")}
           </button>
-          <button type="button" onClick={() => onMove(1)} disabled={disabled || position === total} aria-label={`Move ${label} down`} className={button}>
-            ↓ Down
+          <button type="button" onClick={() => onMove(1)} disabled={disabled || position === total} aria-label={t("profile.moveSectionDown", { label })} className={button}>
+            {t("profile.down")}
           </button>
-          <button type="button" onClick={onToggleHidden} disabled={disabled} aria-label={`${hidden ? "Show" : "Hide"} ${label}`} aria-pressed={hidden} className={button}>
-            {hidden ? "Show" : "Hide"}
+          <button type="button" onClick={onToggleHidden} disabled={disabled} aria-label={t(hidden ? "profile.showSection" : "profile.hideSection", { label })} aria-pressed={hidden} className={button}>
+            {hidden ? t("profile.show") : t("profile.hide")}
           </button>
         </span>
       </div>

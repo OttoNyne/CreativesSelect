@@ -43,6 +43,7 @@ import { EmailStatus } from "../components/profile/EmailStatus";
 import { PushSettings } from "../components/profile/PushSettings";
 import { ProfileNames } from "../components/profile/ProfileNames";
 import { CSBadge } from "../components/common/CSBadge";
+import { t } from "../i18n";
 
 export function ProfilePage() {
   const { username = "" } = useParams();
@@ -126,7 +127,7 @@ export function ProfilePage() {
       if (isOwner) setViewer(user);
       return true;
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't save that change.");
+      alert(err instanceof ApiError ? err.message : t("common.saveChangeFailed"));
       return false;
     } finally {
       setSaving(false);
@@ -140,7 +141,7 @@ export function ProfilePage() {
       const { url } = await uploadFile(file, "avatars");
       await saveProfile({ avatarUrl: url });
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't upload that image.");
+      alert(err instanceof ApiError ? err.message : t("profile.couldntUploadThatImage"));
     }
   }
 
@@ -152,7 +153,7 @@ export function ProfilePage() {
       const wallpaperType = file.type.startsWith("video/") ? "video" : "image";
       await saveProfile({ wallpaperUrl: url, wallpaperType, wallpaperPosition: "50% 50%" });
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't upload that file.");
+      alert(err instanceof ApiError ? err.message : t("composer.uploadFailed"));
     }
   }
 
@@ -166,32 +167,32 @@ export function ProfilePage() {
   }
 
   async function handleBlock() {
-    if (!confirm(`Block @${username}? They won't be able to friend, comment, or interact with you.`)) return;
+    if (!confirm(t("profile.blockConfirm", { username }))) return;
     try {
       await moderationApi.block(username);
-      alert("User blocked.");
+      alert(t("profile.userBlocked"));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't block that user.");
+      alert(err instanceof ApiError ? err.message : t("profile.couldntBlockThatUser"));
     }
   }
 
   async function handleReport() {
-    const reason = prompt("What's the issue with this profile?");
+    const reason = prompt(t("profile.whatsTheIssueWith"));
     if (!reason) return;
     try {
       await moderationApi.report("user", profile!.id, reason);
-      alert("Report submitted. Thanks for helping keep this space safe.");
+      alert(t("profile.reportSubmittedThanksFor"));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't submit that report.");
+      alert(err instanceof ApiError ? err.message : t("profile.couldntSubmitThatReport"));
     }
   }
 
   if (notFound) {
-    return <div className="p-8 text-center text-white/60">This profile is unavailable or private.</div>;
+    return <div className="p-8 text-center text-white/60">{t("profile.thisProfileIsUnavailable")}</div>;
   }
 
   if (!profile) {
-    return <div className="p-8 text-center text-white/60">Loading profile…</div>;
+    return <div className="p-8 text-center text-white/60">{t("profile.loadingProfile")}</div>;
   }
 
   // The sections below the introduction, in the owner's order. While editing the owner sees every one (with controls); everyone else,
@@ -237,7 +238,7 @@ export function ProfilePage() {
               onClick={() => avatarInputRef.current?.click()}
               className="absolute -bottom-1 -end-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white"
             >
-              Edit
+              {t("common.edit")}
             </button>
           )}
           <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
@@ -256,11 +257,11 @@ export function ProfilePage() {
         <div className="ms-auto flex flex-wrap gap-2 pb-2">
           <ShareButton
             url={() => profileUrl(profile.username)}
-            title={isOwner ? "Share your profile" : `Share ${profile.displayName}'s profile`}
-            description="Scan the code, or send the link, to open this profile."
+            title={isOwner ? t("profile.shareYourProfile") : t("profile.shareOther", { name: profile.displayName })}
+            description={t("profile.scanTheCodeOr")}
             className="rounded-md border border-white/20 px-3 py-1.5 text-sm"
           >
-            Share
+            {t("profile.share")}
           </ShareButton>
           {isOwner ? (
             <button
@@ -268,15 +269,15 @@ export function ProfilePage() {
               className="rounded-md border px-3 py-1.5 text-sm"
               style={{ borderColor: "var(--profile-accent)" }}
             >
-              {editing ? "Done editing" : "Edit profile"}
+              {editing ? t("profile.doneEditing") : t("profile.editProfile")}
             </button>
           ) : viewer ? (
             <>
               {isFriend ? (
                 <>
-                  <span className="rounded-md bg-white/10 px-3 py-1.5 text-sm">✓ Friends</span>
+                  <span className="rounded-md bg-white/10 px-3 py-1.5 text-sm">{t("profile.friends")}</span>
                   <Link to={`/messages/${username}`} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
-                    Message
+                    {t("messages.inputLabel")}
                   </Link>
                 </>
               ) : (
@@ -286,14 +287,14 @@ export function ProfilePage() {
                   className="rounded-md px-3 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
                   style={{ background: "var(--profile-accent-fill)" }}
                 >
-                  {requestSent ? "Request sent" : "Add Friend"}
+                  {requestSent ? t("mayKnow.requestSent") : t("profile.addFriend")}
                 </button>
               )}
               <button onClick={handleReport} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
-                Report
+                {t("common.report")}
               </button>
               <button onClick={handleBlock} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
-                Block
+                {t("profile.block")}
               </button>
             </>
           ) : null}
@@ -317,7 +318,7 @@ export function ProfilePage() {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             rows={3}
-            placeholder="Tell people what you make…"
+            placeholder={t("profile.tellPeopleWhatYou")}
             className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm placeholder:text-white/55 focus:outline-none"
           />
           <StatusEditor mood={mood} listeningTo={listeningTo} onMood={setMood} onListeningTo={setListeningTo} />
@@ -330,39 +331,38 @@ export function ProfilePage() {
                 checked={profile.isPrivate}
                 onChange={(e) => saveProfile({ isPrivate: e.target.checked })}
               />
-              Private profile
+              {t("profile.privateProfile")}
             </label>
             <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input type="checkbox" checked={profile.showActivity !== false} onChange={(e) => saveProfile({ showActivity: e.target.checked })} />
-              Show my friends when I&apos;m online
+              {t("profile.showMyFriendsWhen")}
             </label>
             <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input type="checkbox" checked={profile.profileViews === true} onChange={(e) => saveProfile({ profileViews: e.target.checked })} />
-              Profile views
+              {t("profile.profileViews")}
             </label>
             <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input type="checkbox" checked={profile.chatStatus !== false} onChange={(e) => saveProfile({ chatStatus: e.target.checked })} />
-              Show friends when I&apos;ve read their messages and when I&apos;m typing
+              {t("profile.showFriendsWhenIve")}
             </label>
             <p className="w-full text-xs text-[var(--profile-muted)]">
-              On: a friend sees &quot;Seen&quot; under their message once you open the chat, and &quot;typing…&quot; while you write. Off: they see neither, and you don&apos;t see theirs. Either of you turning it off turns it off for both.
+              {t("profile.onAFriendSees")}
             </p>
             <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input type="checkbox" checked={profile.showConnections !== false} onChange={(e) => saveProfile({ showConnections: e.target.checked })} />
-              Show who I know to friends of friends
+              {t("profile.showWhoIKnow")}
             </label>
             <p className="w-full text-xs text-[var(--profile-muted)]">
-              On: you can be named as a mutual friend and suggested as someone people may know. Off: neither, and your friends aren&apos;t suggested through you.
+              {t("profile.onYouCanBe")}
             </p>
             <p className="w-full text-xs text-[var(--profile-muted)]">
-              Off by default. Turn on to see who visits your profile; you then show up to other people who have it on when you visit theirs. Turning it off deletes
-              every visit.
+              {t("profile.offByDefaultTurn")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-white/60">Avatar:</span>
+            <span className="text-xs text-white/60">{t("profile.avatar")}</span>
             <ImageSearchPicker
-              label="🔍 Search photos for avatar"
+              label={t("profile.searchPhotosForAvatar")}
               onSelect={(url) => saveProfile({ avatarUrl: url })}
             />
           </div>
@@ -372,7 +372,7 @@ export function ProfilePage() {
               onClick={() => wallpaperInputRef.current?.click()}
               className="rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10"
             >
-              🖼️ Change wallpaper
+              {t("profile.changeWallpaper")}
             </button>
             <input
               ref={wallpaperInputRef}
@@ -387,7 +387,7 @@ export function ProfilePage() {
                 onClick={() => saveProfile({ wallpaperUrl: null })}
                 className="text-xs text-white/60 hover:text-red-400"
               >
-                Remove wallpaper
+                {t("profile.removeWallpaper")}
               </button>
             )}
           </div>
@@ -402,7 +402,7 @@ export function ProfilePage() {
             }}
           />
           <ImageSearchPicker
-            label="🔍 Search photos for wallpaper"
+            label={t("profile.searchPhotosForWallpaper")}
             onSelect={(url) =>
               saveProfile({ wallpaperUrl: url, wallpaperType: "image", wallpaperPosition: "50% 50%" })
             }
@@ -422,7 +422,7 @@ export function ProfilePage() {
             className="rounded-md px-4 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
             style={{ background: "var(--profile-accent-fill)" }}
           >
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("reset.saving") : t("profile.saveChanges")}
           </button>
           <div className="space-y-3 border-t border-white/10 pt-3">
             <EmailStatus />
@@ -438,7 +438,7 @@ export function ProfilePage() {
         </div>
       ) : (
         <>
-          <p className="mt-4 text-sm">{profile.bio || "No bio yet."}</p>
+          <p className="mt-4 text-sm">{profile.bio || t("profile.noBioYet")}</p>
           <ProfileTags tags={profile.tags} />
         </>
       )}
