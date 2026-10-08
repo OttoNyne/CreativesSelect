@@ -110,7 +110,7 @@ test.describe("portfolio videos", () => {
     await page.getByRole("button", { name: "Add video" }).click();
     const video = page.locator("video");
     await expect(video).toBeVisible();
-    await expect(video).toHaveAttribute("src", "https://cdn.example.com/clips/demo.mp4#t=0,30");
+    await expect(video).toHaveAttribute("src", "https://cdn.example.com/clips/demo.mp4#t=0,60");
     await expect(video).toHaveAttribute("controls", "");
   });
 
