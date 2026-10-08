@@ -1,5 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
 import { apiUser, befriend, expectNoHorizontalOverflow, fakeIpHeaders, newUser, signUpViaUi } from "./helpers";
 
 test.use({ extraHTTPHeaders: fakeIpHeaders() });
@@ -16,6 +18,23 @@ async function expectReadable(page: Page, where: string) {
   const results = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
   const problems = results.violations.flatMap((v) => v.nodes.map((n) => `${n.target.join(" ")} — ${(n.any[0]?.message ?? v.help).replace(/\s+/g, " ")}`));
   expect(problems, `unreadable text on ${where}`).toEqual([]);
+}
+
+const OUTBOX = process.env.MAIL_OUTBOX_DIR;
+
+// The subjects and texts of the emails sent to this address so far.
+async function mailsTo(address: string): Promise<{ subject: string; text: string }[]> {
+  const names = (await readdir(OUTBOX!).catch(() => [] as string[])).filter((n) => n.endsWith(".json")).sort();
+  const found: { subject: string; text: string }[] = [];
+  for (const name of names) {
+    try {
+      const mail = JSON.parse(await readFile(path.join(OUTBOX!, name), "utf8"));
+      if (mail.to === address) found.push(mail);
+    } catch {
+      // being replaced as we look: it will be there next time
+    }
+  }
+  return found;
 }
 
 test.describe("the site in other languages", () => {
@@ -127,5 +146,29 @@ test.describe("the site in other languages", () => {
     await expect(page.getByText(/ahora mismo|hace \d+ min/).first()).toBeVisible();
     await expect(page.getByText(/te envió un mensaje/)).toBeVisible();
     await friend.context.close();
+  });
+
+  test("emails come in the language the person signed up in, and follow a change of language", async ({ page }) => {
+    test.skip(!OUTBOX, "needs MAIL_OUTBOX_DIR (see e2e/README.md)");
+    const me = newUser("carta");
+    await page.goto("/register");
+    await useLanguage(page, "es");
+    await page.getByPlaceholder("Nombre para mostrar").fill(me.displayName);
+    await page.getByPlaceholder("Nombre de usuario").fill(me.username);
+    await page.getByPlaceholder("Correo electrónico").fill(me.email);
+    await page.getByPlaceholder(/Contraseña/).fill(me.password);
+    await page.getByRole("button", { name: "Registrarse", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    await expect.poll(async () => (await mailsTo(me.email)).map((m) => m.subject)).toContain("Confirma tu correo de CreativesSelect");
+    const spanish = (await mailsTo(me.email)).find((m) => /Confirma/.test(m.subject))!;
+    expect(spanish.text).toContain(`Hola, ${me.displayName}`);
+    expect(spanish.text).toMatch(/\/verify-email#token=[a-f0-9]+/);
+
+    // switching the site to Arabic tells the account, so the next email is in Arabic
+    await page.getByRole("combobox", { name: "Idioma" }).selectOption("ar");
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect.poll(async () => (await page.request.get("/api/auth/me")).json().then((j) => j.user.language)).toBe("ar");
+    await page.request.post("/api/auth/forgot-password", { data: { email: me.email } });
+    await expect.poll(async () => (await mailsTo(me.email)).map((m) => m.subject)).toContain("إعادة تعيين كلمة مرور CreativesSelect");
   });
 });

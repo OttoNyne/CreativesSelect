@@ -41,5 +41,5 @@ export const info = {
   "info.featuresIntro": "Everything you get with one account.",
   "info.howIntro": "From sign-up to sharing your work, in five steps.",
   "info.languagesTitle": "In your language",
-  "info.languagesText": "Use the whole site in English, Spanish or Arabic (which reads right to left, with every page mirrored to match). It starts in your browser's language, you can change it from the footer on any page, and your choice is remembered. Emails are still sent in English.",
+  "info.languagesText": "Use the whole site in English, Spanish or Arabic (which reads right to left, with every page mirrored to match). It starts in your browser's language, you can change it from the footer on any page, and your choice is remembered. The emails the site sends you come in it too.",
 } as const;

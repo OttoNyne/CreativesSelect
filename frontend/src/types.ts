@@ -28,6 +28,8 @@ export interface User {
   email?: string;
   /** Whether you've opened the link we emailed to confirm the address. Only on your own user object. */
   emailVerified?: boolean;
+  /** The language the site emails you in: the one you use it in. Only on your own user object. */
+  language?: "en" | "es" | "ar";
   username: string;
   displayName: string;
   bio: string | null;

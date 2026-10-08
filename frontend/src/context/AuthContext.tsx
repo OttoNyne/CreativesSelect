@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { authApi } from "../api/auth.api";
+import { profilesApi } from "../api/profiles.api";
+import { language } from "../i18n";
 import type { User } from "../types";
 
 interface AuthContextValue {
@@ -19,6 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { user } = await authApi.me();
       setUser(user);
+      // The site emails people in the language they use it in: if this page is in another one, the account is told (a miss is harmless).
+      if (user.language && user.language !== language()) profilesApi.updateMe({ language: language() }).catch(() => {});
     } catch {
       setUser(null);
     } finally {

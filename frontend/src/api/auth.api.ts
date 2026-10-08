@@ -1,5 +1,6 @@
 import { api } from "./client";
 import type { User } from "../types";
+import { language } from "../i18n";
 
 export interface RegisterInput {
   email: string;
@@ -35,7 +36,8 @@ export interface TwoFactorStatus {
 }
 
 export const authApi = {
-  register: (input: RegisterInput) => api.post<{ user: User; invitedBy?: string }>("/auth/register", input),
+  // the page's language goes with it, so the emails the site sends this person are in it too
+  register: (input: RegisterInput) => api.post<{ user: User; invitedBy?: string }>("/auth/register", { ...input, language: language() }),
   login: (input: LoginInput) => api.post<LoginResult>("/auth/login", input),
   loginTwoFactor: (challenge: string, code: string) => api.post<{ user: User; recoveryCodesLeft: number }>("/auth/login/2fa", { challenge, code }),
   logout: () => api.post<void>("/auth/logout"),

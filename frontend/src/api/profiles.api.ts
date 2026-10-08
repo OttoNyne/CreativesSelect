@@ -19,6 +19,7 @@ export interface UpdateProfileInput {
   profileViews?: boolean;
   showConnections?: boolean;
   chatStatus?: boolean;
+  language?: "en" | "es" | "ar";
   isPrivate?: boolean;
   theme?: ProfileTheme;
 }

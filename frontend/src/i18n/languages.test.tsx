@@ -181,3 +181,15 @@ describe("when a language's file can't be loaded", () => {
     vi.resetModules();
   });
 });
+
+describe("signing up", () => {
+  it("sends the page's language with the sign-up, so the site's emails are in it", async () => {
+    // (modules were reset by the test before, so the page's language and the API come from the same fresh copy)
+    const fresh = await import("./index");
+    await fresh.initI18n("es");
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ user: {} }), { status: 201, headers: { "Content-Type": "application/json" } }));
+    const { authApi } = await import("../api/auth.api");
+    await authApi.register({ email: "a@b.co", username: "abc", password: "password123", displayName: "A" });
+    expect(JSON.parse(String(spy.mock.calls[0][1]?.body))).toMatchObject({ language: "es" });
+  });
+});
