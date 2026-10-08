@@ -43,5 +43,5 @@ export const info: Translation<typeof en> = {
   "info.featuresIntro": "Todo lo que obtienes con una sola cuenta.",
   "info.howIntro": "Del registro a compartir tu trabajo, en cinco pasos.",
   "info.languagesTitle": "En tu idioma",
-  "info.languagesText": "Usa todo el sitio en inglés, español o árabe (que se lee de derecha a izquierda, con cada página en espejo). Empieza en el idioma de tu navegador, puedes cambiarlo desde el pie de cualquier página y se recuerda tu elección. Los correos que te envía el sitio también llegan en ese idioma.",
+  "info.languagesText": "Usa todo el sitio en inglés, español o árabe (que se lee de derecha a izquierda, con cada página en espejo). Empieza en el idioma de tu navegador, puedes cambiarlo desde el pie de cualquier página y se recuerda tu elección. Los correos, las notificaciones del teléfono y los textos escritos con IA que el sitio te prepara también llegan en ese idioma.",
 };

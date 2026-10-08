@@ -752,7 +752,7 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 1104 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 1135 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
@@ -948,4 +948,4 @@ logical start/end forms (`ms-`, `pe-`, `text-start`, `border-s`, `start-0`…) s
 by itself, a unit test fails the build if a left/right form is written again, arrows turn
 (`.rtl-flip`), usernames are isolated (`<bdi>`) so the `@` stays in front, and what people write
 (posts, comments, messages) picks its own direction (`dir="auto"`) so an English sentence inside
-an Arabic page still reads correctly. **Emails** follow the person's language too: the page sends its language when someone signs up, and again whenever it differs from the account's (`language` on the user, checked against the same fixed list), and the server composes every email (`utils/emailText.js`: confirmations, resets, email changes, passkey and two-step notices, new-device alerts) in that language; the language of a reset email comes from the stored account, never from the request, so nobody else can pick it.
+an Arabic page still reads correctly. **Emails** follow the person's language too: the page sends its language when someone signs up, and again whenever it differs from the account's (`language` on the user, checked against the same fixed list), and the server composes every email (`utils/emailText.js`: confirmations, resets, email changes, passkey and two-step notices, new-device alerts) in that language; the language of a reset email comes from the stored account, never from the request, so nobody else can pick it. **Phone notifications** (`utils/pushText.js`, used by `services/push.js`) are worded in the *recipient's* language, never the sender's, and **AI-written captions and bios** are asked for in the requester's stored language (`services/ai`; the built-in test provider has Spanish and Arabic templates).
