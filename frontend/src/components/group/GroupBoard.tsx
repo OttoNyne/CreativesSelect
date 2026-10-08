@@ -328,7 +328,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
           {editingTopic ? (
             <EditBox title={topic.title} maxTitle={MAX_TOPIC_TITLE} text={topic.body} maxText={MAX_TOPIC_BODY} label={t("groups.editTopic")} onSave={saveTopic} onCancel={() => setEditingTopic(false)} />
           ) : (
-            <p className="mt-3 whitespace-pre-line break-words text-sm text-white/90">{topic.body}</p>
+            <p dir="auto" className="mt-3 whitespace-pre-line break-words text-sm text-white/90">{topic.body}</p>
           )}
           <div className="mt-3 flex gap-2">
             {topic.mine && !editingTopic && (
@@ -385,7 +385,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
                 {editingReply === r.id ? (
                   <EditBox text={r.body} maxText={MAX_REPLY_BODY} label={t("groups.editReply")} rows={3} onSave={({ text }) => saveReply(r, text)} onCancel={() => setEditingReply(null)} />
                 ) : (
-                  <p className="mt-1 whitespace-pre-line break-words text-sm text-white/90">
+                  <p dir="auto" className="mt-1 whitespace-pre-line break-words text-sm text-white/90">
                     {r.body} <EditedMark editedAt={r.editedAt} />
                   </p>
                 )}

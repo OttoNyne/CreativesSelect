@@ -25,7 +25,7 @@ export const groups: Translation<typeof en> = {
   "groups.couldntDeleteThatReply": "تعذّر حذف هذا الرد.",
   "groups.couldntChangeThat": "تعذّر تغيير ذلك.",
   "groups.topic": "الموضوع",
-  "groups.backToTheBoard": "← العودة إلى اللوحة",
+  "groups.backToTheBoard": "→ العودة إلى اللوحة",
   "groups.thisTopicIsntAvailable": "هذا الموضوع غير متاح. ربما حُذف.",
   "groups.couldntLoadThisTopic": "تعذّر تحميل هذا الموضوع. حاول مرة أخرى.",
   "groups.editTopic": "تعديل الموضوع",

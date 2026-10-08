@@ -139,7 +139,7 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
                       </button>
                     )}
                   </div>
-                  <p className="whitespace-pre-wrap break-words text-sm text-white">{m.body}</p>
+                  <p dir="auto" className="whitespace-pre-wrap break-words text-sm text-white">{m.body}</p>
                 </div>
               </div>
             ))}

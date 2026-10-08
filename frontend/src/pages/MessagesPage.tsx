@@ -60,7 +60,7 @@ function ConversationList({ conversations, active }: { conversations: Conversati
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-white">{c.user.displayName}</span>
               <ActivityBadge activity={c.user.activity} className="text-white/60" />
-              <span className="block truncate text-xs text-white/60">
+              <span dir="auto" className="block truncate text-xs text-white/60">
                 {c.lastMessage ? (c.lastMessage.mine ? t("messages.youPrefix", { body: c.lastMessage.body }) : c.lastMessage.body) : t("messages.noMessages")}
               </span>
             </span>

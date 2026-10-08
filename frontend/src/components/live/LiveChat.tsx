@@ -97,7 +97,7 @@ export function LiveChat({
         {comments.map((c) => (
           <div key={c.id} className="flex items-start gap-2 text-sm">
             {c.user && <Avatar username={c.user.username} displayName={c.user.displayName} avatarUrl={c.user.avatarUrl} size={24} />}
-            <p className="min-w-0 flex-1 break-words text-white">
+            <p dir="auto" className="min-w-0 flex-1 break-words text-white">
               {c.user ? (
                 <Link to={`/u/${c.user.username}`} className="me-1.5 font-medium text-white/70 hover:underline">
                   {c.mine ? t("groups.you") : c.user.displayName}

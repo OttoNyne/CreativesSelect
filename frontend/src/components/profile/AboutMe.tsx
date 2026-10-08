@@ -72,7 +72,7 @@ export function AboutMe({ username, isOwner }: { username: string; isOwner: bool
           {ABOUT_FIELDS.filter((f) => data.about[f]).map((f) => (
             <div key={f}>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-white/60">{ABOUT_LABELS[f]}</h3>
-              <p className="mt-0.5 whitespace-pre-line break-words text-sm text-white/80">{data.about[f]}</p>
+              <p dir="auto" className="mt-0.5 whitespace-pre-line break-words text-sm text-white/80">{data.about[f]}</p>
             </div>
           ))}
         </div>

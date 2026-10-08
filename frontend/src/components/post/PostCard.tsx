@@ -76,7 +76,7 @@ export function PostCard({
           </Link>
           <CSBadge verified={post.author.csVerified} size={14} className="ms-1" />
           <div className="text-xs text-white/60">
-            @{post.author.username} · {shortAgo(post.createdAt)}
+            <bdi>@{post.author.username}</bdi> · {shortAgo(post.createdAt)}
           </div>
         </div>
       </div>
@@ -84,7 +84,7 @@ export function PostCard({
       {editing ? (
         <EditBox text={content} maxText={MAX_POST} label={t("post.editLabel")} onSave={({ text }) => saveEdit(text)} onCancel={() => setEditing(false)} />
       ) : (
-        <p className="mt-3 whitespace-pre-wrap break-words text-sm text-white/90">
+        <p dir="auto" className="mt-3 whitespace-pre-wrap break-words text-sm text-white/90">
           {content} <EditedMark editedAt={editedAt} />
         </p>
       )}

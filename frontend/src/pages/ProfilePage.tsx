@@ -249,7 +249,7 @@ export function ProfilePage() {
             <h1 className="break-words text-2xl font-bold">{profile.displayName}</h1>
             <CSBadge verified={profile.csVerified} size={22} withLabel />
           </div>
-          <p className="text-sm text-[var(--profile-muted)]">@{profile.username}</p>
+          <p className="text-sm text-[var(--profile-muted)]"><bdi>@{profile.username}</bdi></p>
           <ActivityBadge activity={profile.activity} className="text-[var(--profile-muted)]" />
           <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
         </div>

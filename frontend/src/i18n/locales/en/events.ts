@@ -33,7 +33,6 @@ export const events = {
   "events.planAnEvent": "Plan an event",
   "events.whichEvents": "Which events",
   "events.showMoreEvents": "Show more events",
-  "events.livePage": "Live page",
   "events.couldntLoadTheGuest": "Couldn't load the guest list.",
   "events.couldntLoadMore": "Couldn't load more.",
   "events.nobodyYet": "Nobody yet.",

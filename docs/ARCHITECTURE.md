@@ -530,7 +530,7 @@ What is sent, and when: every notification (the bell) is made with `Notification
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (266 tests × 3 browsers, 798 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (273 tests × 3 browsers, 819 runs — three phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -756,7 +756,7 @@ rather than adding input validation to each route individually.
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 1483 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 1519 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,
@@ -924,3 +924,28 @@ build `app.js`'s `cors()` middleware — which reads `process.env.CLIENT_URL`
 once — *before* `loadEnv()` runs. `server.js` uses `await import("./app.js")`
 after `loadEnv()` specifically to avoid that ordering bug (found and fixed
 this week — see the security review).
+
+**Languages: English, Spanish and Arabic, with the page mirrored for Arabic.** The site's text
+lives in catalogs under `src/i18n/locales/` (one file per part of the site in `en/`, `es/` and
+`ar/`), and a component asks for it with `t("area.key")` (`src/i18n/index.ts`), or `tRich(...)`
+(`i18n/rich.tsx`) when a sentence holds a link or bold words, so each language can put the pieces
+in its own order. English is the source: the Spanish and Arabic files are typed against it
+(`Translation<typeof en>`), so a missing key stops the build, and a text that isn't translated yet
+falls back to English instead of showing a key. The language is chosen once, when the page loads
+(what the person picked in the footer, else the first language their browser asks for that the
+site has), and `main.tsx` waits for that language's catalog before drawing anything, so the page
+never flashes in one language and then another; changing it reloads the page, which keeps every
+text, date and number in one language without each component having to notice. The Spanish and
+Arabic catalogs are loaded only when used (dynamic `import()`), so English visitors download
+nothing extra.
+Details that need more than a lookup: **plurals** use `Intl.PluralRules` (Spanish has one/other,
+Arabic six forms, so a plural is written as an object of forms), **dates and numbers** use the
+page's locale (Arabic with Western digits), and **the server's English error messages** are
+translated on arrival in `api/client.ts` from a table keyed by the server's exact text (messages
+with a number in them are matched by their shape). **Right to left:** `<html lang dir>` is set from
+the language; every margin, padding, border, corner, text alignment and position uses Tailwind's
+logical start/end forms (`ms-`, `pe-`, `text-start`, `border-s`, `start-0`…) so the layout mirrors
+by itself, a unit test fails the build if a left/right form is written again, arrows turn
+(`.rtl-flip`), usernames are isolated (`<bdi>`) so the `@` stays in front, and what people write
+(posts, comments, messages) picks its own direction (`dir="auto"`) so an English sentence inside
+an Arabic page still reads correctly. Emails are still sent in English.

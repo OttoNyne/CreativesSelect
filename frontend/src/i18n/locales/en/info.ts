@@ -36,7 +36,10 @@ export const info = {
   "info.anyoneMakingThingsWhether": "Anyone making things — whether you're posting your first sketch or sharing a finished album. Use it to build a portfolio, find collaborators, get feedback, or just keep up with other creatives.",
   "info.youreInControl": "You're in control",
   "info.profilesCanBePublic": "Profiles can be public or private, you can block or report anyone, and you can delete your account and everything you made at any time. Your email is never shown to other people.",
-  "info.features": "features",
-  "info.howItWorks": "how it works",
   "info.aboutFooter": "CreativesSelect is a student-built capstone project. Explore the <features>features</features> or see <how>how it works</how>.",
+  "info.aboutIntro": "A social platform for painters, musicians, designers, writers and makers to show their work, find each other and collaborate.",
+  "info.featuresIntro": "Everything you get with one account.",
+  "info.howIntro": "From sign-up to sharing your work, in five steps.",
+  "info.languagesTitle": "In your language",
+  "info.languagesText": "Use the whole site in English, Spanish or Arabic (which reads right to left, with every page mirrored to match). It starts in your browser's language, you can change it from the footer on any page, and your choice is remembered. Emails are still sent in English.",
 } as const;

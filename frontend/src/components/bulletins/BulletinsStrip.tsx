@@ -40,7 +40,7 @@ export function BulletinsStrip() {
           {t("bulletinsStrip.new", { count: unread > 99 ? "99+" : unread })}
         </span>
       ) : (
-        <span aria-hidden="true" className="ms-3 shrink-0 text-white/60">
+        <span aria-hidden="true" className="rtl-flip ms-3 shrink-0 text-white/60">
           →
         </span>
       )}

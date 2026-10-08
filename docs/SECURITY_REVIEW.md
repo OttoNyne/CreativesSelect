@@ -1324,6 +1324,16 @@ The backend tests took 40 to 70 minutes on a slow day because they talked to a s
 - **Cheaper hashing in tests, never anywhere else.** `BCRYPT_COST` (4 to 12) lowers the hashing cost, and the tests set it to 4. It is ignored when `NODE_ENV` is `production` and anything outside the range falls back to 12, so a stray setting can't weaken real passwords (tested: production always gives cost 12 whatever is set; the hashes tests make really do start with the low cost and the real ones with 12; and the running tests are confirmed to use the low one).
 - **Not covered:** the browser tests still need a lot of memory (three browsers and a database); on a computer with 6 GB of memory a full local run was too slow to be practical, so CI (three parallel jobs) is where the whole browser suite runs, and local runs are for single specs.
 
+### 5.75 Languages: text that can't become markup, and what the translations never touch
+
+Adding Spanish and Arabic (right to left) touches every screen, so the review looked at what it could open up.
+
+- **Translated text is only ever text.** A sentence with a link or bold words in it (`tRich`) is split into pieces and put back together as React elements; a tag or `{name}` with nothing to fill it is shown as plain text, and nothing is ever inserted as HTML. So a mistake in a translation (or one made on purpose) can break a sentence but can't put a script or a link on the page. The language itself is checked against a fixed list (`detectLanguage`, `setLanguage`) so a stored value such as `<script>` falls back to English, and the catalog file that loads is chosen from that list, never built from the stored text (tested).
+- **What people write is never translated or reordered by the site.** Posts, comments, messages and names are shown as they were written; the page only decides which way they read (`dir="auto"`), and usernames are isolated (`<bdi>`) so a right-to-left page can't swap the `@` and the name around into something that reads as another person.
+- **The server's messages stay the server's.** The page translates an error only by looking up the server's exact English text (or its shape, for ones with a number), and shows anything it doesn't recognise as it came, so a new server message is never lost or garbled. The server still decides what happens; the language is never sent to it and changes no permission or limit.
+- **Mirroring can't hide a control.** Layout uses start/end instead of left/right, and a test fails the build if a physical left/right form is written, so a button can't be pushed off screen in Arabic. Browser tests open every page in Spanish and Arabic and check nothing scrolls sideways and every colour is still readable.
+- **Not covered:** emails (confirmations, resets, sign-in alerts, notices) are still sent in English; the connection details a host can open during a live (technical log lines) and the moderators' own page are only partly translated; and a name or number the server puts inside a sentence is shown as the server wrote it.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

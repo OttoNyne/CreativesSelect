@@ -53,7 +53,7 @@ describe("PostCard", () => {
   it("shows the author (linked to their profile), the handle, how long ago, and the text", () => {
     renderCard(makePost(), "u2");
     expect(screen.getByRole("link", { name: "Ada Lovelace" })).toHaveAttribute("href", "/u/ada");
-    expect(screen.getByText(/@ada · just now/)).toBeInTheDocument();
+    expect(screen.getByText("@ada").parentElement).toHaveTextContent("@ada · just now");
     expect(screen.getByText("Sketching all day")).toBeInTheDocument();
   });
 

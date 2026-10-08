@@ -168,7 +168,7 @@ export function PortfolioTile({
             />
           ) : (
             <p className="flex items-start gap-1.5">
-              {item.caption && <span className="min-w-0 flex-1 break-words">{item.caption}</span>}
+              {item.caption && <span dir="auto" className="min-w-0 flex-1 break-words">{item.caption}</span>}
               {isOwner && onCaption && (
                 <button type="button" onClick={() => setEditingCaption(true)} aria-label={item.caption ? t("media.editCaption") : t("media.addACaption")} className="shrink-0 text-[11px] text-[var(--profile-accent-text)] hover:underline">
                   {item.caption ? t("media.edit") : t("media.addACaption2")}

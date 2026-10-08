@@ -102,7 +102,7 @@ export function BlogEntryPage() {
           </div>
           <div className="mt-5 space-y-4 text-white/90">
             {entry.body.split("\n\n").map((paragraph, i) => (
-              <p key={i} className="whitespace-pre-line break-words leading-relaxed">
+              <p key={i} dir="auto" className="whitespace-pre-line break-words leading-relaxed">
                 {paragraph}
               </p>
             ))}

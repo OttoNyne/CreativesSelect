@@ -35,7 +35,6 @@ export const events: Translation<typeof en> = {
   "events.planAnEvent": "Planear un evento",
   "events.whichEvents": "Qué eventos",
   "events.showMoreEvents": "Mostrar más eventos",
-  "events.livePage": "página En vivo",
   "events.couldntLoadTheGuest": "No se pudo cargar la lista de invitados.",
   "events.couldntLoadMore": "No se pudo cargar más.",
   "events.nobodyYet": "Nadie todavía.",

@@ -44,6 +44,18 @@ function readChoice(): string | null {
 let current: Language = detectLanguage(readChoice(), typeof navigator === "undefined" ? undefined : navigator.languages ?? [navigator.language]);
 let catalog: Partial<Record<Key, Message>> = {};
 let serverCatalog: Record<string, string> = {};
+// Server messages with a value in them ("Titles can be up to {v1} characters") are matched by their shape rather than word for word.
+let serverPatterns: { re: RegExp; names: string[]; text: string }[] = [];
+
+function compileServerPatterns(catalog: Record<string, string>) {
+  return Object.entries(catalog)
+    .filter(([key]) => /\{v\d+\}/.test(key))
+    .map(([key, text]) => ({
+      re: new RegExp("^" + key.replace(/[.*+?^$()|[\]\\]/g, "\\$&").replace(/\{v\d+\}/g, "(.+?)") + "$"),
+      names: [...key.matchAll(/\{(v\d+)\}/g)].map((m) => m[1]),
+      text,
+    }));
+}
 
 export const language = (): Language => current;
 const info = () => LANGUAGES.find((l) => l.code === current)!;
@@ -57,10 +69,12 @@ export async function initI18n(code: Language = current): Promise<void> {
   if (current === "en") {
     catalog = {};
     serverCatalog = {};
+    serverPatterns = [];
   } else {
     const loaded = current === "es" ? await import("./locales/es") : await import("./locales/ar");
     catalog = loaded.messages;
     serverCatalog = loaded.server;
+    serverPatterns = compileServerPatterns(serverCatalog);
   }
   applyDocumentLanguage();
 }
@@ -87,7 +101,13 @@ export function t(key: Key, params?: Params): string {
 
 /** What the server said (always English), in the language in use if we have it. Anything we don't have is shown as it came. */
 export function translateServerMessage(message: string): string {
-  return serverCatalog[message] ?? message;
+  const exact = serverCatalog[message];
+  if (exact !== undefined) return exact;
+  for (const { re, names, text } of serverPatterns) {
+    const match = re.exec(message);
+    if (match) return text.replace(/\{(v\d+)\}/g, (whole, name: string) => match[names.indexOf(name) + 1] ?? whole);
+  }
+  return message;
 }
 
 /** Changes the language and reloads the page, so everything on it changes together. */

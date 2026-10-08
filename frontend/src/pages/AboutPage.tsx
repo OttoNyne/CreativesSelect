@@ -7,7 +7,7 @@ export function AboutPage() {
   return (
     <InfoPage
       title={t("info.aboutCreativesselect")}
-      intro="A social platform for painters, musicians, designers, writers and makers to show their work, find each other and collaborate."
+      intro={t("info.aboutIntro")}
     >
       <div className="space-y-6 text-white/80">
         <section>

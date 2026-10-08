@@ -13,11 +13,12 @@ const FEATURES = [
   { icon: "✨", get title() { return t("info.aiAssistance"); }, get text() { return t("info.optionallyGenerateACaption"); } },
   { icon: "🔒", get title() { return t("info.privacyAndSafety"); }, get text() { return t("info.privateProfilesBlockingReporting"); } },
   { icon: "📱", get title() { return t("info.worksOnYourPhone"); }, get text() { return t("info.useItInAny"); } },
+  { icon: "🌍", get title() { return t("info.languagesTitle"); }, get text() { return t("info.languagesText"); } },
 ];
 
 export function FeaturesPage() {
   return (
-    <InfoPage title={t("footer.features")} intro="Everything you get with one account.">
+    <InfoPage title={t("footer.features")} intro={t("info.featuresIntro")}>
       <ul className="grid gap-3 sm:grid-cols-2">
         {FEATURES.map((f) => (
           <li key={f.title} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">

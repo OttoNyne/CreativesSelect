@@ -115,7 +115,7 @@ export function TasksPage() {
               <span className="text-xs text-white/60">{shortAgo(item.createdAt)}</span>
             </div>
             <div className="font-medium text-white">{item.title}</div>
-            {item.description && <p className="whitespace-pre-wrap text-sm text-white/70">{item.description}</p>}
+            {item.description && <p dir="auto" className="whitespace-pre-wrap text-sm text-white/70">{item.description}</p>}
             {offered.has(item._id) ? (
               <button
                 type="button"
@@ -218,7 +218,7 @@ export function TasksPage() {
                 {task.isPublic ? t("events.public") : t("misc.onlyMe")}
               </span>
             </div>
-            {task.description && <p className="whitespace-pre-wrap text-sm text-white/60">{task.description}</p>}
+            {task.description && <p dir="auto" className="whitespace-pre-wrap text-sm text-white/60">{task.description}</p>}
             <div className="flex gap-3 text-xs">
               <button
                 type="button"

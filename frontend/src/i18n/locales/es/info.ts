@@ -38,7 +38,10 @@ export const info: Translation<typeof en> = {
   "info.anyoneMakingThingsWhether": "Para cualquiera que cree cosas, tanto si publicas tu primer boceto como si compartes un álbum terminado. Úsalo para crear un portafolio, encontrar colaboradores, recibir comentarios o simplemente estar al día con otros creativos.",
   "info.youreInControl": "Tú tienes el control",
   "info.profilesCanBePublic": "Los perfiles pueden ser públicos o privados, puedes bloquear o denunciar a cualquiera y puedes eliminar tu cuenta y todo lo que has creado en cualquier momento. Tu correo nunca se muestra a otras personas.",
-  "info.features": "funciones",
-  "info.howItWorks": "cómo funciona",
   "info.aboutFooter": "CreativesSelect es un proyecto final de estudios creado por estudiantes. Explora las <features>funciones</features> o mira <how>cómo funciona</how>.",
+  "info.aboutIntro": "Una plataforma social para pintores, músicos, diseñadores, escritores y creadores donde mostrar su trabajo, encontrarse y colaborar.",
+  "info.featuresIntro": "Todo lo que obtienes con una sola cuenta.",
+  "info.howIntro": "Del registro a compartir tu trabajo, en cinco pasos.",
+  "info.languagesTitle": "En tu idioma",
+  "info.languagesText": "Usa todo el sitio en inglés, español o árabe (que se lee de derecha a izquierda, con cada página en espejo). Empieza en el idioma de tu navegador, puedes cambiarlo desde el pie de cualquier página y se recuerda tu elección. Los correos siguen enviándose en inglés.",
 };

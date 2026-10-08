@@ -26,5 +26,4 @@ export const common: Translation<typeof en> = {
   "common.tryAgain": "Inténtalo de nuevo",
   "common.saveChangeFailed": "No se pudo guardar ese cambio.",
   "common.someone": "Alguien",
-  "common.you": "tú",
 };

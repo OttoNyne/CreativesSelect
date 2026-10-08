@@ -145,7 +145,7 @@ export function ProfileComments({ username }: { username: string }) {
                 <EditBox text={c.content} maxText={MAX_COMMENT} label={t("profile.editTestimonial")} rows={3} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
               ) : (
                 <>
-                  <p className="whitespace-pre-line break-words text-white/70">
+                  <p dir="auto" className="whitespace-pre-line break-words text-white/70">
                     {c.content && <Linkified text={c.content} />} <EditedMark editedAt={c.editedAt} />
                   </p>
                   {c.imageUrl && <CommentPicture url={c.imageUrl} />}

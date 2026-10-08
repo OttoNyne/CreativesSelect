@@ -297,7 +297,7 @@ export function NotificationBell() {
                     );
                   })()}
                   {n.type === "help_offer" && typeof n.payload.message === "string" && (
-                    <p className="mt-1 whitespace-pre-wrap rounded bg-white/5 px-2 py-1 text-xs italic text-white/70">
+                    <p dir="auto" className="mt-1 whitespace-pre-wrap rounded bg-white/5 px-2 py-1 text-xs italic text-white/70">
                       “{n.payload.message}”
                     </p>
                   )}

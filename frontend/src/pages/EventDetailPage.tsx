@@ -197,7 +197,7 @@ export function EventDetailPage() {
             </div>
           </dl>
 
-          {event.description && <p className="whitespace-pre-line break-words text-sm text-white/80">{event.description}</p>}
+          {event.description && <p dir="auto" className="whitespace-pre-line break-words text-sm text-white/80">{event.description}</p>}
           {over && <p className="text-sm text-amber-300">{t("events.thisEventIsOver")}</p>}
 
           <div className="flex flex-wrap items-center gap-3 border-t border-white/5 pt-3">

@@ -11,7 +11,7 @@ const STEPS = [
 
 export function HowItWorksPage() {
   return (
-    <InfoPage title={t("footer.howItWorks")} intro="From sign-up to sharing your work, in five steps.">
+    <InfoPage title={t("footer.howItWorks")} intro={t("info.howIntro")}>
       <ol className="space-y-3">
         {STEPS.map((s, i) => (
           <li key={s.title} className="flex gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">

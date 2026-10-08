@@ -76,11 +76,11 @@ function CaseCard({ item, onDone }: { item: ModerationCase; onDone: (item: Moder
               <Link to={`/u/${item.target.author.username}`} className="font-medium hover:underline">
                 {item.target.author.displayName}
               </Link>
-              <span className="text-white/60">@{item.target.author.username}</span>
+              <span className="text-white/60"><bdi>@{item.target.author.username}</bdi></span>
             </div>
           )}
           {item.target.title && <p className="mt-2 font-medium text-white">{item.target.title}</p>}
-          {item.target.text && <p className="mt-1 whitespace-pre-line break-words text-sm text-white/85">{item.target.text}</p>}
+          {item.target.text && <p dir="auto" className="mt-1 whitespace-pre-line break-words text-sm text-white/85">{item.target.text}</p>}
           {item.target.image && <p className="mt-1 break-all text-xs text-white/60">{t("misc.picture")} {item.target.image}</p>}
           {item.target.link && (
             <Link to={item.target.link} className="mt-2 inline-block text-xs text-violet-300 hover:underline">
@@ -302,7 +302,7 @@ export function ModerationPage() {
                     <Link to={`/u/${v.user.username}`} className="hover:underline">
                       {v.user.displayName}
                     </Link>
-                    <CSBadge verified size={14} className="ms-1" /> <span className="font-normal text-white/60">@{v.user.username}</span>
+                    <CSBadge verified size={14} className="ms-1" /> <span className="font-normal text-white/60"><bdi>@{v.user.username}</bdi></span>
                   </p>
                   <p className="text-xs text-white/60">{t("misc.given", { day: formatDay(v.givenAt) })}</p>
                 </div>
@@ -323,7 +323,7 @@ export function ModerationPage() {
               <Avatar username={s.user.username} displayName={s.user.displayName} avatarUrl={s.user.avatarUrl} size={32} />
               <div className="min-w-0 flex-1 text-sm">
                 <p className="font-medium text-white">
-                  {s.user.displayName} <span className="font-normal text-white/60">@{s.user.username}</span>
+                  {s.user.displayName} <span className="font-normal text-white/60"><bdi>@{s.user.username}</bdi></span>
                 </p>
                 <p className="text-xs text-white/60">
                   {t("misc.suspendedOn", { day: formatDay(s.suspendedAt) })}

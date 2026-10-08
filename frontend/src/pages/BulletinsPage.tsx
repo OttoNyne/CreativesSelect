@@ -150,7 +150,7 @@ export function BulletinsPage() {
                   <h2 className="mt-2 font-semibold text-white">
                     {b.title} <EditedMark editedAt={b.editedAt} />
                   </h2>
-                  <p className="mt-1 whitespace-pre-line break-words text-sm text-white/85">{b.body}</p>
+                  <p dir="auto" className="mt-1 whitespace-pre-line break-words text-sm text-white/85">{b.body}</p>
                 </>
               )}
               <div className="mt-3 flex gap-2">

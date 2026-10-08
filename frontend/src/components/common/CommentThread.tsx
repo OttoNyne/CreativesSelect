@@ -159,7 +159,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
                   <span className="font-medium text-white/90">{c.author.displayName}</span>
                   <CSBadge verified={c.author.csVerified} size={12} className="ms-0.5" />{" "}
                   {c.content && (
-                    <span className="whitespace-pre-line break-words text-white/70">
+                    <span dir="auto" className="whitespace-pre-line break-words text-white/70">
                       <Linkified text={c.content} />
                     </span>
                   )}{" "}
@@ -204,6 +204,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
         <form onSubmit={handleSubmit} className="space-y-1 pt-1">
           <div className="flex gap-2">
             <input
+              dir="auto"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               maxLength={MAX_COMMENT}

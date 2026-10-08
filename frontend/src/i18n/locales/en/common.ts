@@ -24,5 +24,4 @@ export const common = {
   "common.tryAgain": "Try again",
   "common.saveChangeFailed": "Couldn't save that change.",
   "common.someone": "Someone",
-  "common.you": "you",
 } as const;
