@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { messagesApi, MESSAGES_CHANGED_EVENT } from "../../api/messages.api";
 import { useLiveRefresh } from "../../lib/liveUpdates";
+import { t } from "../../i18n";
 
 const POLL_INTERVAL_MS = 30_000;
 // While the live connection is up the server says when a message arrives, so the timer is only a safety net.
@@ -30,10 +31,10 @@ export function MessagesLink({ className, onClick }: { className?: string; onCli
 
   return (
     <Link to="/messages" className={className} onClick={onClick}>
-      Messages
+      {t("messages.title")}
       {unread > 0 && (
         <span
-          aria-label={`${unread} unread`}
+          aria-label={t("messages.unreadAria", { count: unread })}
           className="ms-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-violet-600 px-1.5 text-[11px] font-semibold leading-5 text-white"
         >
           {unread > 99 ? "99+" : unread}

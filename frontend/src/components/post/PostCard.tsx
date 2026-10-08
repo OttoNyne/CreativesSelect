@@ -13,18 +13,11 @@ import { postsApi } from "../../api/posts.api";
 import { ApiError } from "../../api/client";
 import { EditBox } from "../common/EditBox";
 import { EditedMark } from "../common/EditedMark";
+import { t } from "../../i18n";
+import { shortAgo } from "../../lib/when";
 
 const MAX_POST = 5000;
 
-function timeAgo(iso: string): string {
-  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 export function PostCard({
   post,
@@ -57,7 +50,7 @@ export function PostCard({
       setEditing(false);
       return null;
     } catch (err) {
-      return err instanceof ApiError ? err.message : "Couldn't save that change.";
+      return err instanceof ApiError ? err.message : t("common.saveChangeFailed");
     }
   }
 
@@ -67,7 +60,7 @@ export function PostCard({
       const result = await postsApi.react(post.id, emoji);
       setReactions(result.reactions);
     } catch (err) {
-      setReactError(err instanceof ApiError ? err.message : "Couldn't save your reaction.");
+      setReactError(err instanceof ApiError ? err.message : t("post.reactFailed"));
     }
   }
 
@@ -83,13 +76,13 @@ export function PostCard({
           </Link>
           <CSBadge verified={post.author.csVerified} size={14} className="ms-1" />
           <div className="text-xs text-white/60">
-            @{post.author.username} · {timeAgo(post.createdAt)}
+            @{post.author.username} · {shortAgo(post.createdAt)}
           </div>
         </div>
       </div>
 
       {editing ? (
-        <EditBox text={content} maxText={MAX_POST} label="Edit post" onSave={({ text }) => saveEdit(text)} onCancel={() => setEditing(false)} />
+        <EditBox text={content} maxText={MAX_POST} label={t("post.editLabel")} onSave={({ text }) => saveEdit(text)} onCancel={() => setEditing(false)} />
       ) : (
         <p className="mt-3 whitespace-pre-wrap break-words text-sm text-white/90">
           {content} <EditedMark editedAt={editedAt} />
@@ -115,19 +108,19 @@ export function PostCard({
         <div className="mt-2 flex gap-1.5">
           {post.isAiText && (
             <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium text-violet-300">
-              ✨ AI-assisted text
+              {t("post.aiText")}
             </span>
           )}
           {post.isAiImage && (
             <span className="rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-[10px] font-medium text-fuchsia-300">
-              🖼️ AI-generated image
+              {t("post.aiImage")}
             </span>
           )}
         </div>
       )}
 
       <div className="mt-3 border-t border-white/5 pt-2">
-        <ReactionBar summary={reactions} canReact={Boolean(user)} onReact={react} label="Reactions to this post" />
+        <ReactionBar summary={reactions} canReact={Boolean(user)} onReact={react} label={t("post.reactions")} />
         {reactError && (
           <p role="alert" className="mt-1 text-xs text-red-400">
             {reactError}
@@ -137,16 +130,16 @@ export function PostCard({
 
       <div className="mt-2 flex items-center gap-4 text-xs text-white/60">
         <button onClick={() => setShowComments((s) => !s)} className="hover:text-white">
-          💬 {commentCount} comment{commentCount === 1 ? "" : "s"}
+          {t("post.comments", { n: commentCount })}
         </button>
         {isOwner && !editing && (
           <button onClick={() => setEditing(true)} className="ms-auto hover:text-white">
-            Edit
+            {t("common.edit")}
           </button>
         )}
         {onDeleted && isOwner && (
           <button onClick={() => onDeleted(post.id)} className={isOwner && !editing ? "hover:text-red-400" : "ms-auto hover:text-red-400"}>
-            Delete
+            {t("common.delete")}
           </button>
         )}
       </div>

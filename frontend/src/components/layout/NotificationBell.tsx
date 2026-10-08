@@ -10,86 +10,93 @@ import { formatWhen } from "../../lib/when";
 import { REACTIONS } from "../../lib/reactions";
 import { useLiveRefresh } from "../../lib/liveUpdates";
 import type { Notification } from "../../types";
+import { t, locale, type Key } from "../../i18n";
+import { shortAgo } from "../../lib/when";
 
 const POLL_INTERVAL_MS = 30_000;
 // While the live connection is up the server says when something new arrives, so the timer is only a safety net.
 const SLOW_POLL_INTERVAL_MS = 300_000;
 
-function timeAgo(iso: string): string {
-  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+// What the server calls the kinds of thing a moderator can remove, and the text for each.
+const REMOVED_WHAT: Record<string, Key> = {
+  post: "notif.what.post",
+  comment: "notif.what.comment",
+  testimonial: "notif.what.testimonial",
+  "comment on a portfolio piece": "notif.what.mediaComment",
+  "comment on a blog entry": "notif.what.blogComment",
+  event: "notif.what.event",
+  "blog entry": "notif.what.blogEntry",
+  bulletin: "notif.what.bulletin",
+  "group topic": "notif.what.groupTopic",
+  "group reply": "notif.what.groupReply",
+  content: "notif.what.content",
+};
+const CHANGED_WHAT: Record<string, Key> = { time: "notif.change.time", place: "notif.change.place", link: "notif.change.link" };
 
 function describe(n: Notification): string {
+  const title = typeof n.payload.title === "string" ? n.payload.title : null;
+  const startsAt = typeof n.payload.startsAt === "string" ? n.payload.startsAt : null;
   switch (n.type) {
     case "friend_request":
-      if (n.friendshipStatus === "accepted") return "sent you a friend request — accepted";
-      if (n.friendshipStatus === "declined") return "sent you a friend request — declined";
-      return "sent you a friend request";
+      if (n.friendshipStatus === "accepted") return t("notif.friendRequestAccepted");
+      if (n.friendshipStatus === "declined") return t("notif.friendRequestDeclined");
+      return t("notif.friendRequest");
     case "friend_accept":
-      return "accepted your friend request";
+      return t("notif.friendAccept");
     case "comment":
-      return "commented on your post";
+      return t("notif.comment");
     case "profile_comment":
-      return "left a comment on your profile";
+      return t("notif.profileComment");
     case "media_comment":
-      return "commented on your portfolio";
+      return t("notif.mediaComment");
     case "blog_comment":
-      return typeof n.payload.title === "string" ? `commented on your blog entry "${n.payload.title}"` : "commented on your blog entry";
+      return title !== null ? t("notif.blogCommentTitled", { title }) : t("notif.blogComment");
     case "friend_birthday":
-      return "has a birthday today 🎂";
+      return t("notif.birthday");
     case "reaction": {
       const mark = REACTIONS.find((r) => r.key === n.payload.emoji)?.emoji ?? "";
-      return n.payload.targetType === "post" ? `reacted ${mark} to your post` : `reacted ${mark} to your portfolio`;
+      return n.payload.targetType === "post" ? t("notif.reactedPost", { mark }) : t("notif.reactedPortfolio", { mark });
     }
     case "cs_verified":
-      return n.payload.reason === "friends" ? "— you're now CSverified: you have 1,000 active friends." : "— you're now CSverified: an administrator gave you the badge.";
+      return n.payload.reason === "friends" ? t("notif.verifiedFriends") : t("notif.verifiedAdmin");
     case "event_created":
-      return typeof n.payload.title === "string" && typeof n.payload.startsAt === "string" ? `is planning an event: "${n.payload.title}", ${formatWhen(n.payload.startsAt)}` : "is planning an event";
+      return title !== null && startsAt !== null ? t("notif.eventCreatedFull", { title, when: formatWhen(startsAt) }) : t("notif.eventCreated");
     case "event_updated": {
       const changed = Array.isArray(n.payload.changed) ? n.payload.changed.filter((c): c is string => typeof c === "string") : [];
-      const what = changed.length ? ` — the ${changed.join(" and ")} changed` : " — it changed";
-      return typeof n.payload.title === "string" ? `changed an event you answered: "${n.payload.title}"${what}` : `changed an event you answered${what}`;
+      const list = new Intl.ListFormat(locale(), { type: "conjunction" }).format(changed.map((c) => (CHANGED_WHAT[c] ? t(CHANGED_WHAT[c]) : c)));
+      const what = changed.length ? t("notif.eventChangedList", { list }) : t("notif.eventChanged");
+      return title !== null ? t("notif.eventUpdatedTitled", { title, what }) : t("notif.eventUpdated", { what });
     }
     case "event_cancelled":
-      return typeof n.payload.title === "string" ? `cancelled an event: "${n.payload.title}"` : "cancelled an event";
+      return title !== null ? t("notif.eventCancelledTitled", { title }) : t("notif.eventCancelled");
     case "event_reminder":
-      return n.payload.own === true ? `— your event "${String(n.payload.title ?? "")}" starts soon` : `has an event starting soon: "${String(n.payload.title ?? "")}"`;
+      return n.payload.own === true ? t("notif.eventReminderOwn", { title: String(n.payload.title ?? "") }) : t("notif.eventReminder", { title: String(n.payload.title ?? "") });
     case "help_accepted":
-      return typeof n.payload.title === "string"
-        ? `accepted your offer to help with "${n.payload.title}"`
-        : "accepted your offer to help";
+      return title !== null ? t("notif.helpAcceptedTitled", { title }) : t("notif.helpAccepted");
     case "message": {
       const count = typeof n.payload.count === "number" ? n.payload.count : 1;
-      return count > 1 ? `sent you ${count} messages` : "sent you a message";
+      return t("notif.messages", { n: count });
     }
     case "live_started":
-      return typeof n.payload.title === "string" ? `is live now: "${n.payload.title}"` : "is live now";
+      return title !== null ? t("notif.liveStartedTitled", { title }) : t("notif.liveStarted");
     case "report_resolved":
-      return n.payload.outcome === "action_taken" ? "— a moderator looked at your report and took action. Thank you." : "— a moderator looked at your report and found nothing to act on. Thank you.";
-    case "content_removed":
-      return `— a moderator removed your ${typeof n.payload.what === "string" ? n.payload.what : "content"} for breaking the site's rules`;
+      return n.payload.outcome === "action_taken" ? t("notif.reportActioned") : t("notif.reportNothing");
+    case "content_removed": {
+      const what = typeof n.payload.what === "string" ? n.payload.what : "content";
+      return t("notif.removed", { what: REMOVED_WHAT[what] ? t(REMOVED_WHAT[what]) : what });
+    }
     case "invite_joined":
-      return "joined with your invite link — you're friends";
+      return t("notif.inviteJoined");
     case "blog_post":
-      return typeof n.payload.title === "string" ? `wrote a blog entry: "${n.payload.title}"` : "wrote a blog entry";
+      return title !== null ? t("notif.blogPostTitled", { title }) : t("notif.blogPost");
     case "live_scheduled":
-      return typeof n.payload.title === "string" && typeof n.payload.startsAt === "string"
-        ? `scheduled a live: "${n.payload.title}", ${formatWhen(n.payload.startsAt)}`
-        : "scheduled a live";
+      return title !== null && startsAt !== null ? t("notif.liveScheduledFull", { title, when: formatWhen(startsAt) }) : t("notif.liveScheduled");
     case "live_reminder":
-      return n.payload.own === true ? `— your live "${String(n.payload.title ?? "")}" starts soon` : `has a live starting soon: "${String(n.payload.title ?? "")}"`;
+      return n.payload.own === true ? t("notif.liveReminderOwn", { title: String(n.payload.title ?? "") }) : t("notif.liveReminder", { title: String(n.payload.title ?? "") });
     case "help_offer":
-      return typeof n.payload.title === "string"
-        ? `offered to help with "${n.payload.title}"`
-        : "offered to help with your request";
+      return title !== null ? t("notif.helpOfferTitled", { title }) : t("notif.helpOffer");
     default:
-      return "sent you a notification";
+      return t("notif.default");
   }
 }
 
@@ -180,7 +187,7 @@ export function NotificationBell() {
       setNotifications((ns) => ns.filter((item) => item.id !== n.id));
       await notificationsApi.markRead(n.id);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't accept that request.");
+      alert(err instanceof ApiError ? err.message : t("friends.acceptFailed"));
     }
   }
 
@@ -191,7 +198,7 @@ export function NotificationBell() {
         ns.map((item) => (item.id === n.id ? { ...item, isRead: true, payload: { ...item.payload, accepted: true } } : item))
       );
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't accept that offer.");
+      alert(err instanceof ApiError ? err.message : t("notif.acceptOfferFailed"));
     }
   }
 
@@ -203,7 +210,7 @@ export function NotificationBell() {
       setNotifications((ns) => ns.filter((item) => item.id !== n.id));
       await notificationsApi.markRead(n.id);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Couldn't decline that request.");
+      alert(err instanceof ApiError ? err.message : t("friends.declineFailed"));
     }
   }
 
@@ -212,7 +219,7 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative rounded-md p-1.5 text-white/70 hover:bg-white/10 hover:text-white"
-        aria-label="Notifications"
+        aria-label={t("notif.title")}
       >
         🔔
         {unreadCount > 0 && (
@@ -225,18 +232,18 @@ export function NotificationBell() {
       {open && (
         <div className="absolute end-0 z-30 mt-2 w-80 rounded-lg border border-white/10 bg-[#15151c] shadow-xl">
           <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
-            <span className="text-sm font-semibold text-white">Notifications</span>
+            <span className="text-sm font-semibold text-white">{t("notif.title")}</span>
             {unreadCount > 0 && (
               <button onClick={handleMarkAllRead} className="text-xs text-violet-400 hover:underline">
-                Mark all read
+                {t("notif.markAllRead")}
               </button>
             )}
           </div>
 
           <div className="max-h-96 overflow-y-auto">
-            {loading && <p className="p-3 text-xs text-white/60">Loading…</p>}
+            {loading && <p className="p-3 text-xs text-white/60">{t("common.loading")}</p>}
             {!loading && notifications.length === 0 && (
-              <p className="p-3 text-xs text-white/60">You're all caught up.</p>
+              <p className="p-3 text-xs text-white/60">{t("notif.caughtUp")}</p>
             )}
             {notifications.map((n) => (
               <div
@@ -264,7 +271,7 @@ export function NotificationBell() {
                         {n.actor.displayName}
                       </Link>
                     ) : (
-                      <span className="font-medium text-white">Someone</span>
+                      <span className="font-medium text-white">{t("common.someone")}</span>
                     )}{" "}
                     {describe(n)}
                   </p>
@@ -294,18 +301,18 @@ export function NotificationBell() {
                       “{n.payload.message}”
                     </p>
                   )}
-                  <p className="mt-0.5 text-[10px] text-white/60">{timeAgo(n.createdAt)}</p>
+                  <p className="mt-0.5 text-[10px] text-white/60">{shortAgo(n.createdAt)}</p>
 
                   {n.type === "help_offer" && (
                     <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
                       {n.payload.accepted ? (
-                        <span className="text-[10px] text-emerald-400">Accepted ✓</span>
+                        <span className="text-[10px] text-emerald-400">{t("notif.accepted")}</span>
                       ) : (
                         <button
                           onClick={() => handleAcceptOffer(n)}
                           className="rounded bg-violet-600 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-violet-500"
                         >
-                          Accept offer
+                          {t("notif.acceptOffer")}
                         </button>
                       )}
                     </div>
@@ -317,13 +324,13 @@ export function NotificationBell() {
                         onClick={() => handleAccept(n)}
                         className="rounded bg-violet-600 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-violet-500"
                       >
-                        Accept
+                        {t("friends.accept")}
                       </button>
                       <button
                         onClick={() => handleDecline(n)}
                         className="rounded border border-white/15 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/10"
                       >
-                        Decline
+                        {t("friends.decline")}
                       </button>
                     </div>
                   )}
@@ -332,7 +339,7 @@ export function NotificationBell() {
             ))}
             {hasMore && (
               <button type="button" onClick={showOlder} disabled={loadingMore} className="block w-full border-t border-white/5 px-3 py-2 text-xs text-violet-300 hover:bg-white/5 disabled:opacity-50">
-                {loadingMore ? "Loading…" : "Show older notifications"}
+                {loadingMore ? t("common.loading") : t("notif.showOlder")}
               </button>
             )}
           </div>

@@ -9,6 +9,7 @@ import { Linkified } from "./Linkified";
 import { CommentPicture } from "./CommentPicture";
 import { CommentPicturePicker } from "./CommentPicturePicker";
 import { useAuth } from "../../context/AuthContext";
+import { t } from "../../i18n";
 
 const MAX_COMMENT = 1000;
 
@@ -59,7 +60,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
         setComments(comments);
         setHasMore(Boolean(hasMore));
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Couldn't load the comments."))
+      .catch((err) => setError(err instanceof ApiError ? err.message : t("comments.loadFailed")))
       .finally(() => setLoading(false));
   }, [threadKey]);
 
@@ -79,7 +80,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
       setComments((old) => [...old, ...next.comments.filter((c) => !old.some((o) => o.id === c.id))]);
       setHasMore(Boolean(next.hasMore));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't load more comments.");
+      setError(err instanceof ApiError ? err.message : t("comments.moreFailed"));
     } finally {
       setLoadingMore(false);
     }
@@ -96,7 +97,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
       setDraft("");
       setPicture(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't post that comment.");
+      setError(err instanceof ApiError ? err.message : t("comments.postFailed"));
     }
   }
 
@@ -107,7 +108,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
       setEditing(null);
       return null;
     } catch (err) {
-      return err instanceof ApiError ? err.message : "Couldn't save that change.";
+      return err instanceof ApiError ? err.message : t("common.saveChangeFailed");
     }
   }
 
@@ -118,19 +119,19 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
       const { comment: saved } = await latest.current.removePicture(comment.id);
       setComments((old) => old.map((c) => (c.id === comment.id ? saved : c)));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't take that picture off.");
+      setError(err instanceof ApiError ? err.message : t("comments.pictureOffFailed"));
     }
   }
 
   async function handleRemove(comment: Comment) {
-    if (!latest.current.remove || !window.confirm("Delete this comment?")) return;
+    if (!latest.current.remove || !window.confirm(t("comments.confirmDelete"))) return;
     setError(null);
     try {
       await latest.current.remove(comment.id);
       setComments((old) => old.filter((c) => c.id !== comment.id));
       onCountChange((n) => Math.max(0, n - 1));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't delete that comment.");
+      setError(err instanceof ApiError ? err.message : t("comments.deleteFailed"));
     }
   }
 
@@ -138,8 +139,8 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
 
   return (
     <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
-      {loading && <div className="text-xs text-white/60">Loading comments…</div>}
-      {!loading && comments.length === 0 && !error && <div className="text-xs text-white/60">No comments yet.</div>}
+      {loading && <div className="text-xs text-white/60">{t("comments.loading")}</div>}
+      {!loading && comments.length === 0 && !error && <div className="text-xs text-white/60">{t("comments.none")}</div>}
       {comments.map((c) => {
         const mine = user?.id === c.author.id;
         return (
@@ -152,7 +153,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
             <Avatar username={c.author.username} displayName={c.author.displayName} avatarUrl={c.author.avatarUrl} size={24} />
             <div className="min-w-0 flex-1">
               {editing === c.id ? (
-                <EditBox text={c.content} maxText={MAX_COMMENT} label="Edit comment" rows={2} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
+                <EditBox text={c.content} maxText={MAX_COMMENT} label={t("comments.editLabel")} rows={2} onSave={({ text }) => saveEdit(c.id, text)} onCancel={() => setEditing(null)} />
               ) : (
                 <>
                   <span className="font-medium text-white/90">{c.author.displayName}</span>
@@ -164,23 +165,23 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
                   )}{" "}
                   <EditedMark editedAt={c.editedAt} />
                   {mine && (
-                    <button type="button" onClick={() => setEditing(c.id)} aria-label={`Edit your comment: ${c.content.slice(0, 30)}`} className={`ms-2 ${action}`}>
-                      Edit
+                    <button type="button" onClick={() => setEditing(c.id)} aria-label={t("comments.editAria", { text: c.content.slice(0, 30) })} className={`ms-2 ${action}`}>
+                      {t("common.edit")}
                     </button>
                   )}
                   {remove && (mine || canModerate) && (
-                    <button type="button" onClick={() => handleRemove(c)} aria-label={`Delete comment by ${mine ? "you" : c.author.displayName}`} className={`ms-2 ${action} hover:text-red-400`}>
-                      Delete
+                    <button type="button" onClick={() => handleRemove(c)} aria-label={mine ? t("comments.deleteMineAria") : t("comments.deleteAria", { name: c.author.displayName })} className={`ms-2 ${action} hover:text-red-400`}>
+                      {t("common.delete")}
                     </button>
                   )}
                   {mine && c.imageUrl && removePicture && (
-                    <button type="button" onClick={() => takePictureOff(c)} aria-label={`Remove the picture from your comment: ${c.content.slice(0, 30)}`} className={`ms-2 ${action}`}>
-                      Remove picture
+                    <button type="button" onClick={() => takePictureOff(c)} aria-label={t("comments.removePictureAria", { text: c.content.slice(0, 30) })} className={`ms-2 ${action}`}>
+                      {t("comments.removePicture")}
                     </button>
                   )}
                   {onReport && user && !mine && (
-                    <button type="button" onClick={() => onReport(c)} aria-label={`Report comment by ${c.author.displayName}`} className={`ms-2 ${action}`}>
-                      Report
+                    <button type="button" onClick={() => onReport(c)} aria-label={t("comments.reportAria", { name: c.author.displayName })} className={`ms-2 ${action}`}>
+                      {t("common.report")}
                     </button>
                   )}
                   {c.imageUrl && (
@@ -196,7 +197,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
       })}
       {hasMore && (
         <button type="button" onClick={showMore} disabled={loadingMore} className="text-xs text-[var(--profile-accent-text,#c4b5fd)] hover:underline disabled:opacity-50">
-          {loadingMore ? "Loading…" : "Show more comments"}
+          {loadingMore ? t("common.loading") : t("comments.showMore")}
         </button>
       )}
       {user && (
@@ -206,11 +207,11 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               maxLength={MAX_COMMENT}
-              placeholder="Write a comment…"
+              placeholder={t("comments.placeholder")}
               className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent,#8b5cf6)] focus:outline-none"
             />
             <button type="submit" className="rounded-md bg-[var(--profile-accent-fill,#7c3aed)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent,#ffffff)] hover:opacity-90">
-              Post
+              {t("composer.post")}
             </button>
           </div>
           <CommentPicturePicker url={picture} onChange={setPicture} />

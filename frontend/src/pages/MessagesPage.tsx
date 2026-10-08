@@ -7,6 +7,8 @@ import { Avatar } from "../components/common/Avatar";
 import { ActivityBadge } from "../components/common/ActivityBadge";
 import { EditBox } from "../components/common/EditBox";
 import { EditedMark } from "../components/common/EditedMark";
+import { locale, t } from "../i18n";
+import { tRich } from "../i18n/rich";
 
 // How long after sending a message its sender can still change it (the server enforces this too).
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
@@ -25,19 +27,21 @@ function timeLabel(iso: string): string {
   const d = new Date(iso);
   const sameDay = d.toDateString() === new Date().toDateString();
   return sameDay
-    ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-    : d.toLocaleDateString([], { month: "short", day: "numeric" });
+    ? d.toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" })
+    : d.toLocaleDateString(locale(), { month: "short", day: "numeric" });
 }
 
 function ConversationList({ conversations, active }: { conversations: Conversation[]; active?: string }) {
   if (conversations.length === 0) {
     return (
       <p className="p-4 text-sm text-white/60">
-        You can message your friends.{" "}
-        <Link to="/search" className="text-violet-400 hover:underline">
-          Find creatives
-        </Link>{" "}
-        to add.
+        {tRich("messages.noFriends", {
+          find: (c) => (
+            <Link to="/search" className="text-violet-400 hover:underline">
+              {c}
+            </Link>
+          ),
+        })}
       </p>
     );
   }
@@ -57,12 +61,12 @@ function ConversationList({ conversations, active }: { conversations: Conversati
               <span className="block truncate text-sm font-medium text-white">{c.user.displayName}</span>
               <ActivityBadge activity={c.user.activity} className="text-white/60" />
               <span className="block truncate text-xs text-white/60">
-                {c.lastMessage ? `${c.lastMessage.mine ? "You: " : ""}${c.lastMessage.body}` : "No messages yet"}
+                {c.lastMessage ? (c.lastMessage.mine ? t("messages.youPrefix", { body: c.lastMessage.body }) : c.lastMessage.body) : t("messages.noMessages")}
               </span>
             </span>
             {c.unread > 0 && (
               <span
-                aria-label={`${c.unread} unread`}
+                aria-label={t("messages.unreadAria", { count: c.unread })}
                 className="rounded-full bg-violet-600 px-1.5 text-[11px] font-semibold leading-5 text-white"
               >
                 {c.unread}
@@ -129,7 +133,7 @@ function Thread({ username }: { username: string }) {
         lastSeenId.current = newest;
       } catch (err) {
         if (first) {
-          setError(err instanceof ApiError ? err.message : "Couldn't load this conversation.");
+          setError(err instanceof ApiError ? err.message : t("messages.threadFailed"));
           setState("error");
         }
         // a failed background poll just tries again next time
@@ -165,7 +169,7 @@ function Thread({ username }: { username: string }) {
       setMessages((prev) => [...res.messages, ...prev]);
       setHasMore(res.hasMore);
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't load earlier messages.");
+      setActionError(err instanceof ApiError ? err.message : t("messages.earlierFailed"));
     }
   }
 
@@ -182,7 +186,7 @@ function Thread({ username }: { username: string }) {
       setDraft("");
       announceMessagesChanged();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't send that message.");
+      setActionError(err instanceof ApiError ? err.message : t("messages.sendFailed"));
     } finally {
       setSending(false);
     }
@@ -195,29 +199,29 @@ function Thread({ username }: { username: string }) {
       setEditing(null);
       return null;
     } catch (err) {
-      return err instanceof ApiError ? err.message : "Couldn't save that change.";
+      return err instanceof ApiError ? err.message : t("common.saveChangeFailed");
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Delete this message for both of you?")) return;
+    if (!window.confirm(t("messages.confirmDelete"))) return;
     setActionError(null);
     try {
       await messagesApi.remove(id);
       setMessages((prev) => prev.filter((m) => m.id !== id));
       announceMessagesChanged(); // the list's preview may have been that message
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't delete that message.");
+      setActionError(err instanceof ApiError ? err.message : t("messages.deleteFailed"));
     }
   }
 
-  if (state === "loading") return <div className="p-6 text-center text-white/60">Loading…</div>;
+  if (state === "loading") return <div className="p-6 text-center text-white/60">{t("common.loading")}</div>;
   if (state === "error") {
     return (
       <div className="p-6 text-center">
         <p className="text-red-400">{error}</p>
         <button onClick={() => navigate("/messages")} className="mt-3 text-sm text-violet-400 hover:underline">
-          Back to messages
+          {t("messages.backToMessages")}
         </button>
       </div>
     );
@@ -226,8 +230,10 @@ function Thread({ username }: { username: string }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center gap-3 border-b border-white/10 px-3 py-2">
-        <Link to="/messages" aria-label="Back to conversations" className="text-white/60 hover:text-white md:hidden">
-          ←
+        <Link to="/messages" aria-label={t("messages.backToConversations")} className="text-white/60 hover:text-white md:hidden">
+          <span aria-hidden="true" className="rtl-flip">
+            ←
+          </span>
         </Link>
         {other && <Avatar username={other.username} displayName={other.displayName} avatarUrl={other.avatarUrl} size={32} />}
         <span className="min-w-0">
@@ -241,34 +247,35 @@ function Thread({ username }: { username: string }) {
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">
         {hasMore && (
           <button onClick={loadEarlier} className="mx-auto block text-xs text-violet-400 hover:underline">
-            Load earlier messages
+            {t("messages.loadEarlier")}
           </button>
         )}
-        {messages.length === 0 && <p className="py-8 text-center text-sm text-white/60">No messages yet — say hello.</p>}
+        {messages.length === 0 && <p className="py-8 text-center text-sm text-white/60">{t("messages.empty")}</p>}
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.mine ? "justify-end" : "justify-start"}`}>
             <div
+              dir="auto"
               className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
                 m.mine ? "bg-violet-600 text-white" : "bg-white/10 text-white"
               }`}
             >
               {editing === m.id ? (
-                <EditBox text={m.body} maxText={MAX_MESSAGE_LENGTH} label="Edit message" rows={2} onSave={({ text }) => saveEdit(m.id, text)} onCancel={() => setEditing(null)} />
+                <EditBox text={m.body} maxText={MAX_MESSAGE_LENGTH} label={t("messages.editLabel")} rows={2} onSave={({ text }) => saveEdit(m.id, text)} onCancel={() => setEditing(null)} />
               ) : (
                 m.body
               )}
               <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-white/60">
                 <span>{timeLabel(m.createdAt)}</span>
                 <EditedMark editedAt={m.editedAt} className="text-[10px] text-white/60" />
-                {m.mine && m.readAt && <span>Seen</span>}
+                {m.mine && m.readAt && <span>{t("messages.seen")}</span>}
                 {m.mine && editing !== m.id && Date.now() - new Date(m.createdAt).getTime() < EDIT_WINDOW_MS && (
-                  <button onClick={() => setEditing(m.id)} aria-label="Edit message" className="hover:text-white">
-                    Edit
+                  <button onClick={() => setEditing(m.id)} aria-label={t("messages.editLabel")} className="hover:text-white">
+                    {t("common.edit")}
                   </button>
                 )}
                 {m.mine && (
-                  <button onClick={() => handleDelete(m.id)} aria-label="Delete message" className="hover:text-white">
-                    Delete
+                  <button onClick={() => handleDelete(m.id)} aria-label={t("messages.deleteLabel")} className="hover:text-white">
+                    {t("common.delete")}
                   </button>
                 )}
               </div>
@@ -280,7 +287,7 @@ function Thread({ username }: { username: string }) {
 
       {actionError && <p className="px-3 text-xs text-red-400">{actionError}</p>}
       <p role="status" aria-live="polite" className="min-h-[1.25rem] px-3 text-xs italic text-white/60">
-        {peerTyping ? `${other?.displayName ?? username} is typing…` : ""}
+        {peerTyping ? t("messages.typing", { name: other?.displayName ?? username }) : ""}
       </p>
       <form onSubmit={handleSend} className="flex items-end gap-2 border-t border-white/10 p-3">
         <textarea
@@ -302,8 +309,9 @@ function Thread({ username }: { username: string }) {
           }}
           maxLength={MAX_MESSAGE_LENGTH}
           rows={1}
-          placeholder="Write a message…"
-          aria-label="Message"
+          dir="auto"
+          placeholder={t("messages.placeholder")}
+          aria-label={t("messages.inputLabel")}
           className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <button
@@ -311,7 +319,7 @@ function Thread({ username }: { username: string }) {
           disabled={!draft.trim() || sending}
           className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          {sending ? "Sending…" : "Send"}
+          {sending ? t("common.sending") : t("messages.send")}
         </button>
       </form>
     </div>
@@ -353,18 +361,18 @@ export function MessagesPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <h1 className="mb-3 text-lg font-semibold text-white">Messages</h1>
+      <h1 className="mb-3 text-lg font-semibold text-white">{t("messages.title")}</h1>
       <div className="flex h-[70vh] min-h-[420px] overflow-hidden rounded-xl border border-white/10 bg-black/20">
         <aside className={`${username ? "hidden md:block" : "block"} w-full overflow-y-auto border-white/10 md:w-72 md:border-e`}>
-          {listState === "loading" && <p className="p-4 text-sm text-white/60">Loading…</p>}
-          {listState === "error" && <p className="p-4 text-sm text-red-400">Couldn&apos;t load your conversations.</p>}
+          {listState === "loading" && <p className="p-4 text-sm text-white/60">{t("common.loading")}</p>}
+          {listState === "error" && <p className="p-4 text-sm text-red-400">{t("messages.listFailed")}</p>}
           {listState === "ready" && <ConversationList conversations={conversations} active={username} />}
         </aside>
         <section className={`${username ? "block" : "hidden md:block"} min-w-0 flex-1`}>
           {username ? (
             <Thread key={username} username={username} />
           ) : (
-            <p className="p-8 text-center text-sm text-white/60">Choose a friend to start chatting.</p>
+            <p className="p-8 text-center text-sm text-white/60">{t("messages.choose")}</p>
           )}
         </section>
       </div>

@@ -1,3 +1,4 @@
+import type { Key } from "../i18n";
 // How a post's picture is framed: its shape, how far it is zoomed in, and which part stays in view.
 export type ImageAspect = "original" | "1:1" | "4:3" | "16:9";
 
@@ -13,11 +14,12 @@ export const DEFAULT_FRAMING: ImageFraming = { aspect: "original", zoom: 1, posi
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 3;
 
-export const ASPECT_OPTIONS: { value: ImageAspect; label: string }[] = [
-  { value: "original", label: "Original" },
-  { value: "1:1", label: "Square" },
-  { value: "4:3", label: "4:3" },
-  { value: "16:9", label: "Wide" },
+/** The shapes to choose from; `labelKey` is the name of the text to show for each. */
+export const ASPECT_OPTIONS: { value: ImageAspect; labelKey: Key }[] = [
+  { value: "original", labelKey: "adjust.original" },
+  { value: "1:1", labelKey: "adjust.square" },
+  { value: "4:3", labelKey: "adjust.fourThree" },
+  { value: "16:9", labelKey: "adjust.wide" },
 ];
 
 export const aspectRatioCss = (aspect: ImageAspect) => (aspect === "original" ? undefined : aspect.replace(":", " / "));

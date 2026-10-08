@@ -8,6 +8,7 @@ import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { ThemedPage, hasChosenBackground } from "../components/layout/ThemedPage";
 import type { Post } from "../types";
+import { t } from "../i18n";
 
 export function FeedPage() {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ export function FeedPage() {
         setStatus("ready");
       })
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : "Failed to load your feed.");
+        setError(err instanceof ApiError ? err.message : t("feed.loadFailed"));
         setStatus("error");
       });
   }, []);
@@ -43,7 +44,7 @@ export function FeedPage() {
       setPosts((p) => [...p, ...next.posts.filter((n) => !p.some((o) => o.id === n.id))]);
       setHasMore(Boolean(next.hasMore));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't load older posts.");
+      setActionError(err instanceof ApiError ? err.message : t("feed.olderFailed"));
     } finally {
       setLoadingMore(false);
     }
@@ -55,7 +56,7 @@ export function FeedPage() {
       await postsApi.remove(id);
       setPosts((p) => p.filter((post) => post.id !== id));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't delete that post.");
+      setActionError(err instanceof ApiError ? err.message : t("feed.deleteFailed"));
     }
   }
 
@@ -70,10 +71,10 @@ export function FeedPage() {
       <BulletinsStrip />
       <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} />
 
-      {status === "loading" && <div className="text-center text-white/60">Loading feed…</div>}
+      {status === "loading" && <div className="text-center text-white/60">{t("feed.loading")}</div>}
       {status === "ready" && posts.length === 0 && (
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center text-white/60">
-          No posts yet — add some friends or post something of your own.
+          {t("feed.empty")}
         </div>
       )}
       {posts.map((post) => (
@@ -81,7 +82,7 @@ export function FeedPage() {
       ))}
       {hasMore && (
         <button type="button" onClick={showOlder} disabled={loadingMore} className="w-full rounded-md border border-white/20 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50">
-          {loadingMore ? "Loading…" : "Show older posts"}
+          {loadingMore ? t("common.loading") : t("feed.showOlder")}
         </button>
       )}
     </>

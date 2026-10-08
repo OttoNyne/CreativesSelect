@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { aiApi } from "../../api/ai.api";
 import { ApiError } from "../../api/client";
+import { t } from "../../i18n";
 
 export function GenerateTextButton({
   kind,
   getPrompt,
   onGenerated,
-  label = "Generate with AI",
+  label,
 }: {
   kind: "bio" | "caption" | "blurb";
   getPrompt: () => string;
@@ -24,7 +25,7 @@ export function GenerateTextButton({
       const { text } = await aiApi.generateText(getPrompt(), kind);
       onGenerated(text);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't generate text, try again.");
+      setError(err instanceof ApiError ? err.message : t("ai.textFailed"));
     } finally {
       setLoading(false);
     }
@@ -36,10 +37,10 @@ export function GenerateTextButton({
         type="button"
         onClick={handleClick}
         disabled={loading || isEmpty}
-        title={isEmpty ? "Type something first" : undefined}
+        title={isEmpty ? t("ai.typeFirst") : undefined}
         className="flex items-center gap-1.5 rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/20 disabled:opacity-50"
       >
-        {loading ? "Generating…" : `✨ ${label}`}
+        {loading ? t("ai.generating") : `✨ ${label ?? t("ai.generateText")}`}
       </button>
       {error && <span className="text-xs text-red-400">{error}</span>}
     </div>

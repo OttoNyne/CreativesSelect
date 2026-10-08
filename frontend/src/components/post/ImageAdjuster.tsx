@@ -11,6 +11,7 @@ import {
   parsePosition,
   type ImageFraming,
 } from "../../lib/framing";
+import { t } from "../../i18n";
 
 const slider = "w-full accent-violet-500";
 
@@ -54,8 +55,8 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
         <FramedImage src={src} aspect={value.aspect} zoom={value.zoom} position={value.position} className="rounded-lg" />
       </div>
 
-      <div role="group" aria-label="Picture shape" className="flex flex-wrap items-center gap-1.5">
-        <span className="me-1 text-[11px] uppercase tracking-wide text-white/60">Shape</span>
+      <div role="group" aria-label={t("adjust.shapeGroup")} className="flex flex-wrap items-center gap-1.5">
+        <span className="me-1 text-[11px] uppercase tracking-wide text-white/60">{t("adjust.shape")}</span>
         {ASPECT_OPTIONS.map((o) => (
           <button
             key={o.value}
@@ -66,17 +67,17 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
               value.aspect === o.value ? "border-violet-500 bg-violet-500/20 text-white" : "border-white/15 text-white/70 hover:bg-white/10"
             }`}
           >
-            {o.label}
+            {t(o.labelKey)}
           </button>
         ))}
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
         <label className="block text-[11px] text-white/60">
-          Zoom <span className="text-white/70">{value.zoom.toFixed(2).replace(/\.?0+$/, "")}×</span>
+          {t("adjust.zoom")} <span className="text-white/70">{value.zoom.toFixed(2).replace(/\.?0+$/, "")}×</span>
           <input
             type="range"
-            aria-label="Zoom"
+            aria-label={t("adjust.zoom")}
             min={MIN_ZOOM}
             max={MAX_ZOOM}
             step={0.05}
@@ -86,10 +87,10 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
           />
         </label>
         <label className="block text-[11px] text-white/60">
-          Left – right
+          {t("adjust.leftRight")}
           <input
             type="range"
-            aria-label="Move left or right"
+            aria-label={t("adjust.moveLeftRight")}
             min={0}
             max={100}
             step={1}
@@ -100,10 +101,10 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
           />
         </label>
         <label className="block text-[11px] text-white/60">
-          Up – down
+          {t("adjust.upDown")}
           <input
             type="range"
-            aria-label="Move up or down"
+            aria-label={t("adjust.moveUpDown")}
             min={0}
             max={100}
             step={1}
@@ -117,7 +118,7 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] text-white/60">
-          {positionMatters ? "Drag the picture, or use the sliders, to choose what shows." : "Pick a shape or zoom in to choose which part shows."}
+          {positionMatters ? t("adjust.helpDrag") : t("adjust.helpPick")}
         </p>
         <button
           type="button"
@@ -125,7 +126,7 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
           disabled={isDefaultFraming(value)}
           className="shrink-0 rounded-md border border-white/15 px-2.5 py-1 text-xs text-white/70 hover:bg-white/10 disabled:opacity-40"
         >
-          Reset
+          {t("adjust.reset")}
         </button>
       </div>
     </div>

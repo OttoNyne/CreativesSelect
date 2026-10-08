@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { t } from "../../i18n";
 
 interface Props {
   /** The words as they are now. */
@@ -29,8 +30,8 @@ export function EditBox({ text, maxText, label, title, maxTitle, rows = 4, onSav
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (hasTitle && !titleDraft.trim()) return setError("Give it a title");
-    if (!draft.trim()) return setError("Write something first");
+    if (hasTitle && !titleDraft.trim()) return setError(t("edit.needTitle"));
+    if (!draft.trim()) return setError(t("edit.needText"));
     setBusy(true);
     setError(null);
     const problem = await onSave({ text: draft, ...(hasTitle ? { title: titleDraft } : {}) });
@@ -42,14 +43,14 @@ export function EditBox({ text, maxText, label, title, maxTitle, rows = 4, onSav
 
   return (
     <form onSubmit={submit} className="mt-2 space-y-2">
-      {hasTitle && <input value={titleDraft} onChange={(e) => setTitleDraft(e.target.value)} maxLength={maxTitle} aria-label={`${label}: title`} className={field} />}
+      {hasTitle && <input value={titleDraft} onChange={(e) => setTitleDraft(e.target.value)} maxLength={maxTitle} aria-label={t("edit.titleLabel", { label })} className={field} />}
       <textarea value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={maxText} rows={rows} aria-label={label} className={field} autoFocus />
       <div className="flex items-center gap-2">
         <button type="submit" disabled={busy || unchanged} className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
-          {busy ? "Saving…" : "Save"}
+          {busy ? t("common.saving") : t("common.save")}
         </button>
         <button type="button" onClick={onCancel} disabled={busy} className="text-sm text-white/70 hover:underline disabled:opacity-50">
-          Cancel
+          {t("common.cancel")}
         </button>
         <span className="ms-auto text-xs text-white/60" aria-live="polite">
           {draft.length} / {maxText}

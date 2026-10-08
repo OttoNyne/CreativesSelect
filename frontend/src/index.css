@@ -231,5 +231,6 @@ a {
 }
 /* Icons that point somewhere (arrows, chevrons) turn around with the page. */
 :root[dir="rtl"] .rtl-flip {
+  display: inline-block;
   transform: scaleX(-1);
 }

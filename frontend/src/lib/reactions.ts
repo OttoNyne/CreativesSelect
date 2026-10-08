@@ -1,4 +1,5 @@
 import type { ReactionKey, ReactionSummary } from "../types";
+import { t, type Key } from "../i18n";
 
 /** The six reactions, in the order they are offered. These match the server's fixed set. */
 export const REACTIONS: { key: ReactionKey; emoji: string; name: string }[] = [
@@ -9,6 +10,9 @@ export const REACTIONS: { key: ReactionKey; emoji: string; name: string }[] = [
   { key: "sad", emoji: "😢", name: "Sad" },
   { key: "fire", emoji: "🔥", name: "Fire" },
 ];
+
+/** The name of a reaction in the language of the page. */
+export const reactionName = (key: ReactionKey): string => t(`reaction.${key}` as Key);
 
 export const emptyReactions = (): ReactionSummary => ({ counts: { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, fire: 0 }, total: 0, mine: null });
 

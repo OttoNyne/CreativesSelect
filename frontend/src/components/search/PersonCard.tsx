@@ -3,6 +3,7 @@ import type { User } from "../../types";
 import { Avatar } from "../common/Avatar";
 import { Highlight } from "../common/Highlight";
 import { CSBadge } from "../common/CSBadge";
+import { t } from "../../i18n";
 
 /** A person in a list: who they are, how they know you (when searching), what they are up to, and their tags. */
 export function PersonCard({ user, onTag, words = [], mutualCount = 0, isFriend = false }: { user: User; onTag?: (tag: string) => void; words?: string[]; mutualCount?: number; isFriend?: boolean }) {
@@ -22,9 +23,9 @@ export function PersonCard({ user, onTag, words = [], mutualCount = 0, isFriend 
       </Link>
       {(isFriend || mutualCount > 0) && (
         <p className="mt-1.5 text-xs text-violet-300">
-          {isFriend && "Your friend"}
+          {isFriend && t("friends.yourFriend")}
           {isFriend && mutualCount > 0 && " · "}
-          {mutualCount > 0 && `${mutualCount} ${mutualCount === 1 ? "friend" : "friends"} in common`}
+          {mutualCount > 0 && t("friends.inCommon", { n: mutualCount })}
         </p>
       )}
       {user.mood && <p className="mt-1.5 truncate text-xs text-white/70">{user.mood}</p>}
@@ -34,11 +35,11 @@ export function PersonCard({ user, onTag, words = [], mutualCount = 0, isFriend 
         </p>
       )}
       {onTag && user.tags && user.tags.length > 0 && (
-        <ul aria-label={`${user.displayName}'s tags`} className="mt-2 flex flex-wrap gap-1.5">
-          {user.tags.map((t) => (
-            <li key={t}>
-              <button type="button" onClick={() => onTag(t)} aria-label={`Browse everyone tagged ${t}`} className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-white/80 hover:bg-white/10">
-                #{t}
+        <ul aria-label={t("person.tagsAria", { name: user.displayName })} className="mt-2 flex flex-wrap gap-1.5">
+          {user.tags.map((tag) => (
+            <li key={tag}>
+              <button type="button" onClick={() => onTag(tag)} aria-label={t("person.browseTag", { tag })} className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-white/80 hover:bg-white/10">
+                #{tag}
               </button>
             </li>
           ))}

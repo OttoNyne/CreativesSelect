@@ -8,6 +8,7 @@ import { CSBadge } from "../components/common/CSBadge";
 import { ActivityBadge } from "../components/common/ActivityBadge";
 import { InviteFriends } from "../components/friends/InviteFriends";
 import { PeopleYouMayKnow } from "../components/friends/PeopleYouMayKnow";
+import { t } from "../i18n";
 
 export function FriendsPage() {
   const [friends, setFriends] = useState<User[]>([]);
@@ -24,7 +25,7 @@ export function FriendsPage() {
       setRequests(requestsRes.requests);
       setStatus("ready");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load friends.");
+      setError(err instanceof ApiError ? err.message : t("friends.loadFailed"));
       setStatus("error");
     }
   }
@@ -39,7 +40,7 @@ export function FriendsPage() {
       await friendsApi.accept(requestId);
       load();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't accept that request.");
+      setActionError(err instanceof ApiError ? err.message : t("friends.acceptFailed"));
     }
   }
 
@@ -49,7 +50,7 @@ export function FriendsPage() {
       await friendsApi.decline(requestId);
       load();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't decline that request.");
+      setActionError(err instanceof ApiError ? err.message : t("friends.declineFailed"));
     }
   }
 
@@ -59,11 +60,11 @@ export function FriendsPage() {
       await friendsApi.remove(friendId);
       load();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't remove that friend.");
+      setActionError(err instanceof ApiError ? err.message : t("friends.removeFailed"));
     }
   }
 
-  if (status === "loading") return <div className="p-8 text-center text-white/60">Loading…</div>;
+  if (status === "loading") return <div className="p-8 text-center text-white/60">{t("common.loading")}</div>;
   if (status === "error") return <div className="p-8 text-center text-red-400">{error}</div>;
 
   return (
@@ -72,7 +73,7 @@ export function FriendsPage() {
       <InviteFriends />
       {requests.length > 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Friend Requests</h2>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">{t("friends.requests")}</h2>
           <div className="space-y-2">
             {requests.map((r) => (
               <div key={r.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
@@ -84,15 +85,15 @@ export function FriendsPage() {
                   </Link>
                   {r.mutualCount ? (
                     <span className="block text-xs text-white/60">
-                      {r.mutualCount} mutual {r.mutualCount === 1 ? "friend" : "friends"}
+                      {t("friends.mutual", { n: r.mutualCount })}
                     </span>
                   ) : null}
                 </span>
                 <button onClick={() => handleAccept(r.id)} className="rounded-md bg-violet-600 px-3 py-1 text-xs font-medium text-white">
-                  Accept
+                  {t("friends.accept")}
                 </button>
                 <button onClick={() => handleDecline(r.id)} className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/70">
-                  Decline
+                  {t("friends.decline")}
                 </button>
               </div>
             ))}
@@ -103,8 +104,8 @@ export function FriendsPage() {
       <PeopleYouMayKnow />
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">Friends ({friends.length})</h2>
-        {friends.length === 0 && <p className="text-sm text-white/60">No friends yet — search for creatives to connect with.</p>}
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/60">{t("friends.heading", { n: friends.length })}</h2>
+        {friends.length === 0 && <p className="text-sm text-white/60">{t("friends.none")}</p>}
         <div className="space-y-2">
           {friends.map((f) => (
             <div key={f.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
@@ -120,10 +121,10 @@ export function FriendsPage() {
                 to={`/messages/${f.username}`}
                 className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
               >
-                Message
+                {t("friends.message")}
               </Link>
               <button onClick={() => handleRemove(f.id)} className="text-xs text-white/60 hover:text-red-400">
-                Unfriend
+                {t("friends.unfriend")}
               </button>
             </div>
           ))}

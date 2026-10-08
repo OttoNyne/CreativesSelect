@@ -7,6 +7,7 @@ import { GenerateImageButton } from "../ai/GenerateImageButton";
 import { ImageAdjuster } from "./ImageAdjuster";
 import { DEFAULT_FRAMING, type ImageFraming } from "../../lib/framing";
 import type { Post } from "../../types";
+import { t } from "../../i18n";
 
 export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   const [content, setContent] = useState("");
@@ -39,7 +40,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
       setIsAiText(false);
       setIsAiImage(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't post that, try again.");
+      setError(err instanceof ApiError ? err.message : t("composer.postFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -55,7 +56,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
       setFraming(DEFAULT_FRAMING);
       setIsAiImage(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't upload that file.");
+      setError(err instanceof ApiError ? err.message : t("composer.uploadFailed"));
     }
   }
 
@@ -65,7 +66,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
         id="post-composer"
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Share what you're working on…"
+        placeholder={t("composer.placeholder")}
         rows={3}
         className="w-full resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
       />
@@ -75,7 +76,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
           <ImageAdjuster src={assetUrl(imageUrl)} value={framing} onChange={setFraming} />
           <button
             type="button"
-            aria-label="Remove picture"
+            aria-label={t("composer.removePicture")}
             onClick={() => {
               setImageUrl(null);
               setFraming(DEFAULT_FRAMING);
@@ -111,7 +112,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
           onClick={() => fileInputRef.current?.click()}
           className="rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10"
         >
-          📎 Attach image
+          {t("composer.attach")}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
@@ -120,7 +121,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
           disabled={submitting || !content.trim()}
           className="ms-auto rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
         >
-          {submitting ? "Posting…" : "Post"}
+          {submitting ? t("composer.posting") : t("composer.post")}
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
