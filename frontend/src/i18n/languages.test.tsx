@@ -60,7 +60,11 @@ describe("what the server says", () => {
     expect(translateServerMessage("Titles can be up to 80 characters")).toBe("Los títulos pueden tener hasta 80 caracteres");
     expect(translateServerMessage("Messages can be up to 2000 characters")).toBe("Los mensajes pueden tener hasta 2000 caracteres");
     expect(translateServerMessage("Your portfolio is full (60 pieces) — remove one to add another")).toBe("Tu portafolio está lleno (60 obras): quita una para añadir otra");
+    // a message that names a field is translated whole, so the grammar fits the field
+    expect(translateServerMessage("Comments can be up to 1000 characters")).toBe("Los comentarios pueden tener hasta 1000 caracteres");
+    expect(translateServerMessage("Mood must be text")).toBe("El campo «Estado de ánimo» debe ser texto");
     await initI18n("ar");
+    expect(translateServerMessage("Comments can be up to 1000 characters")).toBe("يمكن أن يصل طول التعليقات إلى 1000 حرفًا");
     expect(translateServerMessage("Incorrect password")).toBe("كلمة المرور غير صحيحة");
     expect(translateServerMessage("Maximum of 20 tracks reached")).toBe("تم بلوغ الحد الأقصى وهو 20 مقطعًا");
   });

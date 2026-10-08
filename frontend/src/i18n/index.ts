@@ -50,6 +50,8 @@ let serverPatterns: { re: RegExp; names: string[]; text: string }[] = [];
 function compileServerPatterns(catalog: Record<string, string>) {
   return Object.entries(catalog)
     .filter(([key]) => /\{v\d+\}/.test(key))
+    // the most specific first: fewest values left open, then the longest wording ("Comments can be up to {v1} characters" before "{v1} can be up to {v2} characters")
+    .sort(([a], [b]) => (a.match(/\{v\d+\}/g) ?? []).length - (b.match(/\{v\d+\}/g) ?? []).length || b.length - a.length)
     .map(([key, text]) => ({
       re: new RegExp("^" + key.replace(/[.*+?^$()|[\]\\]/g, "\\$&").replace(/\{v\d+\}/g, "(.+?)") + "$"),
       names: [...key.matchAll(/\{(v\d+)\}/g)].map((m) => m[1]),

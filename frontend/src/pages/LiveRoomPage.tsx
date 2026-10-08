@@ -152,13 +152,13 @@ function HostRoom({ room }: { room: LiveRoom }) {
     note(describeNetwork());
     const offline = () => {
       setPhoneOnline(false);
-      note("Your phone says it lost its internet connection");
+      note(t("livelog.yourPhoneSaysIt"));
     };
     const online = () => {
       setPhoneOnline(true);
-      note("Your phone is back online");
+      note(t("livelog.yourPhoneIsBack"));
     };
-    const changed = () => note(`Network changed: ${describeNetwork()}`);
+    const changed = () => note(t("livelog.networkChanged", { info: describeNetwork() }));
     window.addEventListener("offline", offline);
     window.addEventListener("online", online);
     const connection = (navigator as Navigator & { connection?: EventTarget }).connection;

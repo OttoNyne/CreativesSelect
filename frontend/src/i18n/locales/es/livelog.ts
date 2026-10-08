@@ -1,0 +1,31 @@
+import type { Translation } from "../../index";
+import type { livelog as en } from "../en/livelog";
+
+export const livelog: Translation<typeof en> = {
+  "livelog.reachedTheLiveAudio": "Se llegó al servicio de audio en vivo",
+  "livelog.theConnectionToThe": "Se cortó la conexión con el servicio: reconectando",
+  "livelog.yourMicrophoneIsBeing": "Se está enviando tu micrófono",
+  "livelog.theConnectionToThe2": "Se perdió la conexión con el servicio de audio en vivo.",
+  "livelog.audioConnectionDroppedReconnecting": "Se cortó la conexión de audio: reconectando",
+  "livelog.droppedSoonAfterStarting": "Se cortó poco después de empezar: cambiando al relé",
+  "livelog.audioConnectionRestored": "Se restableció la conexión de audio",
+  "livelog.noMicrophoneAudioTo": "No hay audio del micrófono que transmitir.",
+  "livelog.couldntConnectToThe": "No se pudo conectar con el servicio de audio en vivo.",
+  "livelog.yourPhoneSaysIt": "Tu teléfono dice que perdió la conexión a internet",
+  "livelog.yourPhoneIsBack": "Tu teléfono vuelve a estar en línea",
+  "livelog.micProblem": "Problema con el micrófono: {message}",
+  "livelog.quality": "Calidad de la conexión: {quality}",
+  "livelog.connecting": "Conectando con el servicio de audio en vivo (intento {n})",
+  "livelog.connectingRelay": "Conectando con el servicio de audio en vivo (intento {n}, a través del relé)",
+  "livelog.reason": "(motivo {reason})",
+  "livelog.couldntConnectBecause": "No se pudo conectar: {message}",
+  "livelog.couldntConnect": "No se pudo conectar",
+  "livelog.online": "En línea",
+  "livelog.offline": "Sin conexión",
+  "livelog.mbpsDown": "{n} Mbps de bajada",
+  "livelog.rtt": "{n} ms de ida y vuelta",
+  "livelog.dataSaver": "ahorro de datos activado",
+  "livelog.networkChanged": "La red cambió: {info}",
+  "livelog.connectionState": "Conexión: {state}",
+  "livelog.disconnected": "Desconectado",
+};

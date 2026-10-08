@@ -2,6 +2,7 @@ import type * as LiveKit from "livekit-client";
 import { ApiError } from "../../api/client";
 import type { LiveApi } from "../../api/live.api";
 import { Poller } from "./rtc";
+import { t } from "../../i18n";
 
 export interface SfuHostOptions {
   liveId: string;
@@ -111,12 +112,12 @@ export class SfuHost {
     if (!say) return;
     const E = lk.RoomEvent;
     const on = (event: string | undefined, handler: (...args: unknown[]) => void) => event && room.on(event as never, handler as never);
-    on(E.SignalConnected, () => say("Reached the live audio service"));
-    on(E.ConnectionStateChanged, (state) => say(`Connection: ${String(state)}`));
-    on(E.SignalReconnecting, () => say("The connection to the service dropped — reconnecting"));
-    on(E.LocalTrackPublished, () => say("Your microphone is being sent"));
-    on(E.MediaDevicesError, (error) => say(`Microphone problem: ${error instanceof Error ? error.message : String(error)}`));
-    on(E.ConnectionQualityChanged, (quality) => say(`Connection quality: ${String(quality)}`));
+    on(E.SignalConnected, () => say(t("livelog.reachedTheLiveAudio")));
+    on(E.ConnectionStateChanged, (state) => say(t("livelog.connectionState", { state: String(state) })));
+    on(E.SignalReconnecting, () => say(t("livelog.theConnectionToThe")));
+    on(E.LocalTrackPublished, () => say(t("livelog.yourMicrophoneIsBeing")));
+    on(E.MediaDevicesError, (error) => say(t("livelog.micProblem", { message: error instanceof Error ? error.message : String(error) })));
+    on(E.ConnectionQualityChanged, (quality) => say(t("livelog.quality", { quality: String(quality) })));
   }
 
   // The connection is gone for good: start over (new pass, new connection, same microphone) a few times, then give up.
@@ -128,7 +129,7 @@ export class SfuHost {
     this.guestStream = null; // a new connection hands over the guests' audio afresh
     // A connection that dies within moments of starting usually means the direct audio route is blocked on this network.
     if (Date.now() - this.startedAt < HEALTHY_AFTER_MS) this.useRelay = true;
-    if (this.attempts >= (this.opts.maxAttempts ?? 3)) return this.fail("The connection to the live audio service was lost.");
+    if (this.attempts >= (this.opts.maxAttempts ?? 3)) return this.fail(t("livelog.theConnectionToThe2"));
     this.opts.onConnection?.("reconnecting");
     this.retryTimer = setTimeout(() => void this.connect(), RETRY_DELAY_MS * (this.attempts + 1));
   }
@@ -138,7 +139,7 @@ export class SfuHost {
     this.attempts++;
     const relay = this.useRelay;
     this.startedAt = Date.now();
-    this.opts.onDiagnostic?.(`Connecting to the live audio service (try ${this.attempts}${relay ? ", through the relay" : ""})`);
+    this.opts.onDiagnostic?.(t(relay ? "livelog.connectingRelay" : "livelog.connecting", { n: this.attempts }));
     try {
       const { liveId, stream } = this.opts;
       const [{ url, token }, lk] = await Promise.all([this.opts.api.token(liveId), (this.opts.loadClient ?? loadLiveKit)()]);
@@ -146,23 +147,23 @@ export class SfuHost {
       const room = new lk.Room();
       this.room = room;
       room.on(lk.RoomEvent.Disconnected, (reason?: unknown) => {
-        this.opts.onDiagnostic?.(`Disconnected${reason === undefined ? "" : ` (reason ${String(reason)})`}`);
+        this.opts.onDiagnostic?.(`${t("livelog.disconnected")}${reason === undefined ? "" : ` ${t("livelog.reason", { reason: String(reason) })}`}`);
         if (this.room === room && !this.stopped) this.recover();
       });
       room.on(lk.RoomEvent.Reconnecting, () => {
-        this.opts.onDiagnostic?.("Audio connection dropped — reconnecting");
+        this.opts.onDiagnostic?.(t("livelog.audioConnectionDroppedReconnecting"));
         if (this.room !== room) return;
         this.opts.onConnection?.("reconnecting");
         // Dropping soon after starting means the direct audio route probably doesn't work on this network: rather than wait for
         // the media client to keep trying it, start over now through the relay.
         if (!this.useRelay && Date.now() - this.startedAt < HEALTHY_AFTER_MS) {
           this.useRelay = true;
-          this.opts.onDiagnostic?.("Dropped soon after starting — switching to the relay");
+          this.opts.onDiagnostic?.(t("livelog.droppedSoonAfterStarting"));
           room.disconnect();
         }
       });
       room.on(lk.RoomEvent.Reconnected, () => {
-        this.opts.onDiagnostic?.("Audio connection restored");
+        this.opts.onDiagnostic?.(t("livelog.audioConnectionRestored"));
         if (this.room === room) this.opts.onConnection?.("live");
       });
       this.narrate(room, lk);
@@ -185,7 +186,7 @@ export class SfuHost {
       await room.connect(url, token, relay ? { rtcConfig: { iceTransportPolicy: "relay" } } : undefined);
       if (this.stopped) return void room.disconnect();
       const track = stream.getAudioTracks()[0];
-      if (!track) return this.fail("No microphone audio to broadcast.");
+      if (!track) return this.fail(t("livelog.noMicrophoneAudioTo"));
       await room.localParticipant.publishTrack(track, { source: lk.Track.Source.Microphone, name: "microphone" });
       this.attempts = 0;
       this.opts.onConnection?.("live");
@@ -193,9 +194,9 @@ export class SfuHost {
       // the server said no (the live is over, or this isn't allowed): trying again won't help
       if (err instanceof ApiError) return this.fail(err.message);
       // anything else is most likely the network: try again (through the relay) before giving up
-      this.opts.onDiagnostic?.(`Couldn't connect${err instanceof Error && err.message ? `: ${err.message}` : ""}`);
+      this.opts.onDiagnostic?.(err instanceof Error && err.message ? t("livelog.couldntConnectBecause", { message: err.message }) : t("livelog.couldntConnect"));
       this.useRelay = true;
-      if (this.attempts >= (this.opts.maxAttempts ?? 3)) return this.fail("Couldn't connect to the live audio service.");
+      if (this.attempts >= (this.opts.maxAttempts ?? 3)) return this.fail(t("livelog.couldntConnectToThe"));
       this.room?.disconnect();
       this.room = null;
       this.opts.onConnection?.("reconnecting");

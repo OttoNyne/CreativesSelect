@@ -1,0 +1,31 @@
+import type { Translation } from "../../index";
+import type { livelog as en } from "../en/livelog";
+
+export const livelog: Translation<typeof en> = {
+  "livelog.reachedTheLiveAudio": "تم الوصول إلى خدمة الصوت المباشر",
+  "livelog.theConnectionToThe": "انقطع الاتصال بالخدمة — جارٍ إعادة الاتصال",
+  "livelog.yourMicrophoneIsBeing": "يجري إرسال ميكروفونك",
+  "livelog.theConnectionToThe2": "فُقد الاتصال بخدمة الصوت المباشر.",
+  "livelog.audioConnectionDroppedReconnecting": "انقطع اتصال الصوت — جارٍ إعادة الاتصال",
+  "livelog.droppedSoonAfterStarting": "انقطع بعد البدء بقليل — جارٍ التحويل إلى المرحّل",
+  "livelog.audioConnectionRestored": "عاد اتصال الصوت",
+  "livelog.noMicrophoneAudioTo": "لا يوجد صوت من الميكروفون للبث.",
+  "livelog.couldntConnectToThe": "تعذّر الاتصال بخدمة الصوت المباشر.",
+  "livelog.yourPhoneSaysIt": "يقول هاتفك إنه فقد الاتصال بالإنترنت",
+  "livelog.yourPhoneIsBack": "عاد هاتفك إلى الاتصال",
+  "livelog.micProblem": "مشكلة في الميكروفون: {message}",
+  "livelog.quality": "جودة الاتصال: {quality}",
+  "livelog.connecting": "جارٍ الاتصال بخدمة الصوت المباشر (المحاولة {n})",
+  "livelog.connectingRelay": "جارٍ الاتصال بخدمة الصوت المباشر (المحاولة {n}، عبر المرحّل)",
+  "livelog.reason": "(السبب {reason})",
+  "livelog.couldntConnectBecause": "تعذّر الاتصال: {message}",
+  "livelog.couldntConnect": "تعذّر الاتصال",
+  "livelog.online": "متصل",
+  "livelog.offline": "غير متصل",
+  "livelog.mbpsDown": "{n} ميغابت/ث تنزيل",
+  "livelog.rtt": "{n} مللي ثانية للذهاب والإياب",
+  "livelog.dataSaver": "توفير البيانات مفعّل",
+  "livelog.networkChanged": "تغيّرت الشبكة: {info}",
+  "livelog.connectionState": "الاتصال: {state}",
+  "livelog.disconnected": "انقطع الاتصال",
+};
