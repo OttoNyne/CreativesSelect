@@ -30,6 +30,10 @@ export interface User {
   emailVerified?: boolean;
   /** The language the site emails you in: the one you use it in. Only on your own user object. */
   language?: "en" | "es" | "ar";
+  /** Whether they take commissions and collaborations, what they offer (up to five words) and a short note. */
+  openToWork?: boolean;
+  workOffers?: string[];
+  workNote?: string;
   username: string;
   displayName: string;
   bio: string | null;
@@ -359,7 +363,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "reaction";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's
@@ -513,4 +517,20 @@ export interface LiveComment {
   mine: boolean;
   body: string;
   createdAt: string;
+}
+
+/** A request for work: what someone asks of a person who is open to work, and how they answered. */
+export interface WorkRequest {
+  id: string;
+  title: string;
+  details: string;
+  budget: string;
+  deadline: string | null;
+  status: "open" | "accepted" | "declined";
+  reply: string;
+  answeredAt: string | null;
+  createdAt: string;
+  /** Who sent it (in what you have received) or who it was sent to (in what you have sent). */
+  from?: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
+  to?: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
 }

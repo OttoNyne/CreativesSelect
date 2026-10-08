@@ -139,3 +139,11 @@ describe("credits", () => {
     expect(notificationTarget(n("credit_request", {}), undefined)).toBeNull();
   });
 });
+
+describe("work requests", () => {
+  it("a request, or an answer to one, opens the requests on your own profile", () => {
+    expect(notificationTarget(n("work_request", { requestId: "r1", title: "A logo" }), "ada")).toEqual({ to: "/u/ada#work", label: "View requests" });
+    expect(notificationTarget(n("work_reply", { requestId: "r1", accepted: true }), "ada")).toEqual({ to: "/u/ada#work", label: "View answer" });
+    expect(notificationTarget(n("work_request", {}), undefined)).toBeNull();
+  });
+});

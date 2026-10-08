@@ -66,14 +66,17 @@ export interface SearchInput {
   type: SearchType;
   tag?: string;
   connection?: SearchConnection;
+  /** Only people who say they are open to work. */
+  open?: boolean;
   page?: number;
 }
 
 export const searchApi = {
-  search: <T>({ q, type, tag, connection, page }: SearchInput) => {
+  search: <T>({ q, type, tag, connection, open, page }: SearchInput) => {
     const query = new URLSearchParams({ q, type });
     if (tag) query.set("tag", tag);
     if (connection && connection !== "any") query.set("connection", connection);
+    if (open) query.set("open", "1");
     if (page && page > 1) query.set("page", String(page));
     return api.get<SearchResults<T>>(`/search?${query.toString()}`);
   },

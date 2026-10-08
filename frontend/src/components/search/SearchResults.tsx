@@ -35,7 +35,7 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 /** What a search found, of one kind, with the words marked and a way to see more. */
-export function SearchResults({ q, type, tag, connection, onTag }: { q: string; type: SearchType; tag: string; connection: SearchConnection; onTag: (tag: string) => void }) {
+export function SearchResults({ q, type, tag, connection, open = false, onTag }: { q: string; type: SearchType; tag: string; connection: SearchConnection; open?: boolean; onTag: (tag: string) => void }) {
   const [items, setItems] = useState<Result[] | null>(null);
   const [words, setWords] = useState<string[]>([]);
   const [page, setPage] = useState(1);
@@ -49,7 +49,7 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
     setItems(null);
     setError(null);
     searchApi
-      .search<Result>({ q, type, tag, connection })
+      .search<Result>({ q, type, tag, connection, ...(open ? { open } : {}) })
       .then((res) => {
         if (cancelled) return;
         setItems(res.results);
@@ -65,12 +65,12 @@ export function SearchResults({ q, type, tag, connection, onTag }: { q: string; 
     return () => {
       cancelled = true;
     };
-  }, [q, type, tag, connection]);
+  }, [q, type, tag, connection, open]);
 
   async function showMore() {
     setLoadingMore(true);
     try {
-      const res = await searchApi.search<Result>({ q, type, tag, connection, page: page + 1 });
+      const res = await searchApi.search<Result>({ q, type, tag, connection, ...(open ? { open } : {}), page: page + 1 });
       setItems((old) => [...(old ?? []), ...res.results.filter((r) => !(old ?? []).some((o) => idOf(o) === idOf(r)))]);
       setPage(page + 1);
       setHasMore(res.hasMore);

@@ -43,6 +43,8 @@ import { EmailStatus } from "../components/profile/EmailStatus";
 import { PushSettings } from "../components/profile/PushSettings";
 import { ProfileNames } from "../components/profile/ProfileNames";
 import { CSBadge } from "../components/common/CSBadge";
+import { OffersEditor, OpenToWorkBadge, WorkRequestForm } from "../components/profile/OpenToWork";
+import { WorkRequestsPanel } from "../components/profile/WorkRequestsPanel";
 import { t } from "../i18n";
 
 export function ProfilePage() {
@@ -57,6 +59,10 @@ export function ProfilePage() {
   const [mood, setMood] = useState("");
   const [listeningTo, setListeningTo] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [offers, setOffers] = useState<string[]>([]);
+  const [workNote, setWorkNote] = useState("");
+  const [requesting, setRequesting] = useState(false);
+  const [requestedWork, setRequestedWork] = useState(false);
   const [theme, setTheme] = useState<ProfileTheme>({});
   const [isFriend, setIsFriend] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
@@ -82,6 +88,8 @@ export function ProfilePage() {
         setMood(user.mood ?? "");
         setListeningTo(user.listeningTo ?? "");
         setTags(user.tags ?? []);
+        setOffers(user.workOffers ?? []);
+        setWorkNote(user.workNote ?? "");
         setTheme(user.theme);
       })
       .catch(() => {
@@ -252,6 +260,7 @@ export function ProfilePage() {
           <p className="text-sm text-[var(--profile-muted)]"><bdi>@{profile.username}</bdi></p>
           <ActivityBadge activity={profile.activity} className="text-[var(--profile-muted)]" />
           <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
+          <OpenToWorkBadge profile={profile} />
         </div>
 
         <div className="ms-auto flex flex-wrap gap-2 pb-2">
@@ -290,6 +299,11 @@ export function ProfilePage() {
                   {requestSent ? t("mayKnow.requestSent") : t("profile.addFriend")}
                 </button>
               )}
+              {profile.openToWork && (
+                <button onClick={() => setRequesting((r) => !r)} aria-expanded={requesting} className="rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: "var(--profile-accent)" }}>
+                  {t("work.requestWork")}
+                </button>
+              )}
               <button onClick={handleReport} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
                 {t("common.report")}
               </button>
@@ -300,6 +314,22 @@ export function ProfilePage() {
           ) : null}
         </div>
       </div>
+
+      {!isOwner && viewer && profile.openToWork && requesting && (
+        <WorkRequestForm
+          to={profile}
+          onCancel={() => setRequesting(false)}
+          onSent={() => {
+            setRequesting(false);
+            setRequestedWork(true);
+          }}
+        />
+      )}
+      {requestedWork && (
+        <p role="status" className="mt-3 text-sm text-emerald-400">
+          {t("work.sentOk")}
+        </p>
+      )}
 
       {editing && isOwner ? (
         <div className="mt-4 space-y-3">
@@ -323,6 +353,13 @@ export function ProfilePage() {
           />
           <StatusEditor mood={mood} listeningTo={listeningTo} onMood={setMood} onListeningTo={setListeningTo} />
           <TagEditor tags={tags} onChange={setTags} />
+          <div className="space-y-2 rounded-lg border border-white/10 p-2.5">
+            <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+              <input type="checkbox" checked={profile.openToWork === true} onChange={(e) => saveProfile({ openToWork: e.target.checked })} />
+              {t("work.openSwitch")}
+            </label>
+            <OffersEditor offers={offers} note={workNote} onOffers={setOffers} onNote={setWorkNote} />
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <GenerateTextButton kind="bio" getPrompt={() => bio || profile.displayName} onGenerated={setBio} />
             <label className="ms-auto flex items-center gap-2 text-sm text-[var(--profile-muted)]">
@@ -417,7 +454,7 @@ export function ProfilePage() {
             />
           )}
           <button
-            onClick={() => saveProfile({ bio, theme: themeToSave(theme), mood, listeningTo, tags })}
+            onClick={() => saveProfile({ bio, theme: themeToSave(theme), mood, listeningTo, tags, workOffers: offers, workNote })}
             disabled={saving}
             className="rounded-md px-4 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
             style={{ background: "var(--profile-accent-fill)" }}
@@ -446,6 +483,8 @@ export function ProfilePage() {
       {viewer && !isOwner && <MutualFriends username={profile.username} />}
 
       {isOwner && viewer?.profileViews && <ProfileVisitors />}
+
+      {isOwner && <WorkRequestsPanel />}
 
       <div className="profile-sections mt-6 flex flex-col gap-4 pb-10">
         {order

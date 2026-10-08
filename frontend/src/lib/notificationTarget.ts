@@ -73,6 +73,10 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
     }
     case "credit_request":
       return viewerUsername ? { to: `/u/${viewerUsername}#portfolio`, label: t("target.viewCredit") } : null;
+    case "work_request":
+      return viewerUsername ? { to: `/u/${viewerUsername}#work`, label: t("target.viewRequests") } : null;
+    case "work_reply":
+      return viewerUsername ? { to: `/u/${viewerUsername}#work`, label: t("target.viewAnswer") } : null;
     case "credit_accepted": {
       const itemId = str(n.payload.itemId);
       return viewerUsername ? { to: `/u/${viewerUsername}${itemId ? `?piece=${encodeURIComponent(itemId)}` : ""}#portfolio`, label: t("target.viewCredit") } : null;

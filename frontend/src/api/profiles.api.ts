@@ -20,6 +20,9 @@ export interface UpdateProfileInput {
   showConnections?: boolean;
   chatStatus?: boolean;
   language?: "en" | "es" | "ar";
+  openToWork?: boolean;
+  workOffers?: string[];
+  workNote?: string;
   isPrivate?: boolean;
   theme?: ProfileTheme;
 }

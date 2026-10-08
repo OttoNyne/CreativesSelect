@@ -28,6 +28,7 @@ export function PersonCard({ user, onTag, words = [], mutualCount = 0, isFriend 
           {mutualCount > 0 && t("friends.inCommon", { n: mutualCount })}
         </p>
       )}
+      {user.openToWork && <p className="mt-1.5 inline-block rounded-full border border-emerald-400/50 bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-300">{t("work.openToWork")}</p>}
       {user.mood && <p className="mt-1.5 truncate text-xs text-white/70">{user.mood}</p>}
       {user.bio && (
         <p className="mt-1 line-clamp-2 text-sm text-white/70">

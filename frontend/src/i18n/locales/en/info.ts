@@ -44,4 +44,6 @@ export const info = {
   "info.languagesText": "Use the whole site in English, Spanish or Arabic (which reads right to left, with every page mirrored to match). It starts in your browser's language, you can change it from the footer on any page, and your choice is remembered. The emails, phone notifications and AI-written text the site makes for you come in it too.",
   "info.creditsTitle": "Credits and collaborations",
   "info.creditsText": "Credit the friends who worked on a piece (illustrator, producer, model, editor) and say what each did. They are asked first, so nobody can put their name on your work or yours on theirs by themselves, and once they accept the piece shows on their profile as a collaboration. Either of you can take a credit off again at any time.",
+  "info.workTitle": "Open to work",
+  "info.workText": "Say you take commissions or collaborations, list what you offer and add a short note. People can find you by searching only those open to work, and send a request with a short brief (what they need, a budget hint, a deadline). You answer yes or no with a note, and nothing is paid or promised through the site: it only gets you talking.",
 } as const;

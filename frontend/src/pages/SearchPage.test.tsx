@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { SearchPage } from "./SearchPage";
@@ -85,6 +85,17 @@ describe("SearchPage: searching", () => {
     expect(search).toHaveBeenCalledWith({ q: "kiln", type: "people", tag: "potter", connection: "friends" });
     expect(screen.getByLabelText("Show")).toHaveValue("friends");
     expect(screen.getByRole("button", { name: "Stop filtering by potter" })).toBeInTheDocument();
+  });
+
+  it("can keep to people who are open to work, and that is in the address", async () => {
+    search.mockResolvedValue(none(["logo"]));
+    renderPage("/search?q=logo&type=people&open=1");
+    await screen.findByText("No creatives found.");
+    expect(search).toHaveBeenCalledWith({ q: "logo", type: "people", tag: "", connection: "any", open: true });
+    const only = screen.getByRole("checkbox", { name: "Only people open to work" });
+    expect(only).toBeChecked();
+    await userEvent.click(only);
+    await waitFor(() => expect(search).toHaveBeenLastCalledWith({ q: "logo", type: "people", tag: "", connection: "any" }));
   });
 
   it("ignores a kind or filter in the address that isn't one", async () => {

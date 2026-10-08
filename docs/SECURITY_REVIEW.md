@@ -1346,6 +1346,18 @@ Letting people say who worked on a piece adds a claim about someone else, so the
 - **Tidy when things go.** Deleting a piece or either person's account removes the credits and the pending notices about them; the data download lists the credits you gave and the ones you accepted.
 - **Not covered:** a credit can't be reported on its own (a role is plain text and the owner of the piece can remove it, the person credited can leave it); and credits don't yet count toward search.
 
+### 5.77 Open to work: letting strangers write to someone who asked for it
+
+Requests for work let people who aren't friends reach someone, so the review looked at how that could be used to pester or to find people out.
+
+- **Only when the person said yes.** The server refuses a request unless the person has switched "open to work" on, and gives the same "That person isn't taking requests" for everyone it can't be sent to: nobody found, suspended, not open, a private profile the sender can't see, or a block either way (tested), so none of those can be told apart.
+- **Limits on volume.** Five requests a day per sender, two waiting to the same person, thirty waiting in total with one person, and answers are limited per hour (tested).
+- **No money, no promises.** Nothing is paid, held or agreed on the site, and the form says so; the budget is free text of up to 40 characters that only informs the other person.
+- **Plain text only.** Titles, details, budgets, notes and replies are cleaned of hidden characters, length-checked, and drawn as text, never markup; the deadline must be a real day within two years (tested).
+- **Blocks and suspensions hide requests.** A person's inbox leaves out people blocked in either direction and suspended accounts (tested); answering or withdrawing is limited to the right person and the right state, with a clear message otherwise (tested).
+- **Tidy.** Waiting notifications are cleared when a request is answered or withdrawn; a person's requests go with their account; the data download lists what they sent, their answers and their open-to-work settings.
+- **Not covered:** a request can't be reported on its own yet (a person can block the sender, or switch open to work off, which stops new ones), and the budget isn't checked against any real figure.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

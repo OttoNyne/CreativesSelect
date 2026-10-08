@@ -61,6 +61,10 @@ function describe(n: Notification): string {
       return typeof n.payload.role === "string" ? `${t("notif.creditRequest")}: ${n.payload.role}` : t("notif.creditRequest");
     case "credit_accepted":
       return t("notif.creditAccepted");
+    case "work_request":
+      return t("notif.workRequest");
+    case "work_reply":
+      return n.payload.accepted === true ? t("notif.workReplyAccepted") : t("notif.workReplyDeclined");
     case "cs_verified":
       return n.payload.reason === "friends" ? t("notif.verifiedFriends") : t("notif.verifiedAdmin");
     case "event_created":

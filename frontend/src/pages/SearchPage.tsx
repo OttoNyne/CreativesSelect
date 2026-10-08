@@ -34,6 +34,7 @@ export function SearchPage() {
   const type: SearchType = isSearchType(rawType) ? rawType : "people";
   const rawConnection = params.get("connection");
   const connection: SearchConnection = isConnection(rawConnection) ? rawConnection : "any";
+  const open = params.get("open") === "1";
   const [query, setQuery] = useState(q);
   useEffect(() => setQuery(q), [q]); // going back or forward changes the search in the address
 
@@ -135,7 +136,7 @@ export function SearchPage() {
                   type="button"
                   role="tab"
                   aria-selected={type === x.type}
-                  onClick={() => change({ type: x.type, tag: x.type === "people" ? tag : "", connection: x.type === "people" ? connection : "" })}
+                  onClick={() => change({ type: x.type, tag: x.type === "people" ? tag : "", connection: x.type === "people" ? connection : "", open: x.type === "people" && open ? "1" : "" })}
                   className={`rounded-full border px-3 py-1 text-sm ${type === x.type ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}
                 >
                   {x.label}
@@ -158,6 +159,10 @@ export function SearchPage() {
                   ))}
                 </select>
               </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={open} onChange={(e) => change({ open: e.target.checked ? "1" : "" })} />
+                {t("work.searchFilter")}
+              </label>
               {tag && (
                 <button type="button" onClick={() => chooseTag("")} aria-label={t("misc.stopFilteringBy", { tag })} className="rounded-full border border-violet-400 bg-violet-500/20 px-2.5 py-1 text-xs text-white">
                   #{tag} ✕
@@ -165,7 +170,7 @@ export function SearchPage() {
               )}
             </div>
           )}
-          <SearchResults q={q} type={type} tag={type === "people" ? tag : ""} connection={type === "people" ? connection : "any"} onTag={chooseTag} />
+          <SearchResults q={q} type={type} tag={type === "people" ? tag : ""} connection={type === "people" ? connection : "any"} open={type === "people" && open} onTag={chooseTag} />
         </section>
       ) : (
         <>

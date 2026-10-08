@@ -370,3 +370,13 @@ describe("NotificationBell: credits", () => {
     expect(screen.getAllByRole("link", { name: "View credit" })[0]).toHaveAttribute("href", "/u/me#portfolio");
   });
 });
+
+describe("NotificationBell: work requests", () => {
+  it("says someone asked you for work, and whether your request was accepted or declined", async () => {
+    await openWith([note({ id: "a", type: "work_request", payload: { title: "A logo" } }), note({ id: "b", type: "work_reply", payload: { accepted: true } }), note({ id: "c", type: "work_reply", payload: { accepted: false } })]);
+    expect(await screen.findByText("sent you a request for work")).toBeInTheDocument();
+    expect(screen.getByText("accepted your request for work")).toBeInTheDocument();
+    expect(screen.getByText("declined your request for work")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View requests" })).toHaveAttribute("href", "/u/me#work");
+  });
+});
