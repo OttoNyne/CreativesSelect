@@ -330,13 +330,13 @@ describe("ProfilePage", () => {
     profiles.get.mockResolvedValue({ user: zoe });
     renderAs(me, "zoe");
     await screen.findByText("Zoe");
-    expect(document.head.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe("noindex,nofollow");
+    await waitFor(() => expect(document.head.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe("noindex,nofollow"));
     cleanup();
     expect(document.head.querySelector('meta[name="robots"]')).toBeNull();
     profiles.get.mockResolvedValue({ user: { ...zoe, listInSearchEngines: true } });
     renderAs(me, "zoe");
     await screen.findByText("Zoe");
-    expect(document.head.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe("index,follow");
+    await waitFor(() => expect(document.head.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe("index,follow"));
   });
 
   it("invites someone who isn't signed in to join, with ways to sign up or log in", async () => {
