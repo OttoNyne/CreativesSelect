@@ -84,7 +84,7 @@ export function ProfileNames({ profile, onChanged }: { profile: User; onChanged:
           Username <span className="text-white/60">— your profile address (/u/{username.trim().toLowerCase() || "…"})</span>
         </label>
         <div className="flex gap-2">
-          <div className="flex min-w-0 flex-1 items-center rounded-md border border-white/10 bg-black/30 pl-3 focus-within:border-white/30">
+          <div className="flex min-w-0 flex-1 items-center rounded-md border border-white/10 bg-black/30 ps-3 focus-within:border-white/30">
             <span className="text-sm text-white/60">@</span>
             <input
               id="username"

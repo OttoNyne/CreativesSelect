@@ -9,15 +9,16 @@ import { NotificationBell } from "./NotificationBell";
 import { MessagesLink } from "./MessagesLink";
 import { ShareButton } from "../share/ShareButton";
 import { siteUrl } from "../../lib/share";
+import { t, type Key } from "../../i18n";
 
-const NAV_LINKS = [
-  { to: "/", label: "Feed" },
-  { to: "/friends", label: "Friends" },
-  { to: "/groups", label: "Groups" },
-  { to: "/events", label: "Events" },
-  { to: "/search", label: "Search" },
-  { to: "/live", label: "Live" },
-  { to: "/help-wanted", label: "Help wanted" },
+const NAV_LINKS: { to: string; label: Key }[] = [
+  { to: "/", label: "nav.feed" },
+  { to: "/friends", label: "nav.friends" },
+  { to: "/groups", label: "nav.groups" },
+  { to: "/events", label: "nav.events" },
+  { to: "/search", label: "nav.search" },
+  { to: "/live", label: "nav.live" },
+  { to: "/help-wanted", label: "nav.helpWanted" },
 ];
 
 export function NavBar() {
@@ -56,13 +57,13 @@ export function NavBar() {
             <div className="hidden items-center gap-3 text-sm xl:flex">
               {NAV_LINKS.map((link) => (
                 <Link key={link.to} to={link.to} className="whitespace-nowrap text-white/70 hover:text-white">
-                  {link.label}
+                  {t(link.label)}
                 </Link>
               ))}
               <MessagesLink className="whitespace-nowrap text-white/70 hover:text-white" />
               {user.isAdmin && (
                 <Link to="/admin/moderation" className="whitespace-nowrap text-amber-300 hover:text-amber-200">
-                  Moderation
+                  {t("nav.moderation")}
                 </Link>
               )}
               <NotificationBell />
@@ -74,7 +75,7 @@ export function NavBar() {
                 onClick={handleLogout}
                 className="whitespace-nowrap rounded-md border border-white/15 px-3 py-1 text-white/70 hover:bg-white/10 hover:text-white"
               >
-                Log out
+                {t("nav.logOut")}
               </button>
             </div>
 
@@ -85,7 +86,7 @@ export function NavBar() {
               <NotificationBell />
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                aria-label="Menu"
+                aria-label={t("nav.menu")}
                 aria-expanded={menuOpen}
                 className="flex h-9 w-9 items-center justify-center rounded-md border border-white/15 text-white/70 hover:bg-white/10 hover:text-white"
               >
@@ -96,10 +97,10 @@ export function NavBar() {
         ) : (
           <div className="flex items-center gap-3 text-sm">
             <Link to="/login" className="text-white/70 hover:text-white">
-              Log in
+              {t("common.logIn")}
             </Link>
             <Link to="/register" className="rounded-md bg-violet-600 px-3 py-1.5 font-medium text-white hover:bg-violet-500">
-              Sign up
+              {t("common.signUp")}
             </Link>
           </div>
         )}
@@ -122,12 +123,12 @@ export function NavBar() {
               onClick={() => setMenuOpen(false)}
               className="block rounded-md px-2 py-2 text-white/70 hover:bg-white/10 hover:text-white"
             >
-              {link.label}
+              {t(link.label)}
             </Link>
           ))}
           {user.isAdmin && (
             <Link to="/admin/moderation" onClick={() => setMenuOpen(false)} className="block rounded-md px-2 py-2 text-amber-300 hover:bg-white/10">
-              Moderation
+              {t("nav.moderation")}
             </Link>
           )}
           <MessagesLink
@@ -136,20 +137,20 @@ export function NavBar() {
           />
           <ShareButton
             url={siteUrl}
-            title="Share CreativesSelect"
-            description="Anyone who scans this code, or opens the link, lands on the site."
-            className="block w-full rounded-md px-2 py-2 text-left text-white/70 hover:bg-white/10 hover:text-white"
+            title={t("nav.shareTitle")}
+            description={t("nav.shareDescription")}
+            className="block w-full rounded-md px-2 py-2 text-start text-white/70 hover:bg-white/10 hover:text-white"
           >
-            Share this site
+            {t("nav.shareSite")}
           </ShareButton>
           <button
             onClick={() => {
               setMenuOpen(false);
               handleLogout();
             }}
-            className="block w-full rounded-md px-2 py-2 text-left text-white/70 hover:bg-white/10 hover:text-white"
+            className="block w-full rounded-md px-2 py-2 text-start text-white/70 hover:bg-white/10 hover:text-white"
           >
-            Log out
+            {t("nav.logOut")}
           </button>
         </div>
       )}

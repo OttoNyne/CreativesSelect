@@ -80,7 +80,7 @@ export function FriendsPage() {
                 <span className="min-w-0 flex-1">
                   <Link to={`/u/${r.requester.username}`} className="block font-medium text-white hover:underline">
                     {r.requester.displayName}
-                    <CSBadge verified={r.requester.csVerified} size={14} className="ml-1" />
+                    <CSBadge verified={r.requester.csVerified} size={14} className="ms-1" />
                   </Link>
                   {r.mutualCount ? (
                     <span className="block text-xs text-white/60">
@@ -112,7 +112,7 @@ export function FriendsPage() {
               <span className="flex-1">
                 <Link to={`/u/${f.username}`} className="block font-medium text-white hover:underline">
                   {f.displayName}
-                  <CSBadge verified={f.csVerified} size={14} className="ml-1" />
+                  <CSBadge verified={f.csVerified} size={14} className="ms-1" />
                 </Link>
                 <ActivityBadge activity={f.activity} />
               </span>

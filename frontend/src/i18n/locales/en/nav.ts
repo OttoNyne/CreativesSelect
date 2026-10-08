@@ -1,0 +1,22 @@
+// The navigation bar, the footer and the language switcher.
+export const nav = {
+  "nav.feed": "Feed",
+  "nav.friends": "Friends",
+  "nav.groups": "Groups",
+  "nav.events": "Events",
+  "nav.search": "Search",
+  "nav.live": "Live",
+  "nav.helpWanted": "Help wanted",
+  "nav.moderation": "Moderation",
+  "nav.logOut": "Log out",
+  "nav.menu": "Menu",
+  "nav.shareSite": "Share this site",
+  "nav.shareTitle": "Share CreativesSelect",
+  "nav.shareDescription": "Anyone who scans this code, or opens the link, lands on the site.",
+  "footer.tagline": "a home for creatives.",
+  "footer.about": "About",
+  "footer.features": "Features",
+  "footer.howItWorks": "How it works",
+  "footer.navLabel": "About this site",
+  "language.label": "Language",
+} as const;

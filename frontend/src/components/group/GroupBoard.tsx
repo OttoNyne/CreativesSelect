@@ -123,7 +123,7 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
             >
               Cancel
             </button>
-            <span className="ml-auto text-xs text-white/60" aria-live="polite">
+            <span className="ms-auto text-xs text-white/60" aria-live="polite">
               {body.length} / {MAX_TOPIC_BODY}
             </span>
           </div>
@@ -145,7 +145,7 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
       <ul className="mt-3 space-y-2">
         {topics.map((t) => (
           <li key={t.id}>
-            <button type="button" onClick={() => setOpen(t.id)} className="block w-full rounded-lg border border-white/10 p-3 text-left hover:bg-white/[0.05]">
+            <button type="button" onClick={() => setOpen(t.id)} className="block w-full rounded-lg border border-white/10 p-3 text-start hover:bg-white/[0.05]">
               <span className="flex items-center gap-2">
                 {t.pinned && <span className="rounded-full bg-violet-500/25 px-2 py-0.5 text-[11px] text-violet-200">Pinned</span>}
                 <span className="font-medium text-white">{t.title}</span>
@@ -309,7 +309,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
       {state === "ready" && topic && (
         <>
           <h2 className="mt-3 text-lg font-semibold text-white">
-            {topic.pinned && <span className="mr-2 rounded-full bg-violet-500/25 px-2 py-0.5 align-middle text-[11px] font-normal text-violet-200">Pinned</span>}
+            {topic.pinned && <span className="me-2 rounded-full bg-violet-500/25 px-2 py-0.5 align-middle text-[11px] font-normal text-violet-200">Pinned</span>}
             {topic.title} <EditedMark editedAt={topic.editedAt} />
           </h2>
           <div className="mt-1 flex items-center gap-2 text-xs text-white/60">
@@ -363,7 +363,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
                   <span className="font-medium text-white/80">{r.mine ? "You" : (r.author?.displayName ?? "Someone")}</span>
                   <span aria-hidden="true">·</span>
                   <time dateTime={r.createdAt}>{formatDay(r.createdAt)}</time>
-                  <span className="ml-auto flex gap-3">
+                  <span className="ms-auto flex gap-3">
                     {r.mine && editingReply !== r.id && (
                       <button type="button" onClick={() => setEditingReply(r.id)} aria-label="Edit your reply" className="text-white/60 hover:text-white">
                         Edit
@@ -403,7 +403,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
               <button type="submit" disabled={busy || !draft.trim()} className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
                 {busy ? "Posting…" : "Reply"}
               </button>
-              <span className="ml-auto text-xs text-white/60" aria-live="polite">
+              <span className="ms-auto text-xs text-white/60" aria-live="polite">
                 {draft.length} / {MAX_REPLY_BODY}
               </span>
             </div>

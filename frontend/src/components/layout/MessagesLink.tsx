@@ -34,7 +34,7 @@ export function MessagesLink({ className, onClick }: { className?: string; onCli
       {unread > 0 && (
         <span
           aria-label={`${unread} unread`}
-          className="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-violet-600 px-1.5 text-[11px] font-semibold leading-5 text-white"
+          className="ms-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-violet-600 px-1.5 text-[11px] font-semibold leading-5 text-white"
         >
           {unread > 99 ? "99+" : unread}
         </span>

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { t } from "../i18n";
+import { tRich } from "../i18n/rich";
 
 const tokenFromHash = (hash: string) => new URLSearchParams(hash.replace(/^#/, "")).get("token") ?? "";
 
@@ -50,7 +52,7 @@ export function EmailLinkPage({ act, working, doneTitle, doneText, failedTitle, 
       })
       .catch((err) => {
         setState("failed");
-        setError(err instanceof ApiError ? err.message : "Something went wrong — please try again.");
+        setError(err instanceof ApiError ? err.message : t("common.somethingWrongRetry"));
       });
   }, [token, act, refresh]);
 
@@ -62,7 +64,7 @@ export function EmailLinkPage({ act, working, doneTitle, doneText, failedTitle, 
       <div className={box}>
         <h1 className="text-xl font-bold text-white">{working}</h1>
         <p role="status" className="mt-3 text-sm text-white/60">
-          One moment.
+          {t("common.oneMoment")}
         </p>
       </div>
     );
@@ -85,15 +87,12 @@ export function EmailLinkPage({ act, working, doneTitle, doneText, failedTitle, 
 
   return (
     <div className={box}>
-      <h1 className="text-xl font-bold text-white">{state === "missing" ? "Link needed" : failedTitle}</h1>
+      <h1 className="text-xl font-bold text-white">{state === "missing" ? t("emailLink.missingTitle") : failedTitle}</h1>
       <p role="alert" className="mt-3 text-sm text-white/70">
         {state === "missing" ? missingText : error}
       </p>
       <p className="mt-3 text-sm text-white/60">
-        <Link to="/login" className="text-violet-400 hover:underline">
-          Log in
-        </Link>{" "}
-        to ask again from your profile&apos;s edit panel.
+        {tRich("emailLink.askAgain", { login: (c) => <Link to="/login" className="text-violet-400 hover:underline">{c}</Link> })}
       </p>
     </div>
   );

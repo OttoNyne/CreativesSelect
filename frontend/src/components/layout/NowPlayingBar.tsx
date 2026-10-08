@@ -59,7 +59,7 @@ export function NowPlayingBar() {
   // video, so it keeps the thin bar.
   if (isYouTube) {
     return (
-      <div className="fixed bottom-2 right-2 z-40 flex w-[min(340px,calc(100vw-1rem))] overflow-hidden rounded-xl border border-white/15 bg-[#0e0e12]/95 shadow-lg backdrop-blur">
+      <div className="fixed bottom-2 end-2 z-40 flex w-[min(340px,calc(100vw-1rem))] overflow-hidden rounded-xl border border-white/15 bg-[#0e0e12]/95 shadow-lg backdrop-blur">
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-2.5">
           <div className="min-w-0">
             <p className="line-clamp-4 break-words text-sm font-medium text-white">{current.title}</p>
@@ -96,7 +96,7 @@ export function NowPlayingBar() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0e0e12]/95 backdrop-blur">
+      <div className="fixed bottom-0 start-0 end-0 z-40 border-t border-white/10 bg-[#0e0e12]/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2">
           <button
             onClick={toggle}

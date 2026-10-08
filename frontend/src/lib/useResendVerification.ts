@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { authApi } from "../api/auth.api";
 import { ApiError } from "../api/client";
+import { t } from "../i18n";
 
 // Asks for another "confirm your email" link and keeps track of what to tell the person.
 export function useResendVerification() {
@@ -14,10 +15,10 @@ export function useResendVerification() {
     try {
       await authApi.resendVerification();
       setState("sent");
-      setMessage("Sent — check your inbox (and spam folder).");
+      setMessage(t("verify.sent"));
     } catch (err) {
       setState("error");
-      setMessage(err instanceof ApiError ? err.message : "Couldn't send the email — please try again.");
+      setMessage(err instanceof ApiError ? err.message : t("verify.sendFailed"));
     }
   }
 

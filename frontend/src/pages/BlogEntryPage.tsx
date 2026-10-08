@@ -93,7 +93,7 @@ export function BlogEntryPage() {
             <Avatar username={entry.author.username} displayName={entry.author.displayName} avatarUrl={entry.author.avatarUrl} size={28} />
             <Link to={`/u/${entry.author.username}`} className="hover:underline">
               {entry.author.displayName}
-              <CSBadge verified={entry.author.csVerified} size={14} className="ml-1" />
+              <CSBadge verified={entry.author.csVerified} size={14} className="ms-1" />
             </Link>
             <span aria-hidden="true">·</span>
             <time dateTime={entry.createdAt}>{formatDay(entry.createdAt)}</time>

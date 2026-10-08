@@ -106,9 +106,9 @@ describe("NowPlayingBar", () => {
       const card = frame.parentElement as HTMLElement;
       expect(card.className).toContain("fixed");
       expect(card.className).toContain("bottom-2");
-      expect(card.className).toContain("right-2");
+      expect(card.className).toContain("end-2");
       expect(card.className).toContain("w-[min(340px,"); // about as wide as the video and its buttons need (less on a very narrow screen)
-      expect(card.className).not.toContain("left-");
+      expect(card.className).not.toContain("start-");
       expect(frame.className).toContain("h-[200px]"); // still the 200 pixels YouTube asks for
       expect(frame.className).toContain("w-[224px]");
       expect(frame.className).toContain("shrink-0"); // the buttons give way, never the video
@@ -120,7 +120,7 @@ describe("NowPlayingBar", () => {
       expect(card).toContainElement(screen.getByRole("button", { name: "Stop" }));
       // and nothing is stretched across the bottom
       expect(document.querySelectorAll(".fixed")).toHaveLength(1);
-      expect(document.querySelector(".left-0.right-0")).toBeNull();
+      expect(document.querySelector(".start-0.end-0")).toBeNull();
     });
 
     it("keeps working from the card: skip and stop", async () => {
@@ -136,8 +136,8 @@ describe("NowPlayingBar", () => {
       render(<NowPlayingBar />);
       const bar = screen.getByRole("status").closest(".fixed") as HTMLElement;
       expect(bar.className).toContain("bottom-0");
-      expect(bar.className).toContain("left-0");
-      expect(bar.className).toContain("right-0");
+      expect(bar.className).toContain("start-0");
+      expect(bar.className).toContain("end-0");
       expect(document.querySelector("iframe")).toBeNull();
     });
 

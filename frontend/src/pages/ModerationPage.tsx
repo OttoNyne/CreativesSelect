@@ -300,7 +300,7 @@ export function ModerationPage() {
                     <Link to={`/u/${v.user.username}`} className="hover:underline">
                       {v.user.displayName}
                     </Link>
-                    <CSBadge verified size={14} className="ml-1" /> <span className="font-normal text-white/60">@{v.user.username}</span>
+                    <CSBadge verified size={14} className="ms-1" /> <span className="font-normal text-white/60">@{v.user.username}</span>
                   </p>
                   <p className="text-xs text-white/60">Given {formatDay(v.givenAt)}</p>
                 </div>

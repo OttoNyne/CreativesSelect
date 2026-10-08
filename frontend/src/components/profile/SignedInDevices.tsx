@@ -102,7 +102,7 @@ export function SignedInDevices() {
                 <span className="min-w-0 text-xs text-white/85">
                   <span className="block truncate font-medium">
                     {d.device}
-                    {d.current && <span className="ml-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-normal text-emerald-300">This device</span>}
+                    {d.current && <span className="ms-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-normal text-emerald-300">This device</span>}
                   </span>
                   <span className="block text-[11px] text-white/60">
                     {d.current ? "Using it now" : `Last used ${agoText(d.lastSeenAt)}`} · signed in {agoText(d.createdAt)}

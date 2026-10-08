@@ -5,6 +5,7 @@ import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { passkeysApi } from "../api/passkeys.api";
 import { PasskeyError, passkeysSupported, signInWithPasskey } from "../lib/passkeys";
+import { t } from "../i18n";
 
 export function LoginPage() {
   const { setUser } = useAuth();
@@ -30,7 +31,7 @@ export function LoginPage() {
       setUser(result.user);
       navigate("/");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(err instanceof ApiError ? err.message : t("common.somethingWrong"));
     } finally {
       setSubmitting(false);
     }
@@ -52,7 +53,7 @@ export function LoginPage() {
         setPassword("");
       }
       setCode("");
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(err instanceof ApiError ? err.message : t("common.somethingWrong"));
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +71,7 @@ export function LoginPage() {
       navigate("/");
     } catch (err) {
       // closing the prompt is not an error worth shouting about
-      setError(err instanceof PasskeyError && err.reason === "cancelled" ? null : err instanceof ApiError || err instanceof PasskeyError ? err.message : "Something went wrong");
+      setError(err instanceof PasskeyError && err.reason === "cancelled" ? null : err instanceof ApiError || err instanceof PasskeyError ? err.message : t("common.somethingWrong"));
     } finally {
       setSubmitting(false);
     }
@@ -86,11 +87,11 @@ export function LoginPage() {
   if (challenge) {
     return (
       <div className="mx-auto mt-16 max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <h1 className="text-xl font-bold text-white">Two-step sign-in</h1>
-        <p className="mt-2 text-sm text-white/70">Open your authenticator app and enter the 6-digit code it shows for CreativesSelect.</p>
+        <h1 className="text-xl font-bold text-white">{t("login.twoStep.title")}</h1>
+        <p className="mt-2 text-sm text-white/70">{t("login.twoStep.intro")}</p>
         <form onSubmit={handleCode} className="mt-4 space-y-3">
           <label className="block text-xs text-white/70" htmlFor="login-code">
-            Code from your app
+            {t("login.twoStep.label")}
           </label>
           <input
             id="login-code"
@@ -104,7 +105,7 @@ export function LoginPage() {
             onChange={(e) => setCode(e.target.value)}
             className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm tracking-widest text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
-          <p className="text-xs text-white/60">Lost your phone? Type one of your recovery codes here instead. Each one works once.</p>
+          <p className="text-xs text-white/60">{t("login.twoStep.recoveryHint")}</p>
           {error && (
             <p role="alert" className="text-sm text-red-400">
               {error}
@@ -115,10 +116,10 @@ export function LoginPage() {
             disabled={submitting || !code.trim()}
             className="w-full rounded-md bg-violet-600 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
           >
-            {submitting ? "Checking…" : "Continue"}
+            {submitting ? t("common.checking") : t("common.continue")}
           </button>
           <button type="button" onClick={startOver} className="w-full text-center text-xs text-white/60 hover:text-white">
-            Back to log in
+            {t("common.backToLogin")}
           </button>
         </form>
       </div>
@@ -127,13 +128,13 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto mt-16 max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-6">
-      <h1 className="text-xl font-bold text-white">Log in to CreativesSelect</h1>
+      <h1 className="text-xl font-bold text-white">{t("login.title")}</h1>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <input
           type="email"
           required
-          placeholder="Email"
+          placeholder={t("common.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
@@ -141,15 +142,15 @@ export function LoginPage() {
         <input
           type="password"
           required
-          placeholder="Password"
+          placeholder={t("common.password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         {error && <p className="text-sm text-red-400">{error}</p>}
-        <div className="text-right">
+        <div className="text-end">
           <Link to="/forgot-password" className="text-xs text-violet-400 hover:underline">
-            Forgot password?
+            {t("login.forgot")}
           </Link>
         </div>
         <button
@@ -157,7 +158,7 @@ export function LoginPage() {
           disabled={submitting}
           className="w-full rounded-md bg-violet-600 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
         >
-          {submitting ? "Logging in…" : "Log in"}
+          {submitting ? t("login.submitting") : t("login.submit")}
         </button>
       </form>
 
@@ -169,15 +170,15 @@ export function LoginPage() {
             disabled={submitting}
             className="w-full rounded-md border border-white/20 py-2 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-50"
           >
-            Sign in with a passkey
+            {t("login.passkey")}
           </button>
         </div>
       )}
 
       <p className="mt-4 text-center text-sm text-white/60">
-        No account?{" "}
+        {t("login.noAccount")}{" "}
         <Link to="/register" className="text-violet-400 hover:underline">
-          Sign up
+          {t("common.signUp")}
         </Link>
       </p>
     </div>

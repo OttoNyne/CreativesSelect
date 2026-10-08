@@ -112,7 +112,7 @@ function AboutForm({ data, onSaved, onCancel }: { data: ProfileAbout; onSaved: (
             {ABOUT_LABELS[f]}
           </label>
           <textarea id={`about-${f}`} value={texts[f]} onChange={(e) => setTexts((t) => ({ ...t, [f]: e.target.value }))} maxLength={MAX_ABOUT} rows={2} className={field} />
-          <p className="text-right text-[10px] text-white/60">
+          <p className="text-end text-[10px] text-white/60">
             {texts[f].length} / {MAX_ABOUT}
           </p>
         </div>

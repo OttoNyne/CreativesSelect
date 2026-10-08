@@ -7,6 +7,8 @@ import { Avatar } from "../components/common/Avatar";
 import type { Inviter } from "../types";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { t } from "../i18n";
+import { tRich } from "../i18n/rich";
 
 export function RegisterPage() {
   const { user: signedIn, setUser } = useAuth();
@@ -48,7 +50,7 @@ export function RegisterPage() {
       // came in through someone's link: show them their new friend; otherwise the feed
       navigate(invitedBy ? "/friends" : "/");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(err instanceof ApiError ? err.message : t("common.somethingWrong"));
     } finally {
       setSubmitting(false);
     }
@@ -56,39 +58,37 @@ export function RegisterPage() {
 
   return (
     <div className="mx-auto mt-16 max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-6">
-      <h1 className="text-xl font-bold text-white">Join CreativesSelect</h1>
-      <p className="mt-1 text-sm text-white/60">A safe space for creatives to network, collab, and show off work.</p>
+      <h1 className="text-xl font-bold text-white">{t("register.title")}</h1>
+      <p className="mt-1 text-sm text-white/60">{t("register.subtitle")}</p>
 
       {signedIn && code && (
         <p role="status" className="mt-4 rounded-md border border-white/10 bg-white/5 p-3 text-sm text-white/80">
-          You&apos;re already signed in. <Link to="/" className="text-violet-400 hover:underline">Go to your feed</Link>.
+          {tRich("register.alreadySignedIn", { feed: (c) => <Link to="/" className="text-violet-400 hover:underline">{c}</Link> })}
         </p>
       )}
       {inviteState === "valid" && inviter && (
         <div role="status" className="mt-4 flex items-center gap-3 rounded-md border border-violet-400/40 bg-violet-500/10 p-3 text-sm text-white">
           <Avatar username={inviter.username} displayName={inviter.displayName} avatarUrl={inviter.avatarUrl} size={36} />
-          <span>
-            <strong>{inviter.displayName}</strong> invited you. You&apos;ll be friends as soon as you sign up.
-          </span>
+          <span>{tRich("register.invitedYou", { name: (c) => <strong>{c}</strong> }, { name: inviter.displayName })}</span>
         </div>
       )}
       {inviteState === "invalid" && (
         <p role="status" className="mt-4 rounded-md border border-white/10 bg-white/5 p-3 text-sm text-white/80">
-          This invite link isn&apos;t valid any more. You can still sign up, and find your friend by searching for them.
+          {t("register.inviteInvalid")}
         </p>
       )}
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <input
           required
-          placeholder="Display name"
+          placeholder={t("register.displayName")}
           value={form.displayName}
           onChange={(e) => update("displayName", e.target.value)}
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <input
           required
-          placeholder="Username"
+          placeholder={t("register.username")}
           value={form.username}
           onChange={(e) => update("username", e.target.value.replace(/\s/g, ""))}
           autoCapitalize="none"
@@ -97,17 +97,17 @@ export function RegisterPage() {
           minLength={3}
           maxLength={30}
           pattern="[A-Za-z0-9_]+"
-          title="3–30 letters, numbers or underscores"
+          title={t("register.usernameRule")}
           aria-describedby="username-hint"
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <p id="username-hint" className="-mt-1 text-[11px] text-white/60">
-          Your profile address: 3–30 letters, numbers or underscores.
+          {t("register.usernameHint")}
         </p>
         <input
           type="email"
           required
-          placeholder="Email"
+          placeholder={t("common.email")}
           value={form.email}
           onChange={(e) => update("email", e.target.value)}
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
@@ -116,7 +116,7 @@ export function RegisterPage() {
           type="password"
           required
           minLength={8}
-          placeholder="Password (min 8 characters)"
+          placeholder={t("register.passwordPlaceholder")}
           value={form.password}
           onChange={(e) => update("password", e.target.value)}
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
@@ -127,14 +127,14 @@ export function RegisterPage() {
           disabled={submitting}
           className="w-full rounded-md bg-violet-600 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
         >
-          {submitting ? "Creating account…" : "Sign up"}
+          {submitting ? t("register.submitting") : t("common.signUp")}
         </button>
       </form>
 
       <p className="mt-4 text-center text-sm text-white/60">
-        Already have an account?{" "}
+        {t("register.haveAccount")}{" "}
         <Link to="/login" className="text-violet-400 hover:underline">
-          Log in
+          {t("common.logIn")}
         </Link>
       </p>
     </div>

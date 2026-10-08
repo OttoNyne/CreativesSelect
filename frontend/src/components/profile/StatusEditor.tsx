@@ -71,7 +71,7 @@ export function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags:
       <label htmlFor={listId + "-input"}>What do you do? Tags help people find you ({tags.length}/{MAX_TAGS})</label>
       <ul aria-label="Your tags" className="mt-1 flex flex-wrap gap-1.5">
         {tags.map((tag) => (
-          <li key={tag} className="flex items-center gap-1 rounded-full border border-white/20 bg-white/5 py-0.5 pl-2.5 pr-1 text-xs text-white">
+          <li key={tag} className="flex items-center gap-1 rounded-full border border-white/20 bg-white/5 py-0.5 ps-2.5 pe-1 text-xs text-white">
             #{tag}
             <button type="button" onClick={() => onChange(tags.filter((t) => t !== tag))} aria-label={`Remove tag ${tag}`} className="rounded-full px-1.5 text-white/70 hover:bg-white/10 hover:text-white">
               ✕

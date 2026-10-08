@@ -138,7 +138,7 @@ export function HostStage({
         {listeners.length === 0 ? (
           <p className="mt-1 text-sm text-white/60">No one else is listening yet.</p>
         ) : (
-          <ul className="mt-1 max-h-56 divide-y divide-white/5 overflow-y-auto pr-1">
+          <ul className="mt-1 max-h-56 divide-y divide-white/5 overflow-y-auto pe-1">
             {listeners.map(({ user }) => (
               <Person key={user.id} user={user}>
                 {invite(user)}

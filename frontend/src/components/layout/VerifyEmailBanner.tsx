@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useResendVerification } from "../../lib/useResendVerification";
+import { t } from "../../i18n";
+import { tRich } from "../../i18n/rich";
 
 const KEY = "verify-email-banner-dismissed";
 const wasDismissed = () => {
@@ -23,13 +25,12 @@ export function VerifyEmailBanner() {
   if (!user || user.emailVerified !== false || dismissed || pathname === "/verify-email") return null;
 
   return (
-    <div role="region" aria-label="Confirm your email" className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5">
+    <div role="region" aria-label={t("verifyBanner.label")} className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/90">
         <p className="flex-1 basis-64">
-          <strong className="font-semibold text-white">Please confirm your email.</strong> We sent a link to{" "}
-          <span className="break-all text-white">{user.email}</span>.
+          {tRich("verifyBanner.message", { b: (c) => <strong className="font-semibold text-white">{c}</strong>, email: <span className="break-all text-white">{user.email}</span> })}
           {message && (
-            <span role={state === "error" ? "alert" : "status"} className={`ml-1 ${state === "error" ? "text-red-300" : "text-emerald-300"}`}>
+            <span role={state === "error" ? "alert" : "status"} className={`ms-1 ${state === "error" ? "text-red-300" : "text-emerald-300"}`}>
               {message}
             </span>
           )}
@@ -40,7 +41,7 @@ export function VerifyEmailBanner() {
           disabled={state === "sending"}
           className="rounded-md border border-white/20 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10 disabled:opacity-50"
         >
-          {state === "sending" ? "Sending…" : "Resend email"}
+          {state === "sending" ? t("common.sending") : t("verifyBanner.resend")}
         </button>
         <button
           type="button"
@@ -52,8 +53,8 @@ export function VerifyEmailBanner() {
             }
             setDismissed(true);
           }}
-          aria-label="Dismiss this reminder"
-          className="-my-1 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-white"
+          aria-label={t("verifyBanner.dismiss")}
+          className="-my-1 -me-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-white"
         >
           ✕
         </button>

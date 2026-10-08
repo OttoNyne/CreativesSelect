@@ -220,3 +220,16 @@ a {
 [data-avatar="square"] .profile-avatar {
   border-radius: 0;
 }
+
+/* Right-to-left languages: addresses, passwords, codes and numbers are always typed left to right, but sit at the start of the field. */
+:root[dir="rtl"] input:is([type="email"], [type="password"], [type="url"], [type="tel"], [type="number"], [inputmode="numeric"]) {
+  direction: ltr;
+  text-align: right;
+}
+:root[dir="rtl"] input:is([type="email"], [type="password"], [type="url"], [type="tel"], [type="number"], [inputmode="numeric"]):placeholder-shown {
+  direction: rtl;
+}
+/* Icons that point somewhere (arrows, chevrons) turn around with the page. */
+:root[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}

@@ -235,7 +235,7 @@ export function ProfilePage() {
           {isOwner && (
             <button
               onClick={() => avatarInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white"
+              className="absolute -bottom-1 -end-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white"
             >
               Edit
             </button>
@@ -253,7 +253,7 @@ export function ProfilePage() {
           <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
         </div>
 
-        <div className="ml-auto flex flex-wrap gap-2 pb-2">
+        <div className="ms-auto flex flex-wrap gap-2 pb-2">
           <ShareButton
             url={() => profileUrl(profile.username)}
             title={isOwner ? "Share your profile" : `Share ${profile.displayName}'s profile`}
@@ -324,7 +324,7 @@ export function ProfilePage() {
           <TagEditor tags={tags} onChange={setTags} />
           <div className="flex flex-wrap items-center gap-2">
             <GenerateTextButton kind="bio" getPrompt={() => bio || profile.displayName} onGenerated={setBio} />
-            <label className="ml-auto flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+            <label className="ms-auto flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input
                 type="checkbox"
                 checked={profile.isPrivate}

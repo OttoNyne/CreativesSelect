@@ -81,7 +81,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
               setFraming(DEFAULT_FRAMING);
               setIsAiImage(false);
             }}
-            className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-xs text-white"
+            className="absolute end-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-xs text-white"
           >
             ✕
           </button>
@@ -118,7 +118,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
         <button
           type="submit"
           disabled={submitting || !content.trim()}
-          className="ml-auto rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+          className="ms-auto rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
         >
           {submitting ? "Posting…" : "Post"}
         </button>

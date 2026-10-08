@@ -60,7 +60,7 @@ function Guests({ eventId, status, total }: { eventId: string; status: EventAnsw
       <ul className="mt-2 flex flex-wrap gap-2">
         {guests.map((g) => (
           <li key={g.id}>
-            <Link to={`/u/${g.username}`} className="flex items-center gap-1.5 rounded-full border border-white/10 py-0.5 pl-0.5 pr-2.5 text-xs text-white/80 hover:bg-white/10">
+            <Link to={`/u/${g.username}`} className="flex items-center gap-1.5 rounded-full border border-white/10 py-0.5 ps-0.5 pe-2.5 text-xs text-white/80 hover:bg-white/10">
               <Avatar username={g.username} displayName={g.displayName} avatarUrl={g.avatarUrl} size={20} />
               {g.displayName}
             </Link>
@@ -217,7 +217,7 @@ export function EventDetailPage() {
               </button>
             )}
             {!event.isHost && user && (
-              <button type="button" onClick={() => report(event)} className="ml-auto text-xs text-white/60 hover:text-white hover:underline">
+              <button type="button" onClick={() => report(event)} className="ms-auto text-xs text-white/60 hover:text-white hover:underline">
                 Report
               </button>
             )}

@@ -43,7 +43,7 @@ function CaptionEditor({ caption, onSave, onCancel }: { caption: string; onSave:
         <button type="button" onClick={onCancel} disabled={busy} className="text-white/70 hover:underline disabled:opacity-50">
           Cancel
         </button>
-        <span className="ml-auto text-white/60">
+        <span className="ms-auto text-white/60">
           {draft.length}/{MAX_CAPTION_LENGTH}
         </span>
       </div>
@@ -136,7 +136,7 @@ export function PortfolioTile({
         )}
 
         {item.isAiImage && (
-          <span className="absolute left-1 top-1 rounded-full bg-fuchsia-500/80 px-1.5 py-0.5 text-[9px] font-medium text-white">
+          <span className="absolute start-1 top-1 rounded-full bg-fuchsia-500/80 px-1.5 py-0.5 text-[9px] font-medium text-white">
             AI
           </span>
         )}
@@ -146,7 +146,7 @@ export function PortfolioTile({
             onClick={() => onRemove(item.id)}
             aria-label="Remove from portfolio"
             title="Remove from portfolio"
-            className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-xs text-white hover:bg-red-600"
+            className="absolute end-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-xs text-white hover:bg-red-600"
           >
             ✕
           </button>
@@ -211,7 +211,7 @@ export function PortfolioTile({
         </div>
       )}
       </div>
-      {commentsOpen && comments && <div className="min-w-0 flex-1 border-t border-white/10 px-3 pb-3 sm:border-l sm:border-t-0">{comments}</div>}
+      {commentsOpen && comments && <div className="min-w-0 flex-1 border-t border-white/10 px-3 pb-3 sm:border-s sm:border-t-0">{comments}</div>}
     </div>
   );
 }

@@ -98,11 +98,11 @@ export function LiveChat({
             {c.user && <Avatar username={c.user.username} displayName={c.user.displayName} avatarUrl={c.user.avatarUrl} size={24} />}
             <p className="min-w-0 flex-1 break-words text-white">
               {c.user ? (
-                <Link to={`/u/${c.user.username}`} className="mr-1.5 font-medium text-white/70 hover:underline">
+                <Link to={`/u/${c.user.username}`} className="me-1.5 font-medium text-white/70 hover:underline">
                   {c.mine ? "You" : c.user.displayName}
                 </Link>
               ) : (
-                <span className="mr-1.5 text-white/60">Former member</span>
+                <span className="me-1.5 text-white/60">Former member</span>
               )}
               {c.body}
             </p>

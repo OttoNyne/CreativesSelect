@@ -216,14 +216,14 @@ export function NotificationBell() {
       >
         🔔
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+          <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-80 rounded-lg border border-white/10 bg-[#15151c] shadow-xl">
+        <div className="absolute end-0 z-30 mt-2 w-80 rounded-lg border border-white/10 bg-[#15151c] shadow-xl">
           <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
             <span className="text-sm font-semibold text-white">Notifications</span>
             {unreadCount > 0 && (

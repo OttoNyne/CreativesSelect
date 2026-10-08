@@ -140,7 +140,7 @@ export function BulletinsPage() {
                 </Link>
                 <span aria-hidden="true">·</span>
                 <time dateTime={b.createdAt}>{formatDay(b.createdAt)}</time>
-                <span className="ml-auto text-xs text-white/60">{daysLeft(b.expiresAt)}</span>
+                <span className="ms-auto text-xs text-white/60">{daysLeft(b.expiresAt)}</span>
               </div>
               {editing === b.id ? (
                 <EditBox title={b.title} maxTitle={MAX_BULLETIN_TITLE} text={b.body} maxText={MAX_BULLETIN_BODY} label="Edit bulletin" onSave={(value) => saveEdit(b, value)} onCancel={() => setEditing(null)} />

@@ -83,7 +83,7 @@ export function BlogEditorPage() {
             aria-label="Entry text"
             className={`${field} leading-relaxed`}
           />
-          <p className="mt-1 text-right text-xs text-white/60" aria-live="polite">
+          <p className="mt-1 text-end text-xs text-white/60" aria-live="polite">
             {body.length.toLocaleString()} / {MAX_BLOG_BODY.toLocaleString()}
           </p>
         </div>

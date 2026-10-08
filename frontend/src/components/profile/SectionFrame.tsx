@@ -23,7 +23,7 @@ export function SectionFrame({ section, position, total, hidden, disabled, onMov
           {label} <span className="font-normal normal-case text-white/60">({position} of {total})</span>
         </span>
         {hidden && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/80">Hidden from visitors</span>}
-        <span className="ml-auto flex gap-1.5">
+        <span className="ms-auto flex gap-1.5">
           <button type="button" onClick={() => onMove(-1)} disabled={disabled || position === 1} aria-label={`Move ${label} up`} className={button}>
             ↑ Up
           </button>

@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../api/auth.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { t } from "../i18n";
+import { tRich } from "../i18n/rich";
 
 const tokenFromHash = (hash: string) => new URLSearchParams(hash.replace(/^#/, "")).get("token") ?? "";
 
@@ -40,7 +42,7 @@ export function VerifyEmailPage() {
       })
       .catch((err) => {
         setState("failed");
-        setError(err instanceof ApiError ? err.message : "Something went wrong — please try again.");
+        setError(err instanceof ApiError ? err.message : t("common.somethingWrongRetry"));
       });
   }, [token, refresh]);
 
@@ -49,9 +51,9 @@ export function VerifyEmailPage() {
   if (state === "working") {
     return (
       <div className={box}>
-        <h1 className="text-xl font-bold text-white">Confirming your email…</h1>
+        <h1 className="text-xl font-bold text-white">{t("verify.working")}</h1>
         <p role="status" className="mt-3 text-sm text-white/60">
-          One moment.
+          {t("common.oneMoment")}
         </p>
       </div>
     );
@@ -60,12 +62,12 @@ export function VerifyEmailPage() {
   if (state === "done") {
     return (
       <div className={box}>
-        <h1 className="text-xl font-bold text-white">Email confirmed</h1>
+        <h1 className="text-xl font-bold text-white">{t("verify.doneTitle")}</h1>
         <p role="status" className="mt-3 text-sm text-white/70">
-          Thanks — your email address is confirmed.
+          {t("verify.done")}
         </p>
         <Link to={user ? "/" : "/login"} className="mt-4 inline-block rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
-          {user ? "Go to your feed" : "Log in"}
+          {user ? t("verify.goFeed") : t("common.logIn")}
         </Link>
       </div>
     );
@@ -73,19 +75,16 @@ export function VerifyEmailPage() {
 
   return (
     <div className={box}>
-      <h1 className="text-xl font-bold text-white">{state === "missing" ? "Confirmation link needed" : "Couldn't confirm your email"}</h1>
+      <h1 className="text-xl font-bold text-white">{state === "missing" ? t("verify.missingTitle") : t("verify.failedTitle")}</h1>
       <p role="alert" className="mt-3 text-sm text-white/70">
-        {state === "missing" ? "This page needs the link from your confirmation email. Open that link from the email." : error}
+        {state === "missing" ? t("verify.missing") : error}
       </p>
       <p className="mt-3 text-sm text-white/60">
         {user ? (
-          <>You can ask for a new link from the reminder at the top of the page, or from your profile&apos;s edit panel.</>
+          <>{t("verify.helpSignedIn")}</>
         ) : (
           <>
-            Log in and ask for a new link from the reminder at the top of the page.{" "}
-            <Link to="/login" className="text-violet-400 hover:underline">
-              Log in
-            </Link>
+            {tRich("verify.helpSignedOut", { login: (c) => <Link to="/login" className="text-violet-400 hover:underline">{c}</Link> })}
           </>
         )}
       </p>

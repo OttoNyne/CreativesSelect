@@ -156,7 +156,7 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
               ) : (
                 <>
                   <span className="font-medium text-white/90">{c.author.displayName}</span>
-                  <CSBadge verified={c.author.csVerified} size={12} className="ml-0.5" />{" "}
+                  <CSBadge verified={c.author.csVerified} size={12} className="ms-0.5" />{" "}
                   {c.content && (
                     <span className="whitespace-pre-line break-words text-white/70">
                       <Linkified text={c.content} />
@@ -164,22 +164,22 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
                   )}{" "}
                   <EditedMark editedAt={c.editedAt} />
                   {mine && (
-                    <button type="button" onClick={() => setEditing(c.id)} aria-label={`Edit your comment: ${c.content.slice(0, 30)}`} className={`ml-2 ${action}`}>
+                    <button type="button" onClick={() => setEditing(c.id)} aria-label={`Edit your comment: ${c.content.slice(0, 30)}`} className={`ms-2 ${action}`}>
                       Edit
                     </button>
                   )}
                   {remove && (mine || canModerate) && (
-                    <button type="button" onClick={() => handleRemove(c)} aria-label={`Delete comment by ${mine ? "you" : c.author.displayName}`} className={`ml-2 ${action} hover:text-red-400`}>
+                    <button type="button" onClick={() => handleRemove(c)} aria-label={`Delete comment by ${mine ? "you" : c.author.displayName}`} className={`ms-2 ${action} hover:text-red-400`}>
                       Delete
                     </button>
                   )}
                   {mine && c.imageUrl && removePicture && (
-                    <button type="button" onClick={() => takePictureOff(c)} aria-label={`Remove the picture from your comment: ${c.content.slice(0, 30)}`} className={`ml-2 ${action}`}>
+                    <button type="button" onClick={() => takePictureOff(c)} aria-label={`Remove the picture from your comment: ${c.content.slice(0, 30)}`} className={`ms-2 ${action}`}>
                       Remove picture
                     </button>
                   )}
                   {onReport && user && !mine && (
-                    <button type="button" onClick={() => onReport(c)} aria-label={`Report comment by ${c.author.displayName}`} className={`ml-2 ${action}`}>
+                    <button type="button" onClick={() => onReport(c)} aria-label={`Report comment by ${c.author.displayName}`} className={`ms-2 ${action}`}>
                       Report
                     </button>
                   )}

@@ -95,7 +95,7 @@ export function WelcomeChecklist() {
                   {info.label}
                 </Link>
               ) : (
-                <button type="button" onClick={focusComposer} className="text-left text-white underline decoration-white/40 underline-offset-2 hover:decoration-white">
+                <button type="button" onClick={focusComposer} className="text-start text-white underline decoration-white/40 underline-offset-2 hover:decoration-white">
                   {info.label}
                 </button>
               )}

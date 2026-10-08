@@ -27,7 +27,7 @@ export function MutualFriends({ username }: { username: string }) {
         {mutual.count} mutual {mutual.count === 1 ? "friend" : "friends"}:
       </span>
       {mutual.friends.map((f) => (
-        <Link key={f.id} to={`/u/${f.username}`} className="flex items-center gap-1.5 rounded-full border border-white/10 py-0.5 pl-0.5 pr-2.5 text-xs hover:bg-white/10">
+        <Link key={f.id} to={`/u/${f.username}`} className="flex items-center gap-1.5 rounded-full border border-white/10 py-0.5 ps-0.5 pe-2.5 text-xs hover:bg-white/10">
           <Avatar username={f.username} displayName={f.displayName} avatarUrl={f.avatarUrl} size={20} />
           {f.displayName}
         </Link>

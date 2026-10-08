@@ -244,7 +244,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                   <p className="truncate text-xs font-medium text-white/80">{track.title}</p>
                   <p className="text-[10px] text-white/60">
                     {[track.artist, track.sourceType === "youtube" ? "YouTube" : "Uploaded", track.plays ? `${track.plays} ${track.plays === 1 ? "play" : "plays"}` : null].filter(Boolean).join(" · ")}
-                    {track.profileSong && <span className="ml-1.5 rounded-full border border-[var(--profile-accent)] px-1.5 text-[var(--profile-accent-text)]">Profile song</span>}
+                    {track.profileSong && <span className="ms-1.5 rounded-full border border-[var(--profile-accent)] px-1.5 text-[var(--profile-accent-text)]">Profile song</span>}
                   </p>
                 </div>
               )}

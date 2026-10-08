@@ -13,7 +13,7 @@ export function PersonCard({ user, onTag, words = [], mutualCount = 0, isFriend 
         <span className="min-w-0">
           <span className="block truncate font-medium text-white">
             <Highlight text={user.displayName} words={words} />
-            <CSBadge verified={user.csVerified} size={14} className="ml-1" />
+            <CSBadge verified={user.csVerified} size={14} className="ms-1" />
           </span>
           <span className="block truncate text-xs text-white/60">
             @<Highlight text={user.username} words={words} />

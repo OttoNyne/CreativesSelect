@@ -81,7 +81,7 @@ export function PostCard({
           <Link to={`/u/${post.author.username}`} className="font-medium text-white hover:underline">
             {post.author.displayName}
           </Link>
-          <CSBadge verified={post.author.csVerified} size={14} className="ml-1" />
+          <CSBadge verified={post.author.csVerified} size={14} className="ms-1" />
           <div className="text-xs text-white/60">
             @{post.author.username} · {timeAgo(post.createdAt)}
           </div>
@@ -140,12 +140,12 @@ export function PostCard({
           💬 {commentCount} comment{commentCount === 1 ? "" : "s"}
         </button>
         {isOwner && !editing && (
-          <button onClick={() => setEditing(true)} className="ml-auto hover:text-white">
+          <button onClick={() => setEditing(true)} className="ms-auto hover:text-white">
             Edit
           </button>
         )}
         {onDeleted && isOwner && (
-          <button onClick={() => onDeleted(post.id)} className={isOwner && !editing ? "hover:text-red-400" : "ml-auto hover:text-red-400"}>
+          <button onClick={() => onDeleted(post.id)} className={isOwner && !editing ? "hover:text-red-400" : "ms-auto hover:text-red-400"}>
             Delete
           </button>
         )}

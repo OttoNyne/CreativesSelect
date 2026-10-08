@@ -51,7 +51,7 @@ export function EditBox({ text, maxText, label, title, maxTitle, rows = 4, onSav
         <button type="button" onClick={onCancel} disabled={busy} className="text-sm text-white/70 hover:underline disabled:opacity-50">
           Cancel
         </button>
-        <span className="ml-auto text-xs text-white/60" aria-live="polite">
+        <span className="ms-auto text-xs text-white/60" aria-live="polite">
           {draft.length} / {maxText}
         </span>
       </div>

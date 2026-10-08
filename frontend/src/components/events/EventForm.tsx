@@ -114,7 +114,7 @@ export function EventForm({ event, onSaved, onCancel }: { event?: CommunityEvent
           Details (optional)
         </label>
         <textarea id="event-description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={EVENT_LIMITS.description} rows={3} placeholder="What to bring, who it's for…" className={field} />
-        <p className="mt-1 text-right text-xs text-white/60">
+        <p className="mt-1 text-end text-xs text-white/60">
           {description.length} / {EVENT_LIMITS.description}
         </p>
       </div>

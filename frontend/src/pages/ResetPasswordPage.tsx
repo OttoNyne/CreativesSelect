@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../api/auth.api";
 import { ApiError } from "../api/client";
+import { t, translateServerMessage } from "../i18n";
+import { tRich } from "../i18n/rich";
 
 const inputClass =
   "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
@@ -32,14 +34,14 @@ export function ResetPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password.length < 8) return setError("Choose a password of at least 8 characters.");
-    if (password !== confirm) return setError("The two passwords don't match.");
+    if (password.length < 8) return setError(t("reset.tooShort"));
+    if (password !== confirm) return setError(t("reset.mismatch"));
     setSubmitting(true);
     try {
       await authApi.resetPassword(token, password);
       setDone(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong — please try again.");
+      setError(err instanceof ApiError ? err.message : t("common.somethingWrongRetry"));
     } finally {
       setSubmitting(false);
     }
@@ -48,12 +50,12 @@ export function ResetPasswordPage() {
   if (done) {
     return (
       <div className="mx-auto mt-16 max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <h1 className="text-xl font-bold text-white">Password changed</h1>
+        <h1 className="text-xl font-bold text-white">{t("reset.doneTitle")}</h1>
         <p role="status" className="mt-3 text-sm text-white/70">
-          Your password has been reset and any other devices have been signed out. You can log in with the new one now.
+          {t("reset.done")}
         </p>
         <Link to="/login" className="mt-4 inline-block rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
-          Log in
+          {t("common.logIn")}
         </Link>
       </div>
     );
@@ -62,30 +64,27 @@ export function ResetPasswordPage() {
   if (!token) {
     return (
       <div className="mx-auto mt-16 max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <h1 className="text-xl font-bold text-white">Reset link needed</h1>
+        <h1 className="text-xl font-bold text-white">{t("reset.needLinkTitle")}</h1>
         <p className="mt-3 text-sm text-white/70">
-          This page needs the link from your reset email. Open that link, or{" "}
-          <Link to="/forgot-password" className="text-violet-400 hover:underline">
-            request a new one
-          </Link>
-          .
+          {tRich("reset.needLink", { request: (c) => <Link to="/forgot-password" className="text-violet-400 hover:underline">{c}</Link> })}
         </p>
       </div>
     );
   }
 
-  const linkProblem = error && /invalid or has expired/i.test(error);
+  // the server's words for a link that no longer works (in the language in use, as the error was translated when it arrived)
+  const linkProblem = error === translateServerMessage("This reset link is invalid or has expired");
 
   return (
     <div className="mx-auto mt-16 max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-6">
-      <h1 className="text-xl font-bold text-white">Choose a new password</h1>
+      <h1 className="text-xl font-bold text-white">{t("reset.title")}</h1>
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <input
           type="password"
           required
           autoComplete="new-password"
-          placeholder="New password (min 8 characters)"
-          aria-label="New password"
+          placeholder={t("reset.newPasswordPlaceholder")}
+          aria-label={t("reset.newPassword")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className={inputClass}
@@ -94,8 +93,8 @@ export function ResetPasswordPage() {
           type="password"
           required
           autoComplete="new-password"
-          placeholder="Repeat new password"
-          aria-label="Repeat new password"
+          placeholder={t("reset.repeat")}
+          aria-label={t("reset.repeat")}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           className={inputClass}
@@ -107,7 +106,7 @@ export function ResetPasswordPage() {
               <>
                 {" "}
                 <Link to="/forgot-password" className="text-violet-400 hover:underline">
-                  Request a new link
+                  {t("reset.requestNew")}
                 </Link>
               </>
             )}
@@ -118,7 +117,7 @@ export function ResetPasswordPage() {
           disabled={submitting}
           className="w-full rounded-md bg-violet-600 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
         >
-          {submitting ? "Saving…" : "Reset password"}
+          {submitting ? t("reset.saving") : t("reset.submit")}
         </button>
       </form>
     </div>

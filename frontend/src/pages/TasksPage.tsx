@@ -244,7 +244,7 @@ export function TasksPage() {
               <button
                 type="button"
                 onClick={() => run(() => tasksApi.remove(task._id), "Couldn't delete that request.")}
-                className="ml-auto text-white/60 hover:text-red-400"
+                className="ms-auto text-white/60 hover:text-red-400"
               >
                 Delete
               </button>

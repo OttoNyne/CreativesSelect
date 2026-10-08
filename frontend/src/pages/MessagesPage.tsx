@@ -355,7 +355,7 @@ export function MessagesPage() {
     <div className="mx-auto max-w-5xl px-4 py-6">
       <h1 className="mb-3 text-lg font-semibold text-white">Messages</h1>
       <div className="flex h-[70vh] min-h-[420px] overflow-hidden rounded-xl border border-white/10 bg-black/20">
-        <aside className={`${username ? "hidden md:block" : "block"} w-full overflow-y-auto border-white/10 md:w-72 md:border-r`}>
+        <aside className={`${username ? "hidden md:block" : "block"} w-full overflow-y-auto border-white/10 md:w-72 md:border-e`}>
           {listState === "loading" && <p className="p-4 text-sm text-white/60">Loading…</p>}
           {listState === "error" && <p className="p-4 text-sm text-red-400">Couldn&apos;t load your conversations.</p>}
           {listState === "ready" && <ConversationList conversations={conversations} active={username} />}

@@ -55,7 +55,7 @@ export function ImageAdjuster({ src, value, onChange }: { src?: string; value: I
       </div>
 
       <div role="group" aria-label="Picture shape" className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-[11px] uppercase tracking-wide text-white/60">Shape</span>
+        <span className="me-1 text-[11px] uppercase tracking-wide text-white/60">Shape</span>
         {ASPECT_OPTIONS.map((o) => (
           <button
             key={o.value}
