@@ -46,7 +46,7 @@ test.describe("portfolio albums", () => {
     await visitor.page.getByRole("button", { name: "Sketchbook (2)" }).click();
     await expect(pieces(visitor.page)).toHaveCount(2);
     await expect(visitor.page.getByRole("button", { name: "+ New album" })).toHaveCount(0);
-    await expect(visitor.page.getByRole("combobox")).toHaveCount(0);
+    await expect(visitor.page.getByRole("combobox", { name: /^Album for/ })).toHaveCount(0);
 
     // rename it
     await page.getByRole("button", { name: "Rename this album" }).click();

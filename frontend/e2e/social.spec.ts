@@ -69,7 +69,7 @@ test.describe("groups", () => {
     await page.getByPlaceholder("What's this group about?").fill("We paint together");
     await page.getByRole("button", { name: "Create" }).click();
     await expect(page.getByRole("link", { name: groupName })).toBeVisible();
-    await expect(page.locator("div", { hasText: groupName }).getByText("1 members").first()).toBeVisible();
+    await expect(page.locator("div", { hasText: groupName }).getByText("1 member").first()).toBeVisible();
 
     const other = await secondBrowserUser(browser, baseURL!, "joiner");
     await other.page.goto("/groups");
