@@ -57,6 +57,10 @@ function describe(n: Notification): string {
       const mark = REACTIONS.find((r) => r.key === n.payload.emoji)?.emoji ?? "";
       return n.payload.targetType === "post" ? t("notif.reactedPost", { mark }) : t("notif.reactedPortfolio", { mark });
     }
+    case "credit_request":
+      return typeof n.payload.role === "string" ? `${t("notif.creditRequest")}: ${n.payload.role}` : t("notif.creditRequest");
+    case "credit_accepted":
+      return t("notif.creditAccepted");
     case "cs_verified":
       return n.payload.reason === "friends" ? t("notif.verifiedFriends") : t("notif.verifiedAdmin");
     case "event_created":

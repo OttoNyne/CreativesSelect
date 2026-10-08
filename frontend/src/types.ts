@@ -178,6 +178,26 @@ export interface MediaItem {
   reactions: ReactionSummary;
   /** How many comments the piece has. */
   commentCount?: number;
+  /** The people credited on it (accepted ones to everybody; waiting ones only to the owner and the person asked). */
+  credits?: MediaCredit[];
+  createdAt: string;
+}
+
+/** Someone credited on a portfolio piece, with what they did. */
+export interface MediaCredit {
+  id: string;
+  itemId: string;
+  role: string;
+  status: "pending" | "accepted";
+  user: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
+}
+
+/** A piece made by someone else that a person is credited on, or a credit waiting to be accepted. */
+export interface CreditedPiece {
+  id: string;
+  role: string;
+  item: MediaItem;
+  owner: MediaCredit["user"];
   createdAt: string;
 }
 
@@ -339,7 +359,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "reaction";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

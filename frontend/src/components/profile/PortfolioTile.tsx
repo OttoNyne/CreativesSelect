@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { assetUrl } from "../../api/client";
 import { clipWindow, directVideoSrc, playableVideoUrl, videoPosterUrl, youtubeEmbedUrl } from "../../lib/video";
-import type { Album, MediaItem, ReactionKey } from "../../types";
+import type { Album, MediaCredit, MediaItem, ReactionKey } from "../../types";
+import { PieceCredits } from "./PieceCredits";
 import { ReactionBar } from "../common/ReactionBar";
 import { t } from "../../i18n";
 
@@ -69,6 +70,7 @@ export function PortfolioTile({
   albums = [],
   onMove,
   onCaption,
+  onCredits,
   commentsOpen = false,
   onToggleComments,
   comments,
@@ -83,6 +85,8 @@ export function PortfolioTile({
   onMove?: (id: string, albumId: string | null) => void;
   /** How the owner changes the piece's caption: resolves to the reason it couldn't be saved, or null. */
   onCaption?: (id: string, caption: string | null) => Promise<string | null>;
+  /** Told when the people credited on the piece change (credited, accepted, removed). */
+  onCredits?: (id: string, credits: MediaCredit[]) => void;
   /** Whether the comments are showing, how to show or hide them, and what to show. */
   commentsOpen?: boolean;
   onToggleComments?: (id: string) => void;
@@ -178,6 +182,8 @@ export function PortfolioTile({
           )}
         </div>
       )}
+
+      <PieceCredits item={item} isOwner={isOwner} onChange={(credits) => onCredits?.(item.id, credits)} />
 
       <div className="flex flex-wrap items-center gap-1 bg-black/20 px-2 py-1">
         <ReactionBar summary={item.reactions} canReact={canReact} onReact={(key) => onReact(item.id, key)} label={t("media.reactionsToThisPiece")} />

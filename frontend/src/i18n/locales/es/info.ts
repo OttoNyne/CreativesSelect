@@ -44,4 +44,6 @@ export const info: Translation<typeof en> = {
   "info.howIntro": "Del registro a compartir tu trabajo, en cinco pasos.",
   "info.languagesTitle": "En tu idioma",
   "info.languagesText": "Usa todo el sitio en inglés, español o árabe (que se lee de derecha a izquierda, con cada página en espejo). Empieza en el idioma de tu navegador, puedes cambiarlo desde el pie de cualquier página y se recuerda tu elección. Los correos, las notificaciones del teléfono y los textos escritos con IA que el sitio te prepara también llegan en ese idioma.",
+  "info.creditsTitle": "Créditos y colaboraciones",
+  "info.creditsText": "Da crédito a los amigos que trabajaron en una obra (ilustrador, productor, modelo, editor) e indica qué hizo cada uno. Se les pregunta antes, así que nadie puede poner su nombre en tu trabajo ni el tuyo en el suyo por su cuenta, y cuando aceptan la obra aparece en su perfil como colaboración. Cualquiera de los dos puede quitar un crédito en cualquier momento.",
 };

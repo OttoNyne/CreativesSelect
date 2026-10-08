@@ -355,4 +355,13 @@ export const serverAr: Record<string, string> = {
   "The name can be up to {v1} characters": "يمكن أن يصل طول حقل «الاسم» إلى {v1} حرفًا",
   "Text must be text": "يجب أن يكون حقل «النص» نصًا",
   "Text can be up to {v1} characters": "يمكن أن يصل طول حقل «النص» إلى {v1} حرفًا",
+  "Say what they did on it": "اذكر ما الذي فعله فيه",
+  "Roles can be up to {v1} characters": "يمكن أن يصل طول الأدوار إلى {v1} حرفًا",
+  "Choose who to credit": "اختر من تريد اعتماده",
+  "You can't credit yourself": "لا يمكنك اعتماد نفسك",
+  "You can only credit your friends": "يمكنك اعتماد أصدقائك فقط",
+  "A piece can credit up to {v1} people": "يمكن أن يعتمد العمل ما يصل إلى {v1} أشخاص",
+  "They are already credited on this piece": "هو معتمد بالفعل في هذا العمل",
+  "You've credited a lot of people — try again later.": "اعتمدت أشخاصًا كثيرين — حاول لاحقًا.",
+  "Credit not found": "لم يتم العثور على الاعتماد",
 };

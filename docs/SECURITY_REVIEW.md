@@ -1335,6 +1335,17 @@ Adding Spanish and Arabic (right to left) touches every screen, so the review lo
 - **Emails are in the person's language, and only the account decides it.** The language is stored on the account (a fixed list; anything else is refused, tested with objects and made-up codes) and set from the page at sign-up and when it differs; the text of every email is composed on the server (`utils/emailText.js`), links and names are put in as values and never built from the language, and a reset email's language comes from the stored account, not from the request (tested: asking for a reset with another language in the request changes nothing). The same holds for phone notifications, worded in the recipient's language and never the sender's (tested), and for AI-written text, whose language is read from the account and not from the request (tested: a request that names another language is ignored).
 - **Not covered:** a name or number the server puts inside a sentence (a person's name, a device, a time) is shown as the server wrote it, and the field names inside the data-export file stay English on purpose (it is also read by programs).
 
+### 5.76 Credits: putting two people's names on one piece of work
+
+Letting people say who worked on a piece adds a claim about someone else, so the review asked how it could be abused.
+
+- **Nobody can name someone without their yes.** A credit starts as a request that only the owner and the person asked can see; it shows on the piece and as a collaboration only after the person accepts, so a name can't be put on work, or work on a profile, by one person alone (tested: strangers, the owner and others can't accept for them; waiting credits are not visible to anyone else).
+- **Only friends, and not through a block.** The server refuses anyone who isn't a friend, anyone blocked either way, and yourself; a suspended person is never shown; a block after the fact hides the credit from the person who blocked (tested).
+- **Visibility follows the profile.** A collaboration is listed only if the owner's profile is visible to the viewer, so a private profile's pieces don't leak through someone else's page (tested, including a block).
+- **Limits.** One credit per person per piece, ten per piece, forty requests an hour per person; roles are one line of plain text up to 40 characters, drawn as text, never markup (tested).
+- **Tidy when things go.** Deleting a piece or either person's account removes the credits and the pending notices about them; the data download lists the credits you gave and the ones you accepted.
+- **Not covered:** a credit can't be reported on its own (a role is plain text and the owner of the piece can remove it, the person credited can leave it); and credits don't yet count toward search.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

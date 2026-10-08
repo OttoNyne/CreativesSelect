@@ -355,4 +355,13 @@ export const serverEs: Record<string, string> = {
   "The name can be up to {v1} characters": "El campo «Nombre» puede tener hasta {v1} caracteres",
   "Text must be text": "El campo «Texto» debe ser texto",
   "Text can be up to {v1} characters": "El campo «Texto» puede tener hasta {v1} caracteres",
+  "Say what they did on it": "Indica qué hizo en ella",
+  "Roles can be up to {v1} characters": "Los roles pueden tener hasta {v1} caracteres",
+  "Choose who to credit": "Elige a quién dar crédito",
+  "You can't credit yourself": "No puedes darte crédito a ti mismo",
+  "You can only credit your friends": "Solo puedes dar crédito a tus amigos",
+  "A piece can credit up to {v1} people": "Una obra puede dar crédito a hasta {v1} personas",
+  "They are already credited on this piece": "Ya tiene crédito en esta obra",
+  "You've credited a lot of people — try again later.": "Has dado crédito a muchas personas: inténtalo más tarde.",
+  "Credit not found": "Crédito no encontrado",
 };

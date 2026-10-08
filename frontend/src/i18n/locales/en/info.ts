@@ -42,4 +42,6 @@ export const info = {
   "info.howIntro": "From sign-up to sharing your work, in five steps.",
   "info.languagesTitle": "In your language",
   "info.languagesText": "Use the whole site in English, Spanish or Arabic (which reads right to left, with every page mirrored to match). It starts in your browser's language, you can change it from the footer on any page, and your choice is remembered. The emails, phone notifications and AI-written text the site makes for you come in it too.",
+  "info.creditsTitle": "Credits and collaborations",
+  "info.creditsText": "Credit the friends who worked on a piece (illustrator, producer, model, editor) and say what each did. They are asked first, so nobody can put their name on your work or yours on theirs by themselves, and once they accept the piece shows on their profile as a collaboration. Either of you can take a credit off again at any time.",
 } as const;

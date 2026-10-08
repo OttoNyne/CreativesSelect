@@ -130,3 +130,12 @@ describe("notificationTarget: planned lives", () => {
     expect(notificationTarget(n("live_reminder", { scheduledId: "p1" }), "me")).toEqual({ to: "/live", label: "Open Live" });
   });
 });
+
+describe("credits", () => {
+  it("a request opens your portfolio, where it can be answered; an acceptance opens the piece", () => {
+    expect(notificationTarget(n("credit_request", { itemId: "m1", creditId: "c1", role: "Producer" }), "ada")).toEqual({ to: "/u/ada#portfolio", label: "View credit" });
+    expect(notificationTarget(n("credit_accepted", { itemId: "m 1" }), "ada")).toEqual({ to: "/u/ada?piece=m%201#portfolio", label: "View credit" });
+    expect(notificationTarget(n("credit_accepted", {}), "ada")).toEqual({ to: "/u/ada#portfolio", label: "View credit" });
+    expect(notificationTarget(n("credit_request", {}), undefined)).toBeNull();
+  });
+});

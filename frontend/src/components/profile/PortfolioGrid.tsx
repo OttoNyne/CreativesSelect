@@ -9,7 +9,8 @@ import { PortfolioTile, MAX_CAPTION_LENGTH } from "./PortfolioTile";
 import { PieceComments } from "./PieceComments";
 import { AlbumBar, ALL } from "./AlbumBar";
 import { albumsApi } from "../../api/albums.api";
-import type { Album, MediaItem, ReactionKey } from "../../types";
+import type { Album, MediaCredit, MediaItem, ReactionKey } from "../../types";
+import { Collaborations, CreditRequests } from "./CreditLists";
 import { t } from "../../i18n";
 
 
@@ -30,6 +31,8 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
   const [commentsOpenFor, setCommentsOpenFor] = useState<string | null>(focusPiece);
   const focusedFor = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // bumped when a credit is accepted, so the list of collaborations is read again
+  const [collabKey, setCollabKey] = useState(0);
 
   useEffect(() => {
     mediaApi
@@ -54,6 +57,8 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       .catch(() => setAlbums([])); // e.g. a private profile
     setSelected(ALL);
   }, [username]);
+
+  const changeCredits = (id: string, credits: MediaCredit[]) => setItems((list) => list.map((item) => (item.id === id ? { ...item, credits } : item)));
 
   const counts: Record<string, number> = {};
   for (const item of items) if (item.albumId) counts[item.albumId] = (counts[item.albumId] ?? 0) + 1;
@@ -296,6 +301,16 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       )}
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
 
+      {isOwner && (
+        <CreditRequests
+          onAccepted={() => {
+            setCollabKey((k) => k + 1);
+            // a piece of yours may have been waiting on this too: read the pieces again so the credits shown are current
+            mediaApi.byUser(username).then(({ media }) => setItems(media)).catch(() => {});
+          }}
+        />
+      )}
+
       <AlbumBar albums={albums} counts={counts} total={items.length} selected={selected} onSelect={setSelected} isOwner={isOwner} onCreate={createAlbum} onRename={renameAlbum} onDelete={deleteAlbum} />
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -312,6 +327,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
             albums={albums}
             onMove={moveItem}
             onCaption={handleCaption}
+            onCredits={changeCredits}
             commentsOpen={commentsOpenFor === item.id}
             onToggleComments={(id) => setCommentsOpenFor((open) => (open === id ? null : id))}
             comments={
@@ -322,6 +338,8 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
           />
         ))}
       </div>
+
+      <Collaborations username={username} refreshKey={collabKey} />
     </div>
   );
 }

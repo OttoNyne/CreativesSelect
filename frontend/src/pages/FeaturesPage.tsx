@@ -12,6 +12,7 @@ const FEATURES = [
   { icon: "🎙️", get title() { return t("info.liveAudio"); }, get text() { return t("info.goLiveWithYour"); } },
   { icon: "✨", get title() { return t("info.aiAssistance"); }, get text() { return t("info.optionallyGenerateACaption"); } },
   { icon: "🔒", get title() { return t("info.privacyAndSafety"); }, get text() { return t("info.privateProfilesBlockingReporting"); } },
+  { icon: "🤝", get title() { return t("info.creditsTitle"); }, get text() { return t("info.creditsText"); } },
   { icon: "📱", get title() { return t("info.worksOnYourPhone"); }, get text() { return t("info.useItInAny"); } },
   { icon: "🌍", get title() { return t("info.languagesTitle"); }, get text() { return t("info.languagesText"); } },
 ];

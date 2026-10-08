@@ -361,3 +361,12 @@ describe("NotificationBell: older notifications", () => {
     }
   });
 });
+
+describe("NotificationBell: credits", () => {
+  it("says who credited you and as what, and who accepted a credit on your piece", async () => {
+    await openWith([note({ id: "a", type: "credit_request", payload: { role: "Producer", itemId: "m1" } }), note({ id: "b", type: "credit_accepted", payload: { itemId: "m1" } })]);
+    expect(await screen.findByText("credited you on a piece: Producer")).toBeInTheDocument();
+    expect(screen.getByText("accepted a credit on your piece")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "View credit" })[0]).toHaveAttribute("href", "/u/me#portfolio");
+  });
+});

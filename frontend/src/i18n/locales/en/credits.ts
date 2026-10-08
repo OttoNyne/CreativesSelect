@@ -1,0 +1,23 @@
+// credits
+export const credits = {
+  "credits.couldntDoThat": "Couldn't do that, try again.",
+  "credits.couldntCredit": "Couldn't credit them, try again.",
+  "credits.withLabel": "Who worked on this",
+  "credits.waiting": "waiting for them",
+  "credits.removeCredit": "Take {name}'s credit off this piece",
+  "credits.leaveCredit": "Take your name off this piece",
+  "credits.creditSomeone": "+ Credit someone",
+  "credits.whoWorkedOnIt": "Who worked on it",
+  "credits.chooseAFriend": "Choose a friend…",
+  "credits.noFriendsToCredit": "No friends to credit yet",
+  "credits.whatTheyDid": "What they did (e.g. illustrator)",
+  "credits.ask": "Ask",
+  "credits.asking": "Asking…",
+  "credits.requestsTitle": "Credits waiting for you",
+  "credits.askedYou": "{name} credited you as",
+  "credits.collaborations": "Collaborations",
+  "credits.byOwner": "by {name}",
+  "notif.creditRequest": "credited you on a piece",
+  "notif.creditAccepted": "accepted a credit on your piece",
+  "target.viewCredit": "View credit",
+} as const;

@@ -71,6 +71,12 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       if (n.payload.targetType === "post") return { to: `/posts/${targetId}`, label: t("target.viewPost") };
       return viewerUsername ? { to: `/u/${viewerUsername}?piece=${encodeURIComponent(targetId)}#portfolio`, label: t("target.viewPiece") } : actorProfile;
     }
+    case "credit_request":
+      return viewerUsername ? { to: `/u/${viewerUsername}#portfolio`, label: t("target.viewCredit") } : null;
+    case "credit_accepted": {
+      const itemId = str(n.payload.itemId);
+      return viewerUsername ? { to: `/u/${viewerUsername}${itemId ? `?piece=${encodeURIComponent(itemId)}` : ""}#portfolio`, label: t("target.viewCredit") } : null;
+    }
     case "cs_verified":
       return viewerUsername ? { to: `/u/${viewerUsername}`, label: t("target.viewYourProfile") } : null;
     case "live_scheduled":
