@@ -344,33 +344,33 @@ describe("PortfolioGrid: videos", () => {
     expect(el.getAttribute("src")).toBe("https://res.cloudinary.com/demo/video/upload/f_mp4,vc_h264/v1/x/clip.mp4");
   });
 
-  it("plays a linked direct video as a 30-second window from its start time", async () => {
+  it("plays a linked direct video as a one-minute window from its start time", async () => {
     api.byUser.mockResolvedValue({ media: [item({ type: "video", url: "https://cdn.example.com/a.mp4", startSeconds: 20 })] });
     const { container } = renderGrid(false);
     await screen.findByRole("button", { name: "Add a reaction" });
-    expect(container.querySelector("video")!.getAttribute("src")).toBe("https://cdn.example.com/a.mp4#t=20,50");
+    expect(container.querySelector("video")!.getAttribute("src")).toBe("https://cdn.example.com/a.mp4#t=20,80");
   });
 
-  it("stops a linked video at the end of its 30-second window", async () => {
+  it("stops a linked video at the end of its one-minute window", async () => {
     api.byUser.mockResolvedValue({ media: [item({ type: "video", url: "https://cdn.example.com/a.mp4", startSeconds: 0 })] });
     const { container } = renderGrid(false);
     await screen.findByRole("button", { name: "Add a reaction" });
     const el = container.querySelector("video")!;
     const pause = vi.spyOn(el, "pause").mockImplementation(() => {});
-    Object.defineProperty(el, "currentTime", { value: 31, writable: true });
+    Object.defineProperty(el, "currentTime", { value: 61, writable: true });
     fireEvent.timeUpdate(el);
     expect(pause).toHaveBeenCalled();
-    expect(el.currentTime).toBe(30);
+    expect(el.currentTime).toBe(60);
   });
 
-  it("embeds a YouTube link clipped to 30 seconds", async () => {
+  it("embeds a YouTube link clipped to a minute", async () => {
     api.byUser.mockResolvedValue({
       media: [item({ type: "embed", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", startSeconds: 5 })],
     });
     const { container } = renderGrid(false);
     await screen.findByRole("button", { name: "Add a reaction" });
     const src = container.querySelector("iframe")!.getAttribute("src")!;
-    expect(src).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ\?start=5&end=35/);
+    expect(src).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ\?start=5&end=65/);
   });
 
   it("won't embed a stored link that isn't a valid YouTube video", async () => {
@@ -444,21 +444,21 @@ describe("PortfolioGrid: adding videos", () => {
   });
 
   it("refuses an over-long or over-large video before uploading, with the reason", async () => {
-    vi.mocked(checkVideoFile).mockResolvedValue("Videos can be up to 30 seconds — this one is 42 seconds.");
+    vi.mocked(checkVideoFile).mockResolvedValue("Videos can be up to 60 seconds — this one is 72 seconds.");
     renderGrid(true);
     await screen.findAllByRole("button", { name: "Add a reaction" });
     chooseFile(mp4());
-    expect(await screen.findByText(/this one is 42 seconds/)).toBeInTheDocument();
+    expect(await screen.findByText(/this one is 72 seconds/)).toBeInTheDocument();
     expect(upload).not.toHaveBeenCalled();
   });
 
   it("shows the server's message if the upload is rejected", async () => {
     vi.mocked(checkVideoFile).mockResolvedValue(null);
-    upload.mockRejectedValue(new ApiError(400, "Videos can be up to 30 seconds — this one is 44 seconds"));
+    upload.mockRejectedValue(new ApiError(400, "Videos can be up to 60 seconds — this one is 74 seconds"));
     renderGrid(true);
     await screen.findAllByRole("button", { name: "Add a reaction" });
     chooseFile(mp4());
-    expect(await screen.findByText(/this one is 44 seconds/)).toBeInTheDocument();
+    expect(await screen.findByText(/this one is 74 seconds/)).toBeInTheDocument();
   });
 
   it("adds a video by link, with an optional start time", async () => {
@@ -485,7 +485,7 @@ describe("PortfolioGrid: adding videos", () => {
 
   it("tells the owner the limits", async () => {
     renderGrid(true);
-    expect(await screen.findByText(/up to 30 seconds and 30 MB/)).toBeInTheDocument();
+    expect(await screen.findByText(/up to 60 seconds and 100 MB/)).toBeInTheDocument();
   });
 });
 

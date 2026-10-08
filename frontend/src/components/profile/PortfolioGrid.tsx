@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { mediaApi, uploadFile } from "../../api/media.api";
 import { ApiError } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
-import { checkVideoFile, MAX_VIDEO_SECONDS } from "../../lib/video";
+import { checkVideoFile, MAX_VIDEO_MB, MAX_VIDEO_SECONDS } from "../../lib/video";
 import { GenerateImageButton } from "../ai/GenerateImageButton";
 import { ImageSearchPicker } from "../ai/ImageSearchPicker";
 import { PortfolioTile, MAX_CAPTION_LENGTH } from "./PortfolioTile";
@@ -245,7 +245,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       {isOwner && (
         <div className="mt-2 space-y-2">
           <p className="text-[11px] text-white/60">
-            Pictures up to 10 MB. Videos up to {MAX_VIDEO_SECONDS} seconds and 30 MB — upload one, or paste a YouTube or
+            Pictures up to 10 MB. Videos up to {MAX_VIDEO_SECONDS} seconds and {MAX_VIDEO_MB} MB — upload one, or paste a YouTube or
             direct video link (it plays as a {MAX_VIDEO_SECONDS}-second clip).
           </p>
           {showLink && (

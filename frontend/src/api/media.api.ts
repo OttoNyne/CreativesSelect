@@ -36,7 +36,7 @@ export interface CreateMediaItemInput {
   type?: "image" | "video";
   caption?: string;
   isAiImage?: boolean;
-  /** Video links: where the 30-second window starts. */
+  /** Video links: where the one-minute window starts. */
   startSeconds?: number;
 }
 

@@ -26,21 +26,21 @@ describe("video URLs", () => {
   });
 });
 
-describe("30-second clip windows", () => {
-  it("plays 30 seconds from the start time", () => {
-    expect(clipWindow(0)).toEqual({ start: 0, end: 30 });
-    expect(clipWindow(42)).toEqual({ start: 42, end: 72 });
-    expect(clipWindow(-5)).toEqual({ start: 0, end: 30 });
-    expect(clipWindow(7.9)).toEqual({ start: 7, end: 37 });
+describe("one-minute clip windows", () => {
+  it("plays a minute from the start time", () => {
+    expect(clipWindow(0)).toEqual({ start: 0, end: 60 });
+    expect(clipWindow(42)).toEqual({ start: 42, end: 102 });
+    expect(clipWindow(-5)).toEqual({ start: 0, end: 60 });
+    expect(clipWindow(7.9)).toEqual({ start: 7, end: 67 });
   });
 
   it("adds the media fragment to a direct link", () => {
-    expect(directVideoSrc("https://cdn.example.com/a.mp4", 10)).toBe("https://cdn.example.com/a.mp4#t=10,40");
+    expect(directVideoSrc("https://cdn.example.com/a.mp4", 10)).toBe("https://cdn.example.com/a.mp4#t=10,70");
   });
 
   it("embeds a stored YouTube link with start and end, on the privacy-friendly domain", () => {
     expect(youtubeEmbedUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ", 15)).toBe(
-      "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?start=15&end=45&rel=0&playsinline=1&modestbranding=1"
+      "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?start=15&end=75&rel=0&playsinline=1&modestbranding=1"
     );
   });
 
@@ -77,20 +77,20 @@ describe("checkVideoFile", () => {
     expect(await checkVideoFile(clip())).toBeNull();
   });
 
-  it("accepts exactly 30 seconds", async () => {
-    fakeDuration(30);
+  it("accepts exactly 60 seconds", async () => {
+    fakeDuration(60);
     expect(await checkVideoFile(clip())).toBeNull();
   });
 
-  it("rejects a clip over 30 seconds with its length", async () => {
-    fakeDuration(42.4);
-    expect(await checkVideoFile(clip())).toMatch(/up to 30 seconds — this one is 42 seconds/);
+  it("rejects a clip over 60 seconds with its length", async () => {
+    fakeDuration(72.4);
+    expect(await checkVideoFile(clip())).toMatch(/up to 60 seconds — this one is 72 seconds/);
   });
 
-  it("rejects a file over 30 MB without even reading it", async () => {
+  it("rejects a file over 100 MB without even reading it", async () => {
     const big = new File([new Uint8Array(1)], "big.mp4", { type: "video/mp4" });
-    Object.defineProperty(big, "size", { value: 45 * 1024 * 1024 });
-    expect(await checkVideoFile(big)).toMatch(/45 MB.*30 MB/);
+    Object.defineProperty(big, "size", { value: 145 * 1024 * 1024 });
+    expect(await checkVideoFile(big)).toMatch(/145 MB.*100 MB/);
   });
 
   it("lets the server decide when the browser can't read the length", async () => {

@@ -87,9 +87,9 @@ test.describe("portfolio pictures", () => {
 });
 
 test.describe("portfolio videos", () => {
-  test("a YouTube link becomes a 30-second embed", async ({ page }) => {
+  test("a YouTube link becomes a one-minute embed", async ({ page }) => {
     await openOwnProfile(page, "yt");
-    await expect(page.getByText(/up to 30 seconds and 30 MB/)).toBeVisible();
+    await expect(page.getByText(/up to 60 seconds and 100 MB/)).toBeVisible();
     await page.getByRole("button", { name: "+ Video link" }).click();
     await page.getByLabel("Video link").fill("https://youtu.be/dQw4w9WgXcQ");
     await page.getByLabel("Start time in seconds").fill("20");
@@ -97,7 +97,7 @@ test.describe("portfolio videos", () => {
 
     const frame = page.locator("iframe[src*='youtube-nocookie.com']");
     await expect(frame).toBeVisible();
-    await expect(frame).toHaveAttribute("src", /embed\/dQw4w9WgXcQ\?start=20&end=50/);
+    await expect(frame).toHaveAttribute("src", /embed\/dQw4w9WgXcQ\?start=20&end=80/);
 
     await page.reload();
     await expect(page.locator("iframe[src*='youtube-nocookie.com']")).toBeVisible();

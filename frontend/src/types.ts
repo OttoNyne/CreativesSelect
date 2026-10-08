@@ -166,7 +166,7 @@ export interface MediaItem {
   type: "image" | "audio" | "video" | "embed";
   caption: string | null;
   isAiImage: boolean;
-  /** Videos: where playback starts (linked videos play as a 30-second window from here). */
+  /** Videos: where playback starts (linked videos play as a one-minute window from here). */
   startSeconds?: number;
   /** Uploaded videos: measured length in seconds. */
   durationSeconds?: number | null;

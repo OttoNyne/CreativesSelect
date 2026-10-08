@@ -1,6 +1,7 @@
-// Portfolio videos are limited to 30 seconds and 30 MB.
-export const MAX_VIDEO_SECONDS = 30;
-export const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
+// Portfolio videos are limited to a minute and 100 MB (the storage plan's own per-file limit; a minute of phone video is large).
+export const MAX_VIDEO_SECONDS = 60;
+export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+export const MAX_VIDEO_MB = MAX_VIDEO_BYTES / 1024 / 1024;
 
 const CLOUDINARY_VIDEO = /^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)(.+)$/;
 
@@ -21,7 +22,7 @@ export function videoPosterUrl(url: string): string | undefined {
 }
 
 // A linked (not uploaded) direct video can't be measured, so it's played as a
-// 30-second window: media-fragment start/end plus a guard in the player.
+// one-minute window: media-fragment start/end plus a guard in the player.
 export function clipWindow(startSeconds: number): { start: number; end: number } {
   const start = Math.max(0, Math.floor(startSeconds || 0));
   return { start, end: start + MAX_VIDEO_SECONDS };
@@ -78,7 +79,7 @@ export function readVideoDuration(file: File): Promise<number | null> {
 // Returns a message if the file can't be a portfolio video, else null.
 export async function checkVideoFile(file: File): Promise<string | null> {
   if (file.size > MAX_VIDEO_BYTES) {
-    return `That video is ${(file.size / 1024 / 1024).toFixed(0)} MB — the limit is 30 MB (try a shorter or lower-quality clip).`;
+    return `That video is ${(file.size / 1024 / 1024).toFixed(0)} MB — the limit is ${MAX_VIDEO_MB} MB (try a shorter clip, or a lower-quality setting on your phone).`;
   }
   const duration = await readVideoDuration(file);
   if (duration !== null && duration > MAX_VIDEO_SECONDS + 0.5) {

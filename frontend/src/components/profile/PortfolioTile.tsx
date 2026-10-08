@@ -93,7 +93,7 @@ export function PortfolioTile({
   const [editingCaption, setEditingCaption] = useState(false);
 
   function onTimeUpdate(e: React.SyntheticEvent<HTMLVideoElement>) {
-    // A linked video can't be measured, so it only plays a 30-second window.
+    // A linked video can't be measured, so it only plays a one-minute window.
     const video = e.currentTarget;
     const { end } = clipWindow(item.startSeconds ?? 0);
     if (video.currentTime >= end) {

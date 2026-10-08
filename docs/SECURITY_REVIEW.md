@@ -1305,6 +1305,25 @@ Covered by 20 backend tests (the stream and its headers, every kind of hint and 
 
 Covered by 17 backend tests (the setting and what it accepts, when the read time is and isn't sent, the live hint, every case of typing: friends only, blocks, either person off, rate, nothing kept), 12 frontend tests (the typing line, its timing and the pings' pace, Seen, the setting's checkbox) and 4 browser flows on all three browsers (typing appearing and fading in a friend's open chat, Seen appearing without a reload, the setting switched off and remembered with neither shown, and the endpoint's rules).
 
+### 5.73 Longer videos: more room without letting a big file hurt the server
+
+Portfolio videos could be 30 seconds and 30 MB, which a phone's own recording of 30 seconds in good quality could already exceed. The limit is now one minute and 100 MB for video. A bigger limit is also a bigger thing to abuse, so the size is no longer one number for everything.
+
+- **Per kind of file, and counted as it arrives.** Video may be up to 100 MB (the storage plan's own per-file limit); pictures, audio and everything else keep 30 MB (and the plan's 10 MB for pictures). The size is counted as the bytes arrive, so a file over its limit is cut off at once, the upload to storage is abandoned and the rest of the request is read and dropped: it never fills the server's memory (the free server has little) or the storage. Tested at each limit, for every purpose (profile pictures, wallpapers, tracks, comment pictures), exactly at the limit, and that the next upload works after one was cut off.
+- **The length is still checked where it can be measured.** The storage provider reports the length of the file it has just stored; the API refuses and deletes anything over 60 seconds or of unknown length, so skipping the page's own pre-check changes nothing. Linked videos can't be measured, so they play as a one-minute window (YouTube links get start and end set, direct links a media fragment and a player guard).
+- **One number on each side.** The length and size are constants on the server and the page (and the page's pre-check and its explanation use the same constants), so they can't drift apart; the tests that assumed 30 seconds were updated to the new numbers rather than loosened.
+- **Not covered:** a high-quality full minute from a phone can be over 100 MB and is refused with advice to lower the quality or trim it; and the larger limit uses the free storage allowance faster, which is a cost question for the site's owner, not a code one. Uploads still go through the server (streamed, not held in memory); going straight from the browser to storage would be needed for much longer videos.
+
+Covered by 6 new backend tests (the two limits, the message for video, every purpose, exactly at the limit, recovery after a cut-off file) and the video tests updated to a minute on the server and the page.
+
+### 5.74 Faster tests, without making passwords any weaker
+
+The backend tests took 40 to 70 minutes on a slow day because they talked to a shared cloud database, and most of the rest was password hashing (the site hashes at a deliberately slow cost of 12, and the tests sign up hundreds of people). Both are fixed for tests only.
+
+- **A local database for test runs.** `npm run test:local` runs the whole backend suite against a MongoDB on the same computer (the package `mongodb-memory-server`, a development dependency only, which downloads the database program once, about 590 MB, into the user's cache folder), and `npm run e2e-api` starts the API for the browser tests the same way. CI already uses its own database container, so nothing changes there. The full suite went from 40 to 70 minutes to about 3.5 minutes.
+- **Cheaper hashing in tests, never anywhere else.** `BCRYPT_COST` (4 to 12) lowers the hashing cost, and the tests set it to 4. It is ignored when `NODE_ENV` is `production` and anything outside the range falls back to 12, so a stray setting can't weaken real passwords (tested: production always gives cost 12 whatever is set; the hashes tests make really do start with the low cost and the real ones with 12; and the running tests are confirmed to use the low one).
+- **Not covered:** the browser tests still need a lot of memory (three browsers and a database); on a computer with 6 GB of memory a full local run was too slow to be practical, so CI (three parallel jobs) is where the whole browser suite runs, and local runs are for single specs.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
@@ -1435,8 +1454,8 @@ its own.
   a live connection (hints only, 5.71) with polling as the fallback, and by push notification when the site is closed.
 - **Older stored files aren't cleaned up automatically.** Files stored before the
   ledger existed (two AI images) have no ledger entry and are left alone by design.
-- **Test coverage has known gaps.** Real Cloudinary uploads (including the 30-second
-  video check), real AI generation and Openverse search aren't in the automated browser
+- **Test coverage has known gaps.** Real Cloudinary uploads (including the video
+  length check), real AI generation and Openverse search aren't in the automated browser
   tests because CI has no keys for them (they're covered by mocked backend tests plus
   scripted and manual runs against production). The audio player context, theme editor and
   image positioner have no unit tests, and there is no automated real-device

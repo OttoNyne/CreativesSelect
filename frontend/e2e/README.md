@@ -27,7 +27,12 @@ API on `:5000` — the same same-origin shape as production (Vercel proxies
 
 ## Running locally
 
-1. Start MongoDB and the API from the `first-server` repo, on a **throwaway
+1. Easiest: from the `first-server` repo run `npm run e2e-api`. It starts a MongoDB of its own
+   on your computer and the API on `:5000` with everything below already set, and prints the
+   `MAIL_OUTBOX_DIR` to use. (A full run needs a lot of memory: three browsers plus a database.
+   On a small computer run single specs, as below, and let CI run the whole suite.)
+
+   Or by hand: start MongoDB and the API from the `first-server` repo, on a **throwaway
    database** (never your real one):
 
    ```bash
@@ -71,6 +76,6 @@ screenshots plus the API log as the `e2e-failure` artifact.
 ## Not covered here
 
 Anything that needs external services CI doesn't have: real Cloudinary uploads
-(including video upload and the 30-second check), real AI generation, and
+(including video upload and the length check), real AI generation, and
 Openverse photo search. Those are covered by backend tests with the provider
 mocked and by scripted live runs against production.

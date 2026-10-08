@@ -752,7 +752,7 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 1071 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 1082 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
@@ -769,20 +769,26 @@ frontend, a real API and MongoDB — sign-up/in/out and a session that survives 
 posting, profile rename, top friends, password change and account deletion, portfolio
 pictures/reactions/video links, friends, groups, private profiles, the Help wanted flow
 between two users, direct messages between two friends (unread, reply, delete, live arrival, friends-only), group chat, the whole forgotten-password flow through an emailed link (read from a mail outbox folder the API writes to in testing), and **voice Live between two real browsers** (real WebRTC audio from a fake microphone in Chrome, measured arriving at the listener), plus phone layout (menu, no sideways scrolling, tap targets).
-Not covered by automated tests: audio over real networks and between real devices, real email delivery, real Cloudinary uploads (including the 30-second video
+Not covered by automated tests: audio over real networks and between real devices, real email delivery, real Cloudinary uploads (including the video length
 check), real AI generation and Openverse search — CI has no keys for them, so those are
 checked by scripted and manual runs against production — plus the audio player context,
 theme editor and image positioner units.
 
-**Videos: a 30-second limit that's measured where it can be, and clipped where it can't.**
-Uploaded videos (mp4/webm/iPhone .mov, ≤30 MB) go to Cloudinary, which reports the length
-of the file it has just ingested; the API refuses and deletes anything over 30 seconds
+**Videos: a one-minute limit that's measured where it can be, and clipped where it can't.**
+Uploaded videos (mp4/webm/iPhone .mov, ≤100 MB) go to Cloudinary, which reports the length
+of the file it has just ingested; the API refuses and deletes anything over 60 seconds
 (0.75 s slack) or of unknown length, so the limit can't be bypassed by skipping the
-browser's own pre-check (which exists only to fail fast, before a 30 MB upload). Playback
+browser's own pre-check (which exists only to fail fast, before a 100 MB upload). The size
+limit is per kind of file and is counted as the file arrives (`UPLOAD_LIMITS` in
+`middleware/upload.js`): 100 MB for video (the storage plan's own per-file limit; a phone records
+about 130 MB a minute at 1080p, so a high-quality full minute can exceed it and gets a message
+suggesting a lower-quality setting) and 30 MB for everything else. A file over its limit is
+cut off, the upload abandoned and the rest of the request read and dropped, so it never fills
+the server's memory or the storage, and the answer is a `413` that names video or pictures. Playback
 asks Cloudinary for an H.264 MP4 of the file (`f_mp4,vc_h264`) because phones often
 produce HEVC that most browsers can't play, plus a first-frame poster. Linked videos are
 never downloaded, so they can't be measured: a YouTube link becomes a
-`youtube-nocookie.com` embed with `start`/`end` set to a 30-second window, and a direct
+`youtube-nocookie.com` embed with `start`/`end` set to a one-minute window, and a direct
 file link plays with a `#t=start,end` media fragment plus a player guard that pauses at the
 end. The link parser accepts only https YouTube links and direct video files — parsed with
 `new URL`, not a regex over the text, so `https://evil.example/?u=youtube.com/watch?v=…`
