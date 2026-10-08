@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 // Tags describe what someone does ("illustrator", "lo-fi producer"). The server keeps them in this form; the same rules are
 // applied here so a tag is checked, and shown, before it is sent.
 
@@ -26,8 +27,8 @@ export const isValidTag = (tag: string) => tag.length >= MIN_TAG && tag.length <
 export function tagProblem(raw: string, existing: string[]): string | null {
   const tag = normalizeTag(raw);
   if (!tag) return null; // nothing typed: nothing to say
-  if (!isValidTag(tag)) return `Use ${MIN_TAG}–${MAX_TAG} letters, numbers, spaces or hyphens`;
-  if (existing.includes(tag)) return `You already have "${tag}"`;
-  if (existing.length >= MAX_TAGS) return `You can have up to ${MAX_TAGS} tags`;
+  if (!isValidTag(tag)) return t("lib.tagRange", { min: MIN_TAG, max: MAX_TAG });
+  if (existing.includes(tag)) return t("lib.tagExists", { tag });
+  if (existing.length >= MAX_TAGS) return t("lib.tagMax", { max: MAX_TAGS });
   return null;
 }

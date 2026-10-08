@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 // Loads YouTube's official IFrame Player API (the sanctioned embedding
 // mechanism — https://developers.google.com/youtube/iframe_api_reference).
 // This lets us listen for "ended" on an embedded video and react to it
@@ -24,8 +25,8 @@ export interface YTPlayer {
 //   2/5/100: the video id is wrong, can't be played in an embed, or was removed or made private
 //   101/150: the video's owner doesn't allow it to be played outside YouTube
 export function youtubeErrorMessage(code: number): string {
-  if (code === 101 || code === 150) return "The owner of this video doesn't allow it to be played here.";
-  return "This video isn't available.";
+  if (code === 101 || code === 150) return t("libmsg.theOwnerOfThis");
+  return t("libmsg.thisVideoIsntAvailable");
 }
 
 let apiReadyPromise: Promise<void> | null = null;

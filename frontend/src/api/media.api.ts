@@ -2,6 +2,7 @@ import { api, ApiError } from "./client";
 import type { Comment, MediaItem, ReactionKey, ReactionSummary } from "../types";
 
 import { API_BASE } from "./base";
+import { t } from "../i18n";
 
 const API_URL = API_BASE;
 
@@ -26,7 +27,7 @@ export async function uploadFile(
 
   const data = await res.json().catch(() => undefined);
   if (!res.ok) {
-    throw new ApiError(res.status, data?.error ?? "Upload failed");
+    throw new ApiError(res.status, data?.error ?? t("libmsg.uploadFailed"));
   }
   return data;
 }

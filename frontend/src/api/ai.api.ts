@@ -1,6 +1,7 @@
 import { api, ApiError } from "./client";
 import { API_BASE } from "./base";
 import type { ImageSearchResult } from "../types";
+import { t } from "../i18n";
 
 /** How closely a wallpaper made from a reference photo follows that photo. */
 export type WallpaperCloseness = "close" | "balanced" | "loose";
@@ -19,7 +20,7 @@ export const aiApi = {
     // not the JSON client: a form carries the photo, and the browser sets its content type
     const res = await fetch(`${API_BASE}/api/ai/image`, { method: "POST", credentials: "include", body: form });
     const data = await res.json().catch(() => undefined);
-    if (!res.ok) throw new ApiError(res.status, data?.error ?? "Couldn't generate an image, try again.");
+    if (!res.ok) throw new ApiError(res.status, data?.error ?? t("ai.imageFailed"));
     return data as { url: string; usedReference: boolean };
   },
   /** A wallpaper picture from a description, optionally reshaping a reference photo (sent with the request, not as a link). */
@@ -31,7 +32,7 @@ export const aiApi = {
     // not the JSON client: a form carries the photo, and the browser sets its content type
     const res = await fetch(`${API_BASE}/api/ai/wallpaper`, { method: "POST", credentials: "include", body: form });
     const data = await res.json().catch(() => undefined);
-    if (!res.ok) throw new ApiError(res.status, data?.error ?? "Couldn't make a wallpaper, try again.");
+    if (!res.ok) throw new ApiError(res.status, data?.error ?? t("profile.couldntMakeAWallpaper"));
     return data as { url: string; usedReference: boolean };
   },
   /** Throw away a generated picture that wasn't used (best effort; never throws). */

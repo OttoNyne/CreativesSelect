@@ -1,14 +1,15 @@
 import { api } from "./client";
 import type { ProfileAbout } from "../types";
+import { t } from "../i18n";
 
 export const ABOUT_FIELDS = ["interests", "music", "movies", "books", "meet"] as const;
 export type AboutField = (typeof ABOUT_FIELDS)[number];
 export const ABOUT_LABELS: Record<AboutField, string> = {
-  interests: "Interests",
-  music: "Favourite music",
-  movies: "Favourite films and shows",
-  books: "Favourite books",
-  meet: "Who I'd like to meet",
+  get interests() { return t("about.interests"); },
+  get music() { return t("about.favouriteMusic"); },
+  get movies() { return t("about.favouriteFilmsAndShows"); },
+  get books() { return t("about.favouriteBooks"); },
+  get meet() { return t("about.whoIdLikeTo"); },
 };
 export const MAX_ABOUT = 300;
 export const MAX_LOCATION = 60;

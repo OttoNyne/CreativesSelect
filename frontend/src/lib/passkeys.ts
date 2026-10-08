@@ -1,5 +1,6 @@
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
+import { t } from "../i18n";
 
 /** A problem with the device step of a passkey, in words a person can act on. */
 export class PasskeyError extends Error {
@@ -19,18 +20,18 @@ function explain(err: unknown, doing: "add" | "sign in"): PasskeyError {
   const code = (err as { code?: string })?.code;
   // the person closed the prompt, or it timed out
   if (name === "NotAllowedError" || code === "ERROR_CEREMONY_ABORTED" || name === "AbortError") {
-    return new PasskeyError("cancelled", doing === "add" ? "Adding a passkey was cancelled." : "Signing in with a passkey was cancelled.");
+    return new PasskeyError("cancelled", doing === "add" ? t("libmsg.addingAPasskeyWas") : t("libmsg.signingInWithA"));
   }
   if (code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED" || name === "InvalidStateError") {
-    return new PasskeyError("already-added", "This device already has a passkey for this account.");
+    return new PasskeyError("already-added", t("libmsg.thisDeviceAlreadyHas"));
   }
   if (code === "ERROR_AUTHENTICATOR_MISSING_USER_VERIFICATION_SUPPORT" || code === "ERROR_AUTHENTICATOR_MISSING_DISCOVERABLE_CREDENTIAL_SUPPORT" || name === "NotSupportedError") {
-    return new PasskeyError("no-support", "This device can't make a passkey that is unlocked with a fingerprint, face or PIN. Try another device or password manager.");
+    return new PasskeyError("no-support", t("libmsg.thisDeviceCantMake"));
   }
   if (code === "ERROR_INVALID_DOMAIN" || code === "ERROR_INVALID_RP_ID" || name === "SecurityError") {
-    return new PasskeyError("other", "Passkeys only work on the site's main address. Open it there and try again.");
+    return new PasskeyError("other", t("libmsg.passkeysOnlyWorkOn"));
   }
-  return new PasskeyError("other", doing === "add" ? "Couldn't add the passkey. Try again." : "Couldn't sign in with a passkey. Try again, or use your password.");
+  return new PasskeyError("other", doing === "add" ? t("libmsg.couldntAddThePasskey") : t("libmsg.couldntSignInWith"));
 }
 
 /** Asks the device to make a passkey, from the options the server gave. */

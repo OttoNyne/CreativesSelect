@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { ShareDialog } from "./ShareDialog";
+import { t } from "../../i18n";
 
 /** A button that opens the share window (QR code + link) for `url`; focus goes back to it when the window closes. */
 export function ShareButton({
@@ -7,7 +8,7 @@ export function ShareButton({
   title,
   description,
   className = "",
-  children = "Share",
+  children = t("profile.share"),
   onOpen,
 }: {
   /** The address to share; a function so it is worked out when the window opens (it depends on where the site is being viewed). */

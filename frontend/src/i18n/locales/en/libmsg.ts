@@ -1,0 +1,21 @@
+// libmsg
+export const libmsg = {
+  "libmsg.addingAPasskeyWas": "Adding a passkey was cancelled.",
+  "libmsg.signingInWithA": "Signing in with a passkey was cancelled.",
+  "libmsg.thisDeviceAlreadyHas": "This device already has a passkey for this account.",
+  "libmsg.thisDeviceCantMake": "This device can't make a passkey that is unlocked with a fingerprint, face or PIN. Try another device or password manager.",
+  "libmsg.passkeysOnlyWorkOn": "Passkeys only work on the site's main address. Open it there and try again.",
+  "libmsg.couldntAddThePasskey": "Couldn't add the passkey. Try again.",
+  "libmsg.couldntSignInWith": "Couldn't sign in with a passkey. Try again, or use your password.",
+  "libmsg.notificationsAreBlockedFor": "Notifications are blocked for this site. Allow them in your browser's settings for this site, then try again.",
+  "libmsg.yourBrowserCouldntSet": "Your browser couldn't set up notifications. Try again, or use a different browser.",
+  "libmsg.microphoneAccessWasBlocked": "Microphone access was blocked. Allow the microphone for this site in your browser settings, then try again.",
+  "libmsg.noMicrophoneWasFound": "No microphone was found on this device.",
+  "libmsg.yourMicrophoneIsIn": "Your microphone is in use by another app. Close it and try again.",
+  "libmsg.youreNotConnectedTo": "You're not connected to the live audio yet.",
+  "libmsg.theLiveAudioService": "The live audio service hasn't let your microphone through yet. Please try again.",
+  "libmsg.theOwnerOfThis": "The owner of this video doesn't allow it to be played here.",
+  "libmsg.thisVideoIsntAvailable": "This video isn't available.",
+  "libmsg.uploadFailed": "Upload failed",
+  "libmsg.guestsOnStage": "Guests on stage",
+} as const;

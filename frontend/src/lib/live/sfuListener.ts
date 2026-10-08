@@ -4,6 +4,7 @@ import type { LiveApi } from "../../api/live.api";
 import type { ListenerState } from "./listener";
 import { Poller } from "./rtc";
 import { micErrorMessage } from "./hostStream";
+import { t } from "../../i18n";
 
 export interface SfuListenerOptions {
   liveId: string;
@@ -63,10 +64,10 @@ export class SfuListener {
    */
   async startSpeaking() {
     const participant = this.room?.localParticipant;
-    if (!participant) throw new Error("You're not connected to the live audio yet.");
+    if (!participant) throw new Error(t("libmsg.youreNotConnectedTo"));
     const until = Date.now() + PERMISSION_WAIT_MS;
     while (!participant.permissions?.canPublish) {
-      if (Date.now() > until) throw new Error("The live audio service hasn't let your microphone through yet. Please try again.");
+      if (Date.now() > until) throw new Error(t("libmsg.theLiveAudioService"));
       await new Promise((resolve) => setTimeout(resolve, 150));
     }
     try {

@@ -1,4 +1,5 @@
 import { pushApi, type DeviceSubscription } from "../api/push.api";
+import { t } from "../i18n";
 
 // Push notifications in the browser: the permission, the service worker (public/sw.js) and the subscription that ties this device to the
 // account. Nothing is asked of the person until they press the button.
@@ -44,14 +45,14 @@ export class PushError extends Error {
 
 /** Ask permission, register the worker, subscribe, and tell the server. Throws a PushError with something sayable. */
 export async function enablePush(publicKey: string): Promise<void> {
-  if ((await Notification.requestPermission()) !== "granted") throw new PushError("denied", "Notifications are blocked for this site. Allow them in your browser's settings for this site, then try again.");
+  if ((await Notification.requestPermission()) !== "granted") throw new PushError("denied", t("libmsg.notificationsAreBlockedFor"));
   let subscription: PushSubscription;
   try {
     await navigator.serviceWorker.register("/sw.js");
     const reg = await navigator.serviceWorker.ready;
     subscription = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyToBytes(publicKey) as BufferSource }));
   } catch {
-    throw new PushError("failed", "Your browser couldn't set up notifications. Try again, or use a different browser.");
+    throw new PushError("failed", t("libmsg.yourBrowserCouldntSet"));
   }
   await pushApi.subscribe(subscription.toJSON() as DeviceSubscription);
 }

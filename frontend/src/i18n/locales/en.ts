@@ -15,7 +15,11 @@ import { events } from "./en/events";
 import { live } from "./en/live";
 import { misc } from "./en/misc";
 import { labels } from "./en/labels";
+import { info } from "./en/info";
+import { libmsg } from "./en/libmsg";
+import { about } from "./en/about";
+import { lib } from "./en/lib";
 
 // English is the source: every other language is checked against these keys, and anything not translated yet shows as it is here.
 // Each part of the site has its own file (en/, es/ and ar/ hold one per part).
-export const en = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels } satisfies Catalog;
+export const en = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib } satisfies Catalog;

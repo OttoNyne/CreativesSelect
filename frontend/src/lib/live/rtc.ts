@@ -1,10 +1,11 @@
 import type { LiveApi } from "../../api/live.api";
+import { t } from "../../i18n";
 
 export type PeerFactory = (config: RTCConfiguration) => RTCPeerConnection;
 
 // Live audio needs WebRTC. Some browsers (and embedded web views) don't have it.
 export const liveAudioSupported = () => typeof RTCPeerConnection !== "undefined";
-export const UNSUPPORTED_MESSAGE = "This browser can't play live audio. Try a recent Chrome, Edge, Firefox or Safari.";
+export const unsupportedMessage = (host = false) => t(host ? "lib.liveUnsupportedHost" : "lib.liveUnsupported");
 
 export const createPeer: PeerFactory = (config) => new RTCPeerConnection(config);
 

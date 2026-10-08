@@ -28,7 +28,7 @@ export function HostStage({
   onChange,
   sections = ALL_SECTIONS,
   heading = true,
-  label = "Guests on stage",
+  label = t("libmsg.guestsOnStage"),
 }: {
   liveId: string;
   stage: LiveStage;

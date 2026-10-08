@@ -6,7 +6,7 @@ import { ScheduleLive } from "../components/live/ScheduleLive";
 import { UpcomingLives } from "../components/live/UpcomingLives";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
-import { liveAudioSupported, UNSUPPORTED_MESSAGE } from "../lib/live/rtc";
+import { liveAudioSupported, unsupportedMessage } from "../lib/live/rtc";
 import { holdStreamFor, MIC_CONSTRAINTS, micErrorMessage } from "../lib/live/hostStream";
 import type { LiveRoom, ScheduledLive } from "../types";
 import { t } from "../i18n";
@@ -74,7 +74,7 @@ export function LivePage() {
     if (!name || starting) return;
     setStartError(null);
     if (!navigator.mediaDevices?.getUserMedia || !liveAudioSupported()) {
-      return setStartError(UNSUPPORTED_MESSAGE.replace("play", "broadcast"));
+      return setStartError(unsupportedMessage(true));
     }
     setStarting(true);
     // The microphone prompt has to come from this tap, so it happens before the live is created.

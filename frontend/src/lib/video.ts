@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 // Portfolio videos are limited to a minute and 100 MB (the storage plan's own per-file limit; a minute of phone video is large).
 export const MAX_VIDEO_SECONDS = 60;
 export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
@@ -79,11 +80,11 @@ export function readVideoDuration(file: File): Promise<number | null> {
 // Returns a message if the file can't be a portfolio video, else null.
 export async function checkVideoFile(file: File): Promise<string | null> {
   if (file.size > MAX_VIDEO_BYTES) {
-    return `That video is ${(file.size / 1024 / 1024).toFixed(0)} MB — the limit is ${MAX_VIDEO_MB} MB (try a shorter clip, or a lower-quality setting on your phone).`;
+    return t("lib.videoTooBig", { mb: (file.size / 1024 / 1024).toFixed(0), limit: MAX_VIDEO_MB });
   }
   const duration = await readVideoDuration(file);
   if (duration !== null && duration > MAX_VIDEO_SECONDS + 0.5) {
-    return `Videos can be up to ${MAX_VIDEO_SECONDS} seconds — this one is ${Math.round(duration)} seconds.`;
+    return t("lib.videoTooLong", { max: MAX_VIDEO_SECONDS, seconds: Math.round(duration) });
   }
   return null;
 }

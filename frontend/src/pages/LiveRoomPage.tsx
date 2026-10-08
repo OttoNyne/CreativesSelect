@@ -17,7 +17,7 @@ import { LiveHost } from "../lib/live/host";
 import { LiveListener, type ListenerState } from "../lib/live/listener";
 import { SfuHost } from "../lib/live/sfuHost";
 import { SfuListener } from "../lib/live/sfuListener";
-import { liveAudioSupported, UNSUPPORTED_MESSAGE } from "../lib/live/rtc";
+import { liveAudioSupported, unsupportedMessage } from "../lib/live/rtc";
 import { clearStreamFor, getStreamFor, MIC_CONSTRAINTS, micErrorMessage } from "../lib/live/hostStream";
 import type { LiveRoom } from "../types";
 import { t } from "../i18n";
@@ -422,7 +422,7 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
               <p className="text-sm text-white/70">{t("live.tapToStartListening")}</p>
               {!supported && (
                 <p role="alert" className="mt-2 text-sm text-red-400">
-                  {UNSUPPORTED_MESSAGE}
+                  {unsupportedMessage()}
                 </p>
               )}
               <button
