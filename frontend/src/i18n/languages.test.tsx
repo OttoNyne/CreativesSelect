@@ -165,3 +165,19 @@ describe("a page that can be mirrored", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("when a language's file can't be loaded", () => {
+  it("shows the page in English, left to right, instead of not showing it", async () => {
+    vi.resetModules();
+    vi.doMock("./locales/ar", () => {
+      throw new Error("offline");
+    });
+    const fresh = await import("./index");
+    await fresh.initI18n("ar");
+    expect(fresh.language()).toBe("en");
+    expect(fresh.t("nav.feed")).toBe("Feed");
+    expect(document.documentElement.dir).toBe("ltr");
+    vi.doUnmock("./locales/ar");
+    vi.resetModules();
+  });
+});

@@ -71,10 +71,18 @@ export async function initI18n(code: Language = current): Promise<void> {
     serverCatalog = {};
     serverPatterns = [];
   } else {
-    const loaded = current === "es" ? await import("./locales/es") : await import("./locales/ar");
-    catalog = loaded.messages;
-    serverCatalog = loaded.server;
-    serverPatterns = compileServerPatterns(serverCatalog);
+    try {
+      const loaded = current === "es" ? await import("./locales/es") : await import("./locales/ar");
+      catalog = loaded.messages;
+      serverCatalog = loaded.server;
+      serverPatterns = compileServerPatterns(serverCatalog);
+    } catch {
+      // the language's file couldn't be fetched (offline, a bad connection): the page is shown in English rather than not at all
+      current = "en";
+      catalog = {};
+      serverCatalog = {};
+      serverPatterns = [];
+    }
   }
   applyDocumentLanguage();
 }
