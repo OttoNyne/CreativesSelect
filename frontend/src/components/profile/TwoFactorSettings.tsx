@@ -3,6 +3,7 @@ import { authApi } from "../../api/auth.api";
 import { ApiError } from "../../api/client";
 import { groupKey } from "../../lib/twoFactor";
 import { qrCodeFor } from "../../lib/share";
+import { t } from "../../i18n";
 
 type View =
   | { kind: "closed" }
@@ -45,7 +46,7 @@ export function TwoFactorSettings() {
       const status = await authApi.twoFactorStatus();
       go(status.enabled ? { kind: "on", left: status.recoveryCodesLeft } : { kind: "off" });
     } catch (err) {
-      go({ kind: "error", message: err instanceof ApiError ? err.message : "Couldn't load this, try again." });
+      go({ kind: "error", message: err instanceof ApiError ? err.message : t("settings.couldntLoadThisTry") });
     }
   }
 
@@ -60,7 +61,7 @@ export function TwoFactorSettings() {
       const qr = await qrCodeFor(otpauthUrl).catch(() => null);
       go({ kind: "scan", secret, qr });
     } catch (err) {
-      fail(err, "Couldn't start, try again.");
+      fail(err, t("settings.tfaStartFailed"));
     } finally {
       setBusy(false);
     }
@@ -75,7 +76,7 @@ export function TwoFactorSettings() {
       const { recoveryCodes } = await authApi.twoFactorEnable(code);
       go({ kind: "codes", codes: recoveryCodes, justTurnedOn: true });
     } catch (err) {
-      fail(err, "Couldn't turn it on, try again.");
+      fail(err, t("settings.tfaEnableFailed"));
     } finally {
       setBusy(false);
     }
@@ -95,7 +96,7 @@ export function TwoFactorSettings() {
         go({ kind: "codes", codes: recoveryCodes, justTurnedOn: false });
       }
     } catch (err) {
-      fail(err, "Couldn't do that, try again.");
+      fail(err, t("settings.tfaFailed"));
     } finally {
       setBusy(false);
     }
@@ -106,12 +107,12 @@ export function TwoFactorSettings() {
       await navigator.clipboard.writeText(codes.join("\n"));
       setCopied(true);
     } catch {
-      setError("Couldn't copy them — write them down or use Download instead.");
+      setError(t("settings.couldntCopyThemWrite"));
     }
   }
 
   function download(codes: string[]) {
-    const text = `CreativesSelect recovery codes\nEach one works once. Keep them somewhere safe.\n\n${codes.join("\n")}\n`;
+    const text = `${t("settings.recoveryFileTitle")}\n${t("settings.recoveryFileNote")}\n\n${codes.join("\n")}\n`;
     const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
     const link = document.createElement("a");
     link.href = url;
@@ -123,7 +124,7 @@ export function TwoFactorSettings() {
   if (view.kind === "closed") {
     return (
       <button type="button" onClick={open} className="block text-xs text-white/60 hover:text-white">
-        Two-step sign-in…
+        {t("settings.twoStepSignIn")}
       </button>
     );
   }
@@ -135,15 +136,15 @@ export function TwoFactorSettings() {
   );
   const close = (
     <button type="button" onClick={() => go({ kind: "closed" })} className="text-xs text-white/60 hover:text-white">
-      Close
+      {t("common.close")}
     </button>
   );
 
   return (
-    <section aria-label="Two-step sign-in" className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-white/60">Two-step sign-in</h3>
+    <section aria-label={t("login.twoStep.title")} className="space-y-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-white/60">{t("login.twoStep.title")}</h3>
 
-      {view.kind === "loading" && <p className="text-xs text-white/60">Loading…</p>}
+      {view.kind === "loading" && <p className="text-xs text-white/60">{t("common.loading")}</p>}
 
       {view.kind === "error" && (
         <>
@@ -151,7 +152,7 @@ export function TwoFactorSettings() {
             {view.message}
           </p>
           <button type="button" onClick={open} className={button}>
-            Try again
+            {t("common.tryAgain")}
           </button>
         </>
       )}
@@ -159,25 +160,25 @@ export function TwoFactorSettings() {
       {view.kind === "off" && (
         <>
           <p className="text-xs text-white/60">
-            Add a second step to logging in: after your password, a 6-digit code from an authenticator app on your phone (such as Google Authenticator, Microsoft Authenticator or 1Password). Someone who learns your password still can&apos;t get in.
+            {t("settings.addASecondStep")}
           </p>
           <button type="button" onClick={() => go({ kind: "password" })} className={button}>
-            Turn on two-step sign-in
+            {t("settings.turnOnTwoStep")}
           </button>
         </>
       )}
 
       {view.kind === "password" && (
         <form onSubmit={startSetup} className="space-y-2 rounded-md border border-white/10 bg-black/20 p-3">
-          <p className="text-xs text-white/70">Enter your password to start.</p>
-          <input type="password" autoComplete="current-password" placeholder="Your password" aria-label="Your password" value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
+          <p className="text-xs text-white/70">{t("settings.enterYourPasswordTo3")}</p>
+          <input type="password" autoComplete="current-password" placeholder={t("settings.yourPassword")} aria-label={t("settings.yourPassword")} value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
           {errorLine}
           <div className="flex gap-2">
             <button type="submit" disabled={!password || busy} className={primary}>
-              {busy ? "Starting…" : "Continue"}
+              {busy ? t("settings.starting") : t("common.continue")}
             </button>
             <button type="button" onClick={() => go({ kind: "off" })} className={button}>
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </form>
@@ -185,23 +186,23 @@ export function TwoFactorSettings() {
 
       {view.kind === "scan" && (
         <form onSubmit={confirmSetup} className="space-y-2 rounded-md border border-white/10 bg-black/20 p-3">
-          <p className="text-xs text-white/70">1. In your authenticator app, add an account by scanning this picture.</p>
+          <p className="text-xs text-white/70">{t("settings.1InYourAuthenticator")}</p>
           {view.qr && (
-            <img src={view.qr} alt="QR code to scan with your authenticator app" width={160} height={160} className="rounded bg-white p-1" />
+            <img src={view.qr} alt={t("settings.qrCodeToScan")} width={160} height={160} className="rounded bg-white p-1" />
           )}
-          <p className="text-xs text-white/70">Can&apos;t scan it? Choose &quot;enter a setup key&quot; in the app and type this key:</p>
-          <p className="select-all font-mono text-sm tracking-wider text-white" aria-label="Setup key">
+          <p className="text-xs text-white/70">{t("settings.cantScanItChoose")}</p>
+          <p className="select-all font-mono text-sm tracking-wider text-white" aria-label={t("settings.setupKey")}>
             {groupKey(view.secret)}
           </p>
-          <p className="text-xs text-white/70">2. Enter the 6-digit code the app now shows.</p>
-          <input inputMode="numeric" autoComplete="one-time-code" placeholder="6-digit code" aria-label="6-digit code" maxLength={10} value={code} onChange={(e) => setCode(e.target.value)} className={field} />
+          <p className="text-xs text-white/70">{t("settings.2EnterThe6")}</p>
+          <input inputMode="numeric" autoComplete="one-time-code" placeholder={t("settings.6DigitCode")} aria-label={t("settings.6DigitCode")} maxLength={10} value={code} onChange={(e) => setCode(e.target.value)} className={field} />
           {errorLine}
           <div className="flex gap-2">
             <button type="submit" disabled={!code.trim() || busy} className={primary}>
-              {busy ? "Checking…" : "Turn on"}
+              {busy ? t("common.checking") : t("settings.turnOn")}
             </button>
             <button type="button" onClick={() => go({ kind: "off" })} className={button}>
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </form>
@@ -209,47 +210,47 @@ export function TwoFactorSettings() {
 
       {view.kind === "codes" && (
         <div className="space-y-2 rounded-md border border-white/10 bg-black/20 p-3">
-          <p className="text-xs text-emerald-400">{view.justTurnedOn ? "Two-step sign-in is on." : "Here are your new recovery codes. The old ones no longer work."}</p>
+          <p className="text-xs text-emerald-400">{view.justTurnedOn ? t("settings.twoStepSignIn2") : t("settings.hereAreYourNew")}</p>
           <p className="text-xs text-white/70">
-            Save these recovery codes now. If you lose your phone, each one lets you in once. They won&apos;t be shown again.
+            {t("settings.saveTheseRecoveryCodes")}
           </p>
-          <ul className="grid grid-cols-2 gap-1 font-mono text-sm text-white" aria-label="Recovery codes">
+          <ul className="grid grid-cols-2 gap-1 font-mono text-sm text-white" aria-label={t("settings.recoveryCodes")}>
             {view.codes.map((c) => (
               <li key={c}>{c}</li>
             ))}
           </ul>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => copy(view.codes)} className={button}>
-              {copied ? "Copied ✓" : "Copy codes"}
+              {copied ? t("settings.copied") : t("settings.copyCodes")}
             </button>
             <button type="button" onClick={() => download(view.codes)} className={button}>
-              Download
+              {t("settings.download")}
             </button>
           </div>
           {errorLine}
           <label className="flex items-center gap-2 text-xs text-white/80">
             <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
-            I&apos;ve saved these codes somewhere safe
+            {t("settings.iveSavedTheseCodes")}
           </label>
           <button type="button" disabled={!saved} onClick={() => go({ kind: "on", left: view.codes.length })} className={primary}>
-            Done
+            {t("settings.done")}
           </button>
         </div>
       )}
 
       {view.kind === "on" && (
         <>
-          <p className="text-xs text-emerald-400">Two-step sign-in is on.</p>
+          <p className="text-xs text-emerald-400">{t("settings.twoStepSignIn2")}</p>
           <p className={`text-xs ${view.left <= 2 ? "text-amber-300" : "text-white/60"}`}>
-            {view.left === 0 ? "You have no recovery codes left." : `You have ${view.left} recovery code${view.left === 1 ? "" : "s"} left.`}
-            {view.left <= 2 && " Get new ones before you run out."}
+            {view.left === 0 ? t("settings.youHaveNoRecovery") : t("settings.recoveryLeft", { n: view.left })}
+            {view.left <= 2 && ` ${t("settings.recoveryGetNew")}`}
           </p>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => go({ kind: "confirm", action: "new-codes", left: view.left })} className={button}>
-              Get new recovery codes
+              {t("settings.getNewRecoveryCodes")}
             </button>
             <button type="button" onClick={() => go({ kind: "confirm", action: "disable", left: view.left })} className={button}>
-              Turn off
+              {t("settings.turnOff")}
             </button>
           </div>
         </>
@@ -258,17 +259,17 @@ export function TwoFactorSettings() {
       {view.kind === "confirm" && (
         <form onSubmit={confirmAction} className="space-y-2 rounded-md border border-white/10 bg-black/20 p-3">
           <p className="text-xs text-white/70">
-            {view.action === "disable" ? "To turn it off, enter your password and a code from your app (or a recovery code)." : "To get new recovery codes, enter your password and a code from your app (or a recovery code). The old codes will stop working."}
+            {view.action === "disable" ? t("settings.toTurnItOff") : t("settings.toGetNewRecovery")}
           </p>
-          <input type="password" autoComplete="current-password" placeholder="Your password" aria-label="Your password" value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
-          <input autoComplete="one-time-code" placeholder="Code from your app" aria-label="Code from your app" maxLength={40} value={code} onChange={(e) => setCode(e.target.value)} className={field} />
+          <input type="password" autoComplete="current-password" placeholder={t("settings.yourPassword")} aria-label={t("settings.yourPassword")} value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
+          <input autoComplete="one-time-code" placeholder={t("login.twoStep.label")} aria-label={t("login.twoStep.label")} maxLength={40} value={code} onChange={(e) => setCode(e.target.value)} className={field} />
           {errorLine}
           <div className="flex gap-2">
             <button type="submit" disabled={!password || !code.trim() || busy} className={primary}>
-              {busy ? "Checking…" : view.action === "disable" ? "Turn off" : "Get new codes"}
+              {busy ? t("common.checking") : view.action === "disable" ? t("settings.turnOff") : t("settings.getNewCodes")}
             </button>
             <button type="button" onClick={() => go({ kind: "on", left: view.left })} className={button}>
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </form>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayback } from "../../context/PlaybackContext";
 import { loadYouTubeIframeApi, youtubeErrorMessage, type YTPlayer } from "../../lib/youtubeIframeApi";
+import { t } from "../../i18n";
 
 const YT_ELEMENT_ID = "now-playing-yt-player";
 
@@ -50,8 +51,8 @@ export function NowPlayingBar() {
 
   const isYouTube = current.sourceType === "youtube";
   const status = isYouTube
-    ? ytError ?? (needsTap ? "Tap play to start" : "Playing via YouTube")
-    : error ?? (isPlaying ? "Playing" : "Paused");
+    ? ytError ?? (needsTap ? t("media.tapPlay") : t("media.playingYouTube"))
+    : error ?? (isPlaying ? t("media.playing") : t("media.paused"));
 
   // YouTube requires an embedded player to be visible and at least 200 pixels high, and a phone only lets a person start it by tapping
   // it, so it can't shrink into a thin bar. A video is therefore one small card in the corner: the video at its smallest allowed size
@@ -68,15 +69,15 @@ export function NowPlayingBar() {
             </p>
             {ytError && (
               <a href={`https://www.youtube.com/watch?v=${current.url}`} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-violet-300 hover:underline">
-                Open on YouTube
+                {t("media.openOnYoutube")}
               </a>
             )}
           </div>
           <div className="flex gap-2">
             <button onClick={playNext} className={barButton}>
-              Skip ⏭
+              {t("media.skip")}
             </button>
-            <button onClick={stop} aria-label="Stop" className={barButton}>
+            <button onClick={stop} aria-label={t("media.stop")} className={barButton}>
               ✕
             </button>
           </div>
@@ -100,7 +101,7 @@ export function NowPlayingBar() {
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2">
           <button
             onClick={toggle}
-            aria-label={isPlaying ? "Pause" : "Play"}
+            aria-label={isPlaying ? t("media.pause") : t("media.play")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white hover:bg-violet-500"
           >
             {isPlaying ? "⏸" : "▶"}
@@ -114,9 +115,9 @@ export function NowPlayingBar() {
           </div>
 
           <button onClick={playNext} className={barButton}>
-            Skip ⏭
+            {t("media.skip")}
           </button>
-          <button onClick={stop} aria-label="Stop" className={barButton}>
+          <button onClick={stop} aria-label={t("media.stop")} className={barButton}>
             ✕
           </button>
         </div>

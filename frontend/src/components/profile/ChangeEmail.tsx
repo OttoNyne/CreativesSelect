@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { authApi } from "../../api/auth.api";
 import { ApiError } from "../../api/client";
+import { t } from "../../i18n";
 
 /**
  * "Change email" in the owner's own settings. The new address has to be proved (a link goes to it) before anything changes, so this
@@ -38,10 +39,10 @@ export function ChangeEmail() {
     } catch (err) {
       if (err instanceof ApiError && err.code === "second_step_needed") {
         setNeedsCode(true);
-        setError(code ? err.message : "Enter a code from your authenticator app (or a recovery code) to go on.");
+        setError(code ? err.message : t("settings.enterACodeFrom"));
         setCode("");
       } else {
-        setError(err instanceof ApiError ? err.message : "Couldn't ask for the change, try again.");
+        setError(err instanceof ApiError ? err.message : t("settings.couldntAskForThe"));
       }
     } finally {
       setBusy(false);
@@ -61,11 +62,11 @@ export function ChangeEmail() {
           }}
           className="block text-xs text-white/60 hover:text-white"
         >
-          Change email…
+          {t("settings.changeEmail")}
         </button>
         {sentTo && (
           <p role="status" className="text-xs text-emerald-400">
-            We&apos;ve sent a link to {sentTo}. Open it within an hour to finish. Your email changes only then, and we&apos;ve told your current address.
+            {t("settings.emailLinkSent", { email: sentTo })}
           </p>
         )}
       </div>
@@ -73,12 +74,12 @@ export function ChangeEmail() {
   }
 
   return (
-    <form onSubmit={submit} aria-label="Change email" className="space-y-2 rounded-md border border-white/10 bg-black/20 p-3">
-      <p className="text-xs text-white/70">We&apos;ll send a link to the new address. Nothing changes until you open it, and your current address is told about the request.</p>
-      <input type="email" autoComplete="email" placeholder="New email address" aria-label="New email address" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className={field} />
-      <input type="password" autoComplete="current-password" placeholder="Your password" aria-label="Your password" value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
+    <form onSubmit={submit} aria-label={t("settings.changeEmail2")} className="space-y-2 rounded-md border border-white/10 bg-black/20 p-3">
+      <p className="text-xs text-white/70">{t("settings.wellSendALink")}</p>
+      <input type="email" autoComplete="email" placeholder={t("settings.newEmailAddress")} aria-label={t("settings.newEmailAddress")} value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className={field} />
+      <input type="password" autoComplete="current-password" placeholder={t("settings.yourPassword")} aria-label={t("settings.yourPassword")} value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
       {needsCode && (
-        <input autoComplete="one-time-code" placeholder="Code from your app" aria-label="Code from your app" maxLength={40} value={code} onChange={(e) => setCode(e.target.value)} className={field} />
+        <input autoComplete="one-time-code" placeholder={t("login.twoStep.label")} aria-label={t("login.twoStep.label")} maxLength={40} value={code} onChange={(e) => setCode(e.target.value)} className={field} />
       )}
       {error && (
         <p role="alert" className="text-xs text-red-400">
@@ -91,10 +92,10 @@ export function ChangeEmail() {
           disabled={!newEmail.trim() || !password || (needsCode && !code.trim()) || busy}
           className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-500 disabled:opacity-50"
         >
-          {busy ? "Sending…" : "Send the link"}
+          {busy ? t("common.sending") : t("settings.sendTheLink")}
         </button>
         <button type="button" onClick={close} className="rounded-md border border-white/15 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10">
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </form>

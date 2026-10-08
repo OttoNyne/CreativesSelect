@@ -10,6 +10,7 @@ import { PieceComments } from "./PieceComments";
 import { AlbumBar, ALL } from "./AlbumBar";
 import { albumsApi } from "../../api/albums.api";
 import type { Album, MediaItem, ReactionKey } from "../../types";
+import { t } from "../../i18n";
 
 
 export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComment = null }: { username: string; isOwner: boolean; /** A piece, and one of its comments, to open and scroll to (from a notification). */ focusPiece?: string | null; focusComment?: string | null }) {
@@ -66,7 +67,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       setSelected(album.id);
       return null;
     } catch (err) {
-      return problemOf(err, "Couldn't make that album.");
+      return problemOf(err, t("media.albumMakeFailed"));
     }
   }
   async function renameAlbum(id: string, title: string): Promise<string | null> {
@@ -75,7 +76,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       setAlbums((a) => a.map((x) => (x.id === id ? album : x)));
       return null;
     } catch (err) {
-      return problemOf(err, "Couldn't rename that album.");
+      return problemOf(err, t("media.albumRenameFailed"));
     }
   }
   async function deleteAlbum(id: string) {
@@ -86,7 +87,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       setItems((list) => list.map((item) => (item.albumId === id ? { ...item, albumId: null } : item)));
       setSelected(ALL);
     } catch (err) {
-      setError(problemOf(err, "Couldn't delete that album."));
+      setError(problemOf(err, t("media.albumDeleteFailed")));
     }
   }
   async function moveItem(id: string, albumId: string | null) {
@@ -95,7 +96,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       await mediaApi.setAlbum(id, albumId);
       setItems((list) => list.map((item) => (item.id === id ? { ...item, albumId } : item)));
     } catch (err) {
-      setError(problemOf(err, "Couldn't move that piece."));
+      setError(problemOf(err, t("media.pieceMoveFailed")));
     }
   }
 
@@ -114,7 +115,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       if (mediaItem) setItems((i) => [mediaItem, ...i]);
       setNextCaption("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't upload that file.");
+      setError(err instanceof ApiError ? err.message : t("composer.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -138,7 +139,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       setLinkStart("");
       setShowLink(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't add that video link.");
+      setError(err instanceof ApiError ? err.message : t("media.couldntAddThatVideo"));
     } finally {
       setLinkBusy(false);
     }
@@ -155,7 +156,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       setItems((i) => [mediaItem, ...i]);
       setNextCaption("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save that image.");
+      setError(err instanceof ApiError ? err.message : t("media.couldntSaveThatImage"));
     }
   }
 
@@ -166,7 +167,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       setItems((i) => [mediaItem, ...i]);
       setNextCaption("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save that image.");
+      setError(err instanceof ApiError ? err.message : t("media.couldntSaveThatImage"));
     }
   }
 
@@ -177,18 +178,18 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       setItems((list) => list.map((x) => (x.id === id ? { ...x, caption: item.caption } : x)));
       return null;
     } catch (err) {
-      return problemOf(err, "Couldn't save that caption.");
+      return problemOf(err, t("media.captionSaveFailed"));
     }
   }
 
   async function handleRemove(id: string) {
-    if (!window.confirm("Remove this from your portfolio? This can't be undone.")) return;
+    if (!window.confirm(t("media.removeThisFromYour"))) return;
     setError(null);
     try {
       await mediaApi.remove(id);
       setItems((i) => i.filter((item) => item.id !== id));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't remove that item.");
+      setError(err instanceof ApiError ? err.message : t("media.couldntRemoveThatItem"));
     }
   }
 
@@ -198,7 +199,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       const result = await mediaApi.react(id, emoji);
       setItems((list) => list.map((item) => (item.id === id ? { ...item, reactions: result.reactions } : item)));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save your reaction.");
+      setError(err instanceof ApiError ? err.message : t("post.reactFailed"));
     }
   }
 
@@ -213,7 +214,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
   return (
     <div id="portfolio" className="profile-card scroll-mt-20 rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Portfolio</h2>
+        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">{t("sections.portfolio")}</h2>
         {isOwner && (
           <div className="flex gap-3">
             <button
@@ -221,7 +222,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
               onClick={() => setShowLink((s) => !s)}
               className="text-xs text-[var(--profile-accent-text)] hover:underline"
             >
-              + Video link
+              {t("media.videoLink")}
             </button>
             <button
               type="button"
@@ -229,7 +230,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
               disabled={uploading}
               className="text-xs text-[var(--profile-accent-text)] hover:underline disabled:opacity-50"
             >
-              {uploading ? "Uploading…" : "+ Upload"}
+              {uploading ? t("picture.uploading") : t("media.upload")}
             </button>
           </div>
         )}
@@ -245,23 +246,22 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       {isOwner && (
         <div className="mt-2 space-y-2">
           <p className="text-[11px] text-white/60">
-            Pictures up to 10 MB. Videos up to {MAX_VIDEO_SECONDS} seconds and {MAX_VIDEO_MB} MB — upload one, or paste a YouTube or
-            direct video link (it plays as a {MAX_VIDEO_SECONDS}-second clip).
+            {t("media.uploadHelp", { seconds: MAX_VIDEO_SECONDS, mb: MAX_VIDEO_MB })}
           </p>
           {showLink && (
             <form onSubmit={handleAddLink} className="flex flex-col gap-2 sm:flex-row">
               <input
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder="https://youtube.com/watch?v=… or https://…/clip.mp4"
-                aria-label="Video link"
+                placeholder={t("media.httpsYoutubeComWatch")}
+                aria-label={t("media.videoLink2")}
                 className={`${field} flex-1`}
               />
               <input
                 value={linkStart}
                 onChange={(e) => setLinkStart(e.target.value)}
-                placeholder="Start at (sec)"
-                aria-label="Start time in seconds"
+                placeholder={t("media.startAtSec")}
+                aria-label={t("media.startTimeInSeconds")}
                 inputMode="numeric"
                 className={`${field} sm:w-28`}
               />
@@ -270,7 +270,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
                 disabled={!linkUrl.trim() || linkBusy}
                 className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
               >
-                {linkBusy ? "Adding…" : "Add video"}
+                {linkBusy ? t("media.adding") : t("media.addVideo")}
               </button>
             </form>
           )}
@@ -278,20 +278,20 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
             value={nextCaption}
             onChange={(e) => setNextCaption(e.target.value)}
             maxLength={MAX_CAPTION_LENGTH}
-            placeholder="Caption for the next piece you add (optional)"
-            aria-label="Caption for the next piece"
+            placeholder={t("media.captionForTheNext")}
+            aria-label={t("media.captionForTheNext2")}
             className={`${field} w-full`}
           />
           <div className="flex items-center gap-2">
             <input
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe an image to generate…"
+              placeholder={t("media.describeAnImageTo")}
               className={`${field} flex-1`}
             />
-            <GenerateImageButton kind="post" getPrompt={() => prompt} onGenerated={handleAiGenerated} label="Generate" />
+            <GenerateImageButton kind="post" getPrompt={() => prompt} onGenerated={handleAiGenerated} label={t("media.generate")} />
           </div>
-          <ImageSearchPicker label="🔍 Search photos" onSelect={handleSearchSelected} />
+          <ImageSearchPicker label={t("profile.searchPhotos")} onSelect={handleSearchSelected} />
         </div>
       )}
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
@@ -299,8 +299,8 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
       <AlbumBar albums={albums} counts={counts} total={items.length} selected={selected} onSelect={setSelected} isOwner={isOwner} onCreate={createAlbum} onRename={renameAlbum} onDelete={deleteAlbum} />
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {items.length === 0 && <p className="col-span-3 text-xs text-white/60">No portfolio pieces yet.</p>}
-        {items.length > 0 && shown.length === 0 && <p className="col-span-3 text-xs text-white/60">Nothing in this album yet.</p>}
+        {items.length === 0 && <p className="col-span-3 text-xs text-white/60">{t("media.noPortfolioPiecesYet")}</p>}
+        {items.length > 0 && shown.length === 0 && <p className="col-span-3 text-xs text-white/60">{t("media.nothingInThisAlbum")}</p>}
         {shown.map((item) => (
           <PortfolioTile
             key={item.id}

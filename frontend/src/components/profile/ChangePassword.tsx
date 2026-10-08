@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { authApi } from "../../api/auth.api";
 import { ApiError } from "../../api/client";
+import { t } from "../../i18n";
 
 const MIN_LENGTH = 8;
 
@@ -23,8 +24,8 @@ export function ChangePassword() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (next.length < MIN_LENGTH) return setError(`New password must be at least ${MIN_LENGTH} characters.`);
-    if (next !== confirm) return setError("The new passwords don't match.");
+    if (next.length < MIN_LENGTH) return setError(t("settings.newPasswordMin", { min: MIN_LENGTH }));
+    if (next !== confirm) return setError(t("settings.theNewPasswordsDont"));
     setBusy(true);
     setError(null);
     try {
@@ -33,7 +34,7 @@ export function ChangePassword() {
       setOpen(false);
       setDone(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't change your password, try again.");
+      setError(err instanceof ApiError ? err.message : t("settings.couldntChangeYourPassword"));
     } finally {
       setBusy(false);
     }
@@ -53,9 +54,9 @@ export function ChangePassword() {
           }}
           className="text-xs text-white/60 hover:text-white"
         >
-          Change password…
+          {t("settings.changePassword")}
         </button>
-        {done && <span className="text-xs text-emerald-400">Password changed ✓</span>}
+        {done && <span className="text-xs text-emerald-400">{t("settings.passwordChanged")}</span>}
       </div>
     );
   }
@@ -65,7 +66,7 @@ export function ChangePassword() {
       <input
         type="password"
         autoComplete="current-password"
-        placeholder="Current password"
+        placeholder={t("settings.currentPassword")}
         value={current}
         onChange={(e) => setCurrent(e.target.value)}
         className={field}
@@ -73,7 +74,7 @@ export function ChangePassword() {
       <input
         type="password"
         autoComplete="new-password"
-        placeholder={`New password (${MIN_LENGTH}+ characters)`}
+        placeholder={t("settings.newPasswordPlaceholder", { min: MIN_LENGTH })}
         value={next}
         onChange={(e) => setNext(e.target.value)}
         className={field}
@@ -81,7 +82,7 @@ export function ChangePassword() {
       <input
         type="password"
         autoComplete="new-password"
-        placeholder="Confirm new password"
+        placeholder={t("settings.confirmNewPassword")}
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
         className={field}
@@ -93,7 +94,7 @@ export function ChangePassword() {
           disabled={!current || !next || !confirm || busy}
           className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-500 disabled:opacity-50"
         >
-          {busy ? "Saving…" : "Change password"}
+          {busy ? t("reset.saving") : t("settings.changePassword2")}
         </button>
         <button
           type="button"
@@ -103,7 +104,7 @@ export function ChangePassword() {
           }}
           className="rounded-md border border-white/15 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </form>

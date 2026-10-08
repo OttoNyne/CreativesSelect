@@ -8,7 +8,9 @@ import { social } from "./ar/social";
 import { profile } from "./ar/profile";
 import { style } from "./ar/style";
 import { sections } from "./ar/sections";
+import { settings } from "./ar/settings";
+import { media } from "./ar/media";
 
 // Arabic (right to left). Each part of the site has its own file in ar/; the server's own (English) messages, shown on the page, are in server.ar.ts.
-export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections };
+export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media };
 export { serverAr as server } from "./server.ar";

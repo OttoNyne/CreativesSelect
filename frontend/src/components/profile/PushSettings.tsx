@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ApiError } from "../../api/client";
 import { PUSH_CATEGORIES, pushApi, type PushCategory, type PushPrefs } from "../../api/push.api";
 import { PushError, currentSubscription, disablePush, enablePush, notificationPermission, pushSupport } from "../../lib/push";
+import { t } from "../../i18n";
 
 type State =
   | { kind: "loading" }
@@ -54,7 +55,7 @@ export function PushSettings() {
       setState({ kind: "on", prefs: status.prefs });
     } catch (err) {
       if (err instanceof PushError && err.reason === "denied") setState({ kind: "blocked" });
-      else setMessage({ text: err instanceof PushError || err instanceof ApiError ? err.message : "Couldn't turn notifications on.", error: true });
+      else setMessage({ text: err instanceof PushError || err instanceof ApiError ? err.message : t("settings.couldntTurnNotificationsOn"), error: true });
     } finally {
       setBusy(false);
     }
@@ -69,7 +70,7 @@ export function PushSettings() {
       const { publicKey } = await pushApi.key();
       setState({ kind: "off", publicKey: publicKey ?? "" });
     } catch (err) {
-      setMessage({ text: err instanceof ApiError ? err.message : "Couldn't turn notifications off.", error: true });
+      setMessage({ text: err instanceof ApiError ? err.message : t("settings.couldntTurnNotificationsOff"), error: true });
     } finally {
       setBusy(false);
     }
@@ -85,7 +86,7 @@ export function PushSettings() {
       setState({ kind: "on", prefs });
     } catch (err) {
       setState({ kind: "on", prefs: before });
-      setMessage({ text: err instanceof ApiError ? err.message : "Couldn't save that change.", error: true });
+      setMessage({ text: err instanceof ApiError ? err.message : t("common.saveChangeFailed"), error: true });
     }
   }
 
@@ -94,9 +95,9 @@ export function PushSettings() {
     setMessage(null);
     try {
       const { sent } = await pushApi.test();
-      setMessage(sent > 0 ? { text: "Sent. It should arrive in a moment.", error: false } : { text: "It couldn't be delivered to any device. Turn notifications off and on again here.", error: true });
+      setMessage(sent > 0 ? { text: t("settings.pushSent"), error: false } : { text: t("settings.pushNotDelivered"), error: true });
     } catch (err) {
-      setMessage({ text: err instanceof ApiError ? err.message : "Couldn't send a test.", error: true });
+      setMessage({ text: err instanceof ApiError ? err.message : t("settings.couldntSendATest"), error: true });
     } finally {
       setBusy(false);
     }
@@ -104,26 +105,26 @@ export function PushSettings() {
 
   const button = "rounded-md border border-white/20 px-3 py-1.5 text-xs text-white hover:bg-white/10 disabled:opacity-50";
   return (
-    <section aria-label="Notifications on this device" className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-white/60">Notifications on this device</h3>
-      {state.kind === "loading" && <p className="text-xs text-white/60">Checking…</p>}
-      {state.kind === "unavailable" && <p className="text-xs text-white/60">Notifications to your phone or computer aren&apos;t available on this site yet.</p>}
-      {state.kind === "unsupported" && <p className="text-xs text-white/60">This browser can&apos;t show notifications from a website. Try Chrome, Edge, Firefox or Safari.</p>}
+    <section aria-label={t("settings.notificationsOnThisDevice")} className="space-y-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-white/60">{t("settings.notificationsOnThisDevice")}</h3>
+      {state.kind === "loading" && <p className="text-xs text-white/60">{t("common.checking")}</p>}
+      {state.kind === "unavailable" && <p className="text-xs text-white/60">{t("settings.notificationsToYourPhone")}</p>}
+      {state.kind === "unsupported" && <p className="text-xs text-white/60">{t("settings.thisBrowserCantShow")}</p>}
       {state.kind === "needs-install" && (
-        <p className="text-xs text-white/60">On an iPhone, first add CreativesSelect to your Home Screen (tap Share, then Add to Home Screen) and open it from there. Then you can turn notifications on here.</p>
+        <p className="text-xs text-white/60">{t("settings.onAnIphoneFirst")}</p>
       )}
-      {state.kind === "blocked" && <p className="text-xs text-white/60">Notifications are blocked for this site. Allow them in your browser&apos;s settings for this site, then come back and turn them on.</p>}
+      {state.kind === "blocked" && <p className="text-xs text-white/60">{t("settings.notificationsAreBlockedFor")}</p>}
       {state.kind === "off" && (
         <>
-          <p className="text-xs text-white/60">Get a notification on this device when something happens, even when the site is closed. It says who and what, never what they wrote.</p>
+          <p className="text-xs text-white/60">{t("settings.getANotificationOn")}</p>
           <button type="button" onClick={() => turnOn(state.publicKey)} disabled={busy || !state.publicKey} className={button}>
-            {busy ? "Turning on…" : "Turn on notifications on this device"}
+            {busy ? t("settings.turningOn") : t("settings.turnOnNotificationsOn")}
           </button>
         </>
       )}
       {state.kind === "on" && (
         <>
-          <p className="text-xs text-emerald-400">Notifications are on for this device.</p>
+          <p className="text-xs text-emerald-400">{t("settings.notificationsAreOnFor")}</p>
           <ul className="space-y-1">
             {PUSH_CATEGORIES.map((c) => (
               <li key={c.name}>
@@ -141,10 +142,10 @@ export function PushSettings() {
           </ul>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={test} disabled={busy} className={button}>
-              Send me a test
+              {t("settings.sendMeATest")}
             </button>
             <button type="button" onClick={turnOff} disabled={busy} className={button}>
-              Turn off on this device
+              {t("settings.turnOffOnThis")}
             </button>
           </div>
         </>

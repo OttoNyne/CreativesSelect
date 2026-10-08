@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { t } from "../../i18n";
 
 // The CreativesSelect mark: a "C" in cyan and blue that interlocks with an "S" in violet and magenta, drawn as plain shapes so it stays
 // sharp at any size. The same shapes are in public/logo-mark.svg and public/favicon.svg.
@@ -53,9 +54,9 @@ export function Logo({ height = 28, tagline = false, className = "" }: { height?
       <LogoMark height={height} />
       <span className="flex flex-col leading-none">
         <span className="font-semibold tracking-tight text-white" style={{ fontSize: Math.round(height * 0.72) }}>
-          Creatives<span className="bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400 bg-clip-text text-transparent">Select</span>
+          Creatives<span className="bg-gradient-to-r from-cyan-300 via-blue-400 to-fuchsia-400 bg-clip-text text-transparent">{t("media.select")}</span>
         </span>
-        {tagline && <span className="mt-1 text-[0.55rem] uppercase tracking-[0.28em] text-white/55">Ideas · Brands · Digital growth</span>}
+        {tagline && <span className="mt-1 text-[0.55rem] uppercase tracking-[0.28em] text-white/55">{t("media.ideasBrandsDigitalGrowth")}</span>}
       </span>
     </span>
   );

@@ -3,6 +3,7 @@ import { assetUrl } from "../../api/client";
 import { clipWindow, directVideoSrc, playableVideoUrl, videoPosterUrl, youtubeEmbedUrl } from "../../lib/video";
 import type { Album, MediaItem, ReactionKey } from "../../types";
 import { ReactionBar } from "../common/ReactionBar";
+import { t } from "../../i18n";
 
 
 export const MAX_CAPTION_LENGTH = 200;
@@ -31,17 +32,17 @@ function CaptionEditor({ caption, onSave, onCancel }: { caption: string; onSave:
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         maxLength={MAX_CAPTION_LENGTH}
-        placeholder="Say something about this piece"
-        aria-label="Caption"
+        placeholder={t("media.saySomethingAboutThis")}
+        aria-label={t("media.caption")}
         autoFocus
         className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
       />
       <div className="flex items-center gap-2 text-[11px]">
         <button type="submit" disabled={busy || draft.trim() === caption} className="rounded-md bg-[var(--profile-accent-fill)] px-2 py-0.5 font-medium text-[var(--profile-on-accent)] disabled:opacity-50">
-          {busy ? "Saving…" : "Save"}
+          {busy ? t("reset.saving") : t("common.save")}
         </button>
         <button type="button" onClick={onCancel} disabled={busy} className="text-white/70 hover:underline disabled:opacity-50">
-          Cancel
+          {t("common.cancel")}
         </button>
         <span className="ms-auto text-white/60">
           {draft.length}/{MAX_CAPTION_LENGTH}
@@ -112,14 +113,14 @@ export function PortfolioTile({
           embed ? (
             <iframe
               src={embed}
-              title={item.caption ?? "Video"}
+              title={item.caption ?? t("media.video")}
               loading="lazy"
               allow="fullscreen; picture-in-picture"
               referrerPolicy="strict-origin-when-cross-origin"
               className="aspect-video w-full"
             />
           ) : (
-            <p className="p-3 text-xs text-white/60">This video link can't be shown.</p>
+            <p className="p-3 text-xs text-white/60">{t("media.thisVideoLinkCant")}</p>
           )
         ) : item.type === "video" ? (
           <video
@@ -137,15 +138,15 @@ export function PortfolioTile({
 
         {item.isAiImage && (
           <span className="absolute start-1 top-1 rounded-full bg-fuchsia-500/80 px-1.5 py-0.5 text-[9px] font-medium text-white">
-            AI
+            {t("media.ai")}
           </span>
         )}
         {isOwner && (
           <button
             type="button"
             onClick={() => onRemove(item.id)}
-            aria-label="Remove from portfolio"
-            title="Remove from portfolio"
+            aria-label={t("media.removeFromPortfolio")}
+            title={t("media.removeFromPortfolio")}
             className="absolute end-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-xs text-white hover:bg-red-600"
           >
             ✕
@@ -169,8 +170,8 @@ export function PortfolioTile({
             <p className="flex items-start gap-1.5">
               {item.caption && <span className="min-w-0 flex-1 break-words">{item.caption}</span>}
               {isOwner && onCaption && (
-                <button type="button" onClick={() => setEditingCaption(true)} aria-label={item.caption ? "Edit caption" : "Add a caption"} className="shrink-0 text-[11px] text-[var(--profile-accent-text)] hover:underline">
-                  {item.caption ? "✎ Edit" : "+ Add a caption"}
+                <button type="button" onClick={() => setEditingCaption(true)} aria-label={item.caption ? t("media.editCaption") : t("media.addACaption")} className="shrink-0 text-[11px] text-[var(--profile-accent-text)] hover:underline">
+                  {item.caption ? t("media.edit") : t("media.addACaption2")}
                 </button>
               )}
             </p>
@@ -179,14 +180,14 @@ export function PortfolioTile({
       )}
 
       <div className="flex flex-wrap items-center gap-1 bg-black/20 px-2 py-1">
-        <ReactionBar summary={item.reactions} canReact={canReact} onReact={(key) => onReact(item.id, key)} label="Reactions to this piece" />
+        <ReactionBar summary={item.reactions} canReact={canReact} onReact={(key) => onReact(item.id, key)} label={t("media.reactionsToThisPiece")} />
         {onToggleComments && (
           <button
             type="button"
             onClick={() => onToggleComments(item.id)}
             aria-expanded={commentsOpen}
-            aria-label={`Comments (${item.commentCount ?? 0})`}
-            title={commentsOpen ? "Hide comments" : "Show comments"}
+            aria-label={t("media.commentsAria", { n: item.commentCount ?? 0 })}
+            title={commentsOpen ? t("media.hideComments") : t("media.showComments")}
             className={`rounded-md px-2 py-0.5 text-xs ${commentsOpen ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/10"}`}
           >
             💬 {item.commentCount ?? 0}
@@ -198,10 +199,10 @@ export function PortfolioTile({
           <select
             value={item.albumId ?? ""}
             onChange={(e) => onMove(item.id, e.target.value || null)}
-            aria-label={`Album for ${item.caption || "this piece"}`}
+            aria-label={t("media.albumFor", { name: item.caption || t("media.thisPiece") })}
             className="w-full rounded-md border border-white/10 bg-black/40 px-1.5 py-1 text-[11px] text-white focus:border-[var(--profile-accent)] focus:outline-none"
           >
-            <option value="">No album</option>
+            <option value="">{t("media.noAlbum")}</option>
             {albums.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.title}

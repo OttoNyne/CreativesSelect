@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { qrCodeFor } from "../../lib/share";
+import { t } from "../../i18n";
 
 export interface ShareDialogProps {
   /** What the QR code and the link open. */
@@ -82,50 +83,50 @@ export function ShareDialog({ url, title, description, onClose }: ShareDialogPro
             </h2>
             {description && <p className="mt-0.5 text-sm text-white/70">{description}</p>}
           </div>
-          <button ref={closeRef} onClick={() => onCloseRef.current()} aria-label="Close" className="rounded-md border border-white/15 px-2.5 py-1 text-sm text-white/80 hover:bg-white/10">
+          <button ref={closeRef} onClick={() => onCloseRef.current()} aria-label={t("common.close")} className="rounded-md border border-white/15 px-2.5 py-1 text-sm text-white/80 hover:bg-white/10">
             ✕
           </button>
         </div>
 
         <div className="mt-4 flex justify-center">
           {qr ? (
-            <img src={qr} alt={`QR code that opens ${url}`} data-testid="share-qr" width={224} height={224} className="rounded-xl bg-white" />
+            <img src={qr} alt={t("media.qrAlt", { url })} data-testid="share-qr" width={224} height={224} className="rounded-xl bg-white" />
           ) : qrFailed ? (
             <p role="alert" className="py-8 text-center text-sm text-red-400">
-              Couldn&apos;t make the QR code. You can still copy the link below.
+              {t("media.couldntMakeTheQr")}
             </p>
           ) : (
-            <div className="flex h-56 w-56 items-center justify-center rounded-xl bg-white/10 text-sm text-white/70">Making your QR code…</div>
+            <div className="flex h-56 w-56 items-center justify-center rounded-xl bg-white/10 text-sm text-white/70">{t("media.makingYourQrCode")}</div>
           )}
         </div>
-        <p className="mt-2 text-center text-sm text-white/70">Point a phone&apos;s camera at the code to open it.</p>
+        <p className="mt-2 text-center text-sm text-white/70">{t("media.pointAPhonesCamera")}</p>
 
         <div className="mt-4 flex gap-2">
           <input
             ref={linkRef}
             readOnly
             value={url}
-            aria-label="Link"
+            aria-label={t("media.link")}
             onFocus={(e) => e.currentTarget.select()}
             className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none"
           />
           <button onClick={handleCopy} className="rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500">
-            Copy link
+            {t("media.copyLink")}
           </button>
         </div>
         <p role="status" className="mt-1 min-h-5 text-xs text-white/70">
-          {copied === "yes" ? "Link copied." : copied === "no" ? "Couldn't copy automatically — the link is selected, so you can copy it yourself." : ""}
+          {copied === "yes" ? t("media.linkCopied") : copied === "no" ? t("media.couldntCopyAutomaticallyThe") : ""}
         </p>
 
         <div className="mt-2 flex flex-wrap gap-2">
           {canShare && (
             <button onClick={handleShare} className="rounded-md border border-white/20 px-3 py-2 text-sm text-white hover:bg-white/10">
-              Share…
+              {t("media.share")}
             </button>
           )}
           {qr && (
             <a href={qr} download="creativesselect-qr.png" className="rounded-md border border-white/20 px-3 py-2 text-sm text-white hover:bg-white/10">
-              Save QR code
+              {t("media.saveQrCode")}
             </a>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { assetUrl } from "../../api/client";
+import { t } from "../../i18n";
 
 /** A picture (or GIF) in a comment: shown at a modest size, and opens full size in a new tab. */
 export function CommentPicture({ url }: { url: string }) {
@@ -6,7 +7,7 @@ export function CommentPicture({ url }: { url: string }) {
   if (!src) return null;
   return (
     <a href={src} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block">
-      <img src={src} alt="Picture in a comment" loading="lazy" className="max-h-64 max-w-full rounded-md border border-white/10 object-contain" />
+      <img src={src} alt={t("media.pictureInAComment")} loading="lazy" className="max-h-64 max-w-full rounded-md border border-white/10 object-contain" />
     </a>
   );
 }

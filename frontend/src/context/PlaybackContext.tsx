@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Track } from "../types";
 import { playableAudioUrl } from "../lib/audioUrl";
@@ -24,8 +25,9 @@ interface PlaybackContextValue {
 
 const PlaybackContext = createContext<PlaybackContextValue | undefined>(undefined);
 
-const BLOCKED = "Tap play to start the music.";
-const CANT_PLAY = "This song can't be played on this device.";
+// the text is looked up when it is needed, so it is in the language of the page
+const BLOCKED = () => t("media.playbackBlocked");
+const CANT_PLAY = () => t("media.cantPlay");
 
 export function PlaybackProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<Track[]>([]);
@@ -51,7 +53,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("error", () => {
       if (audio.getAttribute("src")) {
         setIsPlaying(false);
-        setError(CANT_PLAY);
+        setError(CANT_PLAY());
       }
     });
     audioRef.current = audio;
@@ -63,12 +65,12 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
       const audio = getAudio();
       setError(null);
       const src = playableAudioUrl(track.url);
-      if (!src) return setError(CANT_PLAY);
+      if (!src) return setError(CANT_PLAY());
       audio.src = src;
       const started = audio.play();
       started?.catch((err: unknown) => {
         // NotAllowedError: the browser wants a tap first (e.g. a song that starts by itself after a video)
-        setError(err instanceof DOMException && err.name === "NotAllowedError" ? BLOCKED : CANT_PLAY);
+        setError(err instanceof DOMException && err.name === "NotAllowedError" ? BLOCKED() : CANT_PLAY());
       });
     },
     [getAudio]
@@ -136,7 +138,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     if (!audio || !audio.getAttribute("src")) return;
     if (audio.paused) {
       setError(null);
-      audio.play()?.catch(() => setError(CANT_PLAY));
+      audio.play()?.catch(() => setError(CANT_PLAY()));
     } else {
       audio.pause();
     }

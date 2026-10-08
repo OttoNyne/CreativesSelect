@@ -3,6 +3,7 @@ import { ApiError } from "../../api/client";
 import { passkeysApi, type Passkey } from "../../api/passkeys.api";
 import { PasskeyError, createPasskey, passkeysSupported } from "../../lib/passkeys";
 import { agoText } from "../../lib/when";
+import { t } from "../../i18n";
 
 type View =
   | { kind: "closed" }
@@ -48,7 +49,7 @@ export function PasskeysSettings() {
       const { passkeys, rpId, max } = await passkeysApi.list();
       setView({ kind: "loaded", passkeys, rpId, max });
     } catch (err) {
-      setView({ kind: "error", message: err instanceof ApiError ? err.message : "Couldn't load your passkeys, try again." });
+      setView({ kind: "error", message: err instanceof ApiError ? err.message : t("settings.couldntLoadYourPasskeys") });
     }
   }
 
@@ -64,16 +65,16 @@ export function PasskeysSettings() {
       const { passkey } = await passkeysApi.registerVerify(response, name.trim() || undefined);
       setView({ ...view, passkeys: [...view.passkeys, passkey] });
       reset();
-      setMessage(`Added “${passkey.name}”. You can now sign in with it.`);
+      setMessage(t("settings.passkeyAdded", { name: passkey.name }));
     } catch (err) {
       if (err instanceof ApiError && err.code === "second_step_needed") {
         setNeedsCode(true);
-        setError(code ? err.message : "Enter a code from your authenticator app (or a recovery code) to go on.");
+        setError(code ? err.message : t("settings.enterACodeFrom"));
         setCode("");
       } else if (err instanceof PasskeyError && err.reason === "cancelled") {
         setError(err.message);
       } else {
-        setError(err instanceof ApiError || err instanceof PasskeyError ? err.message : "Couldn't add the passkey, try again.");
+        setError(err instanceof ApiError || err instanceof PasskeyError ? err.message : t("settings.couldntAddThePasskey"));
       }
     } finally {
       setBusy(false);
@@ -90,7 +91,7 @@ export function PasskeysSettings() {
       setView({ ...view, passkeys: view.passkeys.map((p) => (p.id === id ? passkey : p)) });
       reset();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't rename it, try again.");
+      setError(err instanceof ApiError ? err.message : t("settings.couldntRenameItTry"));
     } finally {
       setBusy(false);
     }
@@ -107,13 +108,13 @@ export function PasskeysSettings() {
       const gone = view.passkeys.find((p) => p.id === id);
       setView({ ...view, passkeys: view.passkeys.filter((p) => p.id !== id) });
       reset();
-      setMessage(`Removed “${gone?.name ?? "the passkey"}”.`);
+      setMessage(t("settings.passkeyRemoved", { name: gone?.name ?? t("settings.thePasskey") }));
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         await open(); // already gone: the list was out of date
         reset();
       } else {
-        setError(err instanceof ApiError ? err.message : "Couldn't remove it, try again.");
+        setError(err instanceof ApiError ? err.message : t("settings.couldntRemoveItTry"));
       }
     } finally {
       setBusy(false);
@@ -123,7 +124,7 @@ export function PasskeysSettings() {
   if (view.kind === "closed") {
     return (
       <button type="button" onClick={open} className="block text-xs text-white/60 hover:text-white">
-        Passkeys…
+        {t("settings.passkeys")}
       </button>
     );
   }
@@ -135,16 +136,16 @@ export function PasskeysSettings() {
   );
 
   return (
-    <section aria-label="Passkeys" className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-white/60">Passkeys</h3>
-      {view.kind === "loading" && <p className="text-xs text-white/60">Loading…</p>}
+    <section aria-label={t("settings.passkeys2")} className="space-y-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-white/60">{t("settings.passkeys2")}</h3>
+      {view.kind === "loading" && <p className="text-xs text-white/60">{t("common.loading")}</p>}
       {view.kind === "error" && (
         <>
           <p role="alert" className="text-xs text-red-400">
             {view.message}
           </p>
           <button type="button" onClick={open} className={button}>
-            Try again
+            {t("common.tryAgain")}
           </button>
         </>
       )}
@@ -152,23 +153,23 @@ export function PasskeysSettings() {
       {view.kind === "loaded" && (
         <>
           <p className="text-xs text-white/60">
-            A passkey lets you log in with your fingerprint, face or device PIN instead of a password. It stays on your device, can&apos;t be typed into a fake login page, and counts as both your password and your two-step code.
+            {t("settings.aPasskeyLetsYou")}
           </p>
-          {!passkeysSupported() && <p className="text-xs text-amber-300">This browser can&apos;t use passkeys. Try a recent Chrome, Safari, Edge or Firefox.</p>}
-          {passkeysSupported() && !onTheRightSite(view.rpId) && <p className="text-xs text-amber-300">Passkeys work on {view.rpId} only. Open the site there to add or use one.</p>}
+          {!passkeysSupported() && <p className="text-xs text-amber-300">{t("settings.thisBrowserCantUse")}</p>}
+          {passkeysSupported() && !onTheRightSite(view.rpId) && <p className="text-xs text-amber-300">{t("settings.passkeysOnlyOn", { host: view.rpId })}</p>}
 
           {view.passkeys.length === 0 ? (
-            <p className="text-xs text-white/60">You haven&apos;t added any passkeys yet.</p>
+            <p className="text-xs text-white/60">{t("settings.youHaventAddedAny")}</p>
           ) : (
-            <ul className="space-y-1.5" aria-label="Your passkeys">
+            <ul className="space-y-1.5" aria-label={t("settings.yourPasskeys")}>
               {view.passkeys.map((p) => (
                 <li key={p.id} className="rounded-md border border-white/10 bg-black/20 px-3 py-2">
                   <div className="flex items-center justify-between gap-3">
                     <span className="min-w-0 text-xs text-white/85">
                       <span className="block truncate font-medium">{p.name}</span>
                       <span className="block text-[11px] text-white/60">
-                        Added {agoText(p.createdAt)} · {p.lastUsedAt ? `used ${agoText(p.lastUsedAt)}` : "never used"}
-                        {p.synced ? " · synced between your devices" : ""}
+                        {t("settings.passkeyMeta", { added: agoText(p.createdAt), used: p.lastUsedAt ? t("settings.usedAgo", { ago: agoText(p.lastUsedAt) }) : t("settings.neverUsed") })}
+                        {p.synced ? ` ${t("settings.syncedBetweenYourDevices")}` : ""}
                       </span>
                     </span>
                     {editing.kind === "none" && (
@@ -177,39 +178,39 @@ export function PasskeysSettings() {
                             reset({ kind: "rename", id: p.id });
                             setName(p.name);
                           }} aria-label={`Rename ${p.name}`} className={button}>
-                          Rename
+                          {t("profile.rename")}
                         </button>
                         <button type="button" onClick={() => reset({ kind: "remove", id: p.id })} aria-label={`Remove ${p.name}`} className={button}>
-                          Remove
+                          {t("common.remove")}
                         </button>
                       </span>
                     )}
                   </div>
                   {editing.kind === "rename" && editing.id === p.id && (
                     <form onSubmit={(e) => rename(e, p.id)} className="mt-2 space-y-2">
-                      <input aria-label="New name" maxLength={40} placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className={field} />
+                      <input aria-label={t("settings.newName")} maxLength={40} placeholder={t("settings.name")} value={name} onChange={(e) => setName(e.target.value)} className={field} />
                       {errorLine}
                       <div className="flex gap-2">
                         <button type="submit" disabled={!name.trim() || busy} className={primary}>
-                          Save name
+                          {t("profile.saveName")}
                         </button>
                         <button type="button" onClick={() => reset()} className={button}>
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </form>
                   )}
                   {editing.kind === "remove" && editing.id === p.id && (
                     <form onSubmit={(e) => remove(e, p.id)} className="mt-2 space-y-2">
-                      <p className="text-xs text-white/70">Enter your password to remove this passkey.</p>
-                      <input type="password" autoComplete="current-password" aria-label="Your password" placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
+                      <p className="text-xs text-white/70">{t("settings.enterYourPasswordTo2")}</p>
+                      <input type="password" autoComplete="current-password" aria-label={t("settings.yourPassword")} placeholder={t("settings.yourPassword")} value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
                       {errorLine}
                       <div className="flex gap-2">
                         <button type="submit" disabled={!password || busy} className={primary}>
-                          {busy ? "Removing…" : "Remove passkey"}
+                          {busy ? t("settings.removing") : t("settings.removePasskey")}
                         </button>
                         <button type="button" onClick={() => reset()} className={button}>
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </form>
@@ -220,18 +221,18 @@ export function PasskeysSettings() {
           )}
 
           {editing.kind === "add" ? (
-            <form onSubmit={add} aria-label="Add a passkey" className="space-y-2 rounded-md border border-white/10 bg-black/20 p-3">
-              <p className="text-xs text-white/70">Enter your password, then your device will ask for your fingerprint, face or PIN.</p>
-              <input type="password" autoComplete="current-password" aria-label="Your password" placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
-              {needsCode && <input autoComplete="one-time-code" aria-label="Code from your app" placeholder="Code from your app" maxLength={40} value={code} onChange={(e) => setCode(e.target.value)} className={field} />}
-              <input aria-label="Name for this passkey (optional)" placeholder="Name for this passkey (optional), such as My phone" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className={field} />
+            <form onSubmit={add} aria-label={t("settings.addAPasskey")} className="space-y-2 rounded-md border border-white/10 bg-black/20 p-3">
+              <p className="text-xs text-white/70">{t("settings.enterYourPasswordThen")}</p>
+              <input type="password" autoComplete="current-password" aria-label={t("settings.yourPassword")} placeholder={t("settings.yourPassword")} value={password} onChange={(e) => setPassword(e.target.value)} className={field} />
+              {needsCode && <input autoComplete="one-time-code" aria-label={t("login.twoStep.label")} placeholder={t("login.twoStep.label")} maxLength={40} value={code} onChange={(e) => setCode(e.target.value)} className={field} />}
+              <input aria-label={t("settings.nameForThisPasskey")} placeholder={t("settings.nameForThisPasskey2")} maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className={field} />
               {errorLine}
               <div className="flex gap-2">
                 <button type="submit" disabled={!password || (needsCode && !code.trim()) || busy} className={primary}>
-                  {busy ? "Waiting for your device…" : "Add passkey"}
+                  {busy ? t("settings.waitingForYourDevice") : t("settings.addPasskey")}
                 </button>
                 <button type="button" onClick={() => reset()} className={button}>
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>
@@ -241,11 +242,11 @@ export function PasskeysSettings() {
             onTheRightSite(view.rpId) &&
             view.passkeys.length < view.max && (
               <button type="button" onClick={() => reset({ kind: "add" })} className={button}>
-                Add a passkey
+                {t("settings.addAPasskey")}
               </button>
             )
           )}
-          {editing.kind === "none" && view.passkeys.length >= view.max && <p className="text-xs text-white/60">You have the most passkeys allowed ({view.max}). Remove one to add another.</p>}
+          {editing.kind === "none" && view.passkeys.length >= view.max && <p className="text-xs text-white/60">{t("settings.passkeyLimit", { max: view.max })}</p>}
           {message && (
             <p role="status" className="text-xs text-emerald-400">
               {message}
@@ -255,7 +256,7 @@ export function PasskeysSettings() {
       )}
       {editing.kind === "none" && (
         <button type="button" onClick={() => setView({ kind: "closed" })} className="text-xs text-white/60 hover:text-white">
-          Close
+          {t("common.close")}
         </button>
       )}
     </section>

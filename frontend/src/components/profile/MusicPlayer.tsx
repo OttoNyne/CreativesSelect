@@ -4,6 +4,7 @@ import { uploadFile } from "../../api/media.api";
 import { ApiError } from "../../api/client";
 import { usePlayback } from "../../context/PlaybackContext";
 import type { Track } from "../../types";
+import { t } from "../../i18n";
 
 export function MusicPlayer({ username, isOwner }: { username: string; isOwner: boolean }) {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -45,7 +46,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
     setError(null);
     try {
       const { track } = await tracksApi.add({
-        title: youtubeTitle.trim() || "Untitled track",
+        title: youtubeTitle.trim() || t("media.untitledTrack"),
         sourceType: "youtube",
         url: youtubeUrl.trim(),
         ...(artist.trim() ? { artist: artist.trim() } : {}),
@@ -55,7 +56,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
       setYoutubeTitle("");
       setArtist("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't add that track");
+      setError(err instanceof ApiError ? err.message : t("media.couldntAddThatTrack"));
     }
   }
 
@@ -76,7 +77,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
       setUploadCaption("");
       setArtist("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't upload that file");
+      setError(err instanceof ApiError ? err.message : t("media.couldntUploadThatFile"));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -91,7 +92,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
     setTracks(next);
-    setAnnouncement(`Moved ${moved.title} to position ${to + 1} of ${next.length}.`);
+    setAnnouncement(t("media.trackMoved", { title: moved.title, pos: to + 1, total: next.length }));
     setError(null);
     setSaving(true);
     try {
@@ -101,7 +102,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
     } catch (err) {
       setTracks(before);
       setAnnouncement("");
-      setError(err instanceof ApiError ? err.message : "Couldn't save the new order.");
+      setError(err instanceof ApiError ? err.message : t("media.couldntSaveTheNew"));
     } finally {
       setSaving(false);
     }
@@ -117,7 +118,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
   async function saveEdit(e: React.FormEvent, track: Track) {
     e.preventDefault();
     if (editBusy) return;
-    if (!editTitle.trim()) return setError("A track needs a title");
+    if (!editTitle.trim()) return setError(t("media.aTrackNeedsA"));
     setEditBusy(true);
     setError(null);
     try {
@@ -125,7 +126,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
       setTracks((list) => list.map((t) => (t.id === track.id ? { ...t, title: saved.title, artist: saved.artist } : t)));
       setEditing(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't save that change.");
+      setError(err instanceof ApiError ? err.message : t("common.saveChangeFailed"));
     } finally {
       setEditBusy(false);
     }
@@ -139,7 +140,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
       await tracksApi.update(track.id, { profileSong: make });
       setTracks((list) => list.map((t) => (t.id === track.id ? { ...t, profileSong: make } : make ? { ...t, profileSong: false } : t)));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't change the profile song.");
+      setError(err instanceof ApiError ? err.message : t("media.couldntChangeTheProfile"));
     }
   }
 
@@ -149,14 +150,14 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
       await tracksApi.remove(id);
       setTracks((t) => t.filter((track) => track.id !== id));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't remove that track.");
+      setError(err instanceof ApiError ? err.message : t("media.couldntRemoveThatTrack"));
     }
   }
 
   return (
     <div className="profile-card rounded-xl border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">Music</h2>
+        <h2 className="profile-heading text-sm font-semibold uppercase tracking-wide text-white/60">{t("sections.music")}</h2>
         <span className="text-xs text-white/60">
           {tracks.length}/{MAX_TRACKS}
         </span>
@@ -167,18 +168,18 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
           onClick={() => play(profileSong, tracks)}
           className="mt-2 rounded-full border border-[var(--profile-accent)] px-3 py-1 text-xs font-medium text-[var(--profile-accent-text)] hover:bg-white/10"
         >
-          ▶ Play profile song: {profileSong.title}
+          {t("media.playProfileSong", { title: profileSong.title })}
         </button>
       )}
       {tracks.length > 1 && (
         <p className="mt-1 text-[10px] text-white/60">
-          Plays straight through the queue until you pause — keeps going as you browse elsewhere in the app.
+          {t("media.playsStraightThroughThe")}
         </p>
       )}
 
       <div className="mt-3 space-y-1.5">
-        {loading && <p className="text-xs text-white/60">Loading…</p>}
-        {!loading && tracks.length === 0 && <p className="text-xs text-white/60">No tracks yet.</p>}
+        {loading && <p className="text-xs text-white/60">{t("common.loading")}</p>}
+        {!loading && tracks.length === 0 && <p className="text-xs text-white/60">{t("media.noTracksYet")}</p>}
         {tracks.map((track, index) => {
           const isPlaying = current?.id === track.id;
           const canArrange = isOwner && tracks.length > 1;
@@ -213,7 +214,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
               } ${dragging === index ? "opacity-50" : ""} ${dropOn === index && dragging !== index ? "ring-2 ring-[var(--profile-accent)]" : ""}`}
             >
               {canArrange && (
-                <span aria-hidden="true" title="Drag to rearrange" className="shrink-0 cursor-grab select-none text-sm text-white/60">
+                <span aria-hidden="true" title={t("profile.dragToRearrange")} className="shrink-0 cursor-grab select-none text-sm text-white/60">
                   ⠿
                 </span>
               )}
@@ -222,20 +223,20 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs ${
                   isPlaying ? "bg-[var(--profile-accent-fill)] text-[var(--profile-on-accent)]" : "bg-white/10 text-white/70 hover:bg-white/20"
                 }`}
-                title={isPlaying ? "Playing" : "Play"}
+                title={isPlaying ? t("media.playing") : t("media.play")}
               >
                 {isPlaying ? "♪" : "▶"}
               </button>
               {editing === track.id ? (
                 <form onSubmit={(e) => saveEdit(e, track)} className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row">
-                  <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} maxLength={MAX_TRACK_TITLE} aria-label="Track title" className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white focus:border-[var(--profile-accent)] focus:outline-none" />
-                  <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} maxLength={MAX_TRACK_ARTIST} placeholder="Artist" aria-label="Artist" className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none" />
+                  <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} maxLength={MAX_TRACK_TITLE} aria-label={t("media.trackTitle")} className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white focus:border-[var(--profile-accent)] focus:outline-none" />
+                  <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} maxLength={MAX_TRACK_ARTIST} placeholder={t("media.artist")} aria-label={t("media.artist")} className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none" />
                   <span className="flex gap-2">
                     <button type="submit" disabled={editBusy} className="rounded-md bg-[var(--profile-accent-fill)] px-2 py-1 text-xs font-medium text-[var(--profile-on-accent)] disabled:opacity-50">
-                      Save
+                      {t("common.save")}
                     </button>
                     <button type="button" onClick={() => setEditing(null)} disabled={editBusy} className="text-xs text-white/70 hover:underline">
-                      Cancel
+                      {t("common.cancel")}
                     </button>
                   </span>
                 </form>
@@ -243,8 +244,8 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-white/80">{track.title}</p>
                   <p className="text-[10px] text-white/60">
-                    {[track.artist, track.sourceType === "youtube" ? "YouTube" : "Uploaded", track.plays ? `${track.plays} ${track.plays === 1 ? "play" : "plays"}` : null].filter(Boolean).join(" · ")}
-                    {track.profileSong && <span className="ms-1.5 rounded-full border border-[var(--profile-accent)] px-1.5 text-[var(--profile-accent-text)]">Profile song</span>}
+                    {[track.artist, track.sourceType === "youtube" ? "YouTube" : t("media.uploadedLabel"), track.plays ? t("media.playsCount", { n: track.plays }) : null].filter(Boolean).join(" · ")}
+                    {track.profileSong && <span className="ms-1.5 rounded-full border border-[var(--profile-accent)] px-1.5 text-[var(--profile-accent-text)]">{t("media.profileSong")}</span>}
                   </p>
                 </div>
               )}
@@ -254,8 +255,8 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                     type="button"
                     onClick={() => toggleProfileSong(track)}
                     aria-pressed={Boolean(track.profileSong)}
-                    aria-label={track.profileSong ? `Stop ${track.title} being the profile song` : `Make ${track.title} the profile song`}
-                    title={track.profileSong ? "Profile song" : "Make this the profile song"}
+                    aria-label={track.profileSong ? t("media.stopProfileSong", { title: track.title }) : t("media.makeProfileSong", { title: track.title })}
+                    title={track.profileSong ? t("media.profileSong") : t("media.makeThisTheProfile")}
                     className={`flex h-7 w-7 items-center justify-center text-sm ${track.profileSong ? "text-[var(--profile-accent-text)]" : "text-white/60 hover:text-white"}`}
                   >
                     {track.profileSong ? "★" : "☆"}
@@ -270,7 +271,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                   <button
                     onClick={() => moveTrack(index, index - 1)}
                     disabled={saving || index === 0}
-                    aria-label={`Move ${track.title} up`}
+                    aria-label={t("media.moveTrackUp", { title: track.title })}
                     className="flex h-6 w-9 items-center justify-center text-[11px] text-white/70 hover:text-white disabled:opacity-30"
                   >
                     ▲
@@ -278,7 +279,7 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
                   <button
                     onClick={() => moveTrack(index, index + 1)}
                     disabled={saving || index === tracks.length - 1}
-                    aria-label={`Move ${track.title} down`}
+                    aria-label={t("media.moveTrackDown", { title: track.title })}
                     className="flex h-6 w-9 items-center justify-center text-[11px] text-white/70 hover:text-white disabled:opacity-30"
                   >
                     ▼
@@ -302,57 +303,57 @@ export function MusicPlayer({ username, isOwner }: { username: string; isOwner: 
       {isOwner && (
         <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
           {atLimit ? (
-            <p className="text-xs text-white/60">Remove a track to add another.</p>
+            <p className="text-xs text-white/60">{t("media.removeATrackTo")}</p>
           ) : (
             <>
               <form onSubmit={handleAddYoutube} className="flex flex-col gap-1.5 sm:flex-row">
                 <input
                   value={youtubeTitle}
                   onChange={(e) => setYoutubeTitle(e.target.value)}
-                  placeholder="Track title"
+                  placeholder={t("media.trackTitle")}
                   className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none sm:w-32"
                 />
                 <input
                   value={artist}
                   onChange={(e) => setArtist(e.target.value)}
                   maxLength={MAX_TRACK_ARTIST}
-                  placeholder="Artist (optional)"
-                  aria-label="Artist (optional)"
+                  placeholder={t("media.artistOptional")}
+                  aria-label={t("media.artistOptional")}
                   className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none sm:w-28"
                 />
                 <input
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
-                  placeholder="Paste a YouTube link…"
+                  placeholder={t("media.pasteAYoutubeLink")}
                   className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
                 />
                 <button
                   type="submit"
                   className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent)]"
                 >
-                  Add
+                  {t("media.add")}
                 </button>
               </form>
               <div className="flex gap-1.5">
                 <input
                   value={uploadCaption}
                   onChange={(e) => setUploadCaption(e.target.value)}
-                  placeholder="Caption (optional)"
+                  placeholder={t("media.captionOptional")}
                   className="flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading || atUploadLimit}
-                  title={atUploadLimit ? `You can upload up to ${MAX_UPLOADS} songs` : undefined}
+                  title={atUploadLimit ? t("media.uploadLimit", { max: MAX_UPLOADS }) : undefined}
                   className="shrink-0 rounded-md border border-white/15 px-3 py-1 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"
                 >
-                  {uploading ? "Uploading…" : "📎 Upload a song"}
+                  {uploading ? t("picture.uploading") : t("media.uploadASong")}
                 </button>
               </div>
               <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileChange} />
               <p className="text-[10px] text-white/60">
-                Up to {MAX_TRACKS} tracks, {MAX_UPLOADS} of them uploaded songs ({uploadCount}/{MAX_UPLOADS} used) — YouTube links can fill the rest.
+                {t("media.trackLimits", { max: MAX_TRACKS, uploads: MAX_UPLOADS, used: uploadCount })}
               </p>
             </>
           )}
