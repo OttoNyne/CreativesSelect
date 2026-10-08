@@ -40,10 +40,10 @@ describe("FeaturesPage", () => {
   it("lists what the site offers, each with its own heading", () => {
     renderPage(<FeaturesPage />);
     expect(screen.getByRole("heading", { level: 1, name: "Features" })).toBeInTheDocument();
-    for (const name of ["A profile that's yours", "Portfolio", "Music", "Feed", "Messages and group chat", "Friends and groups", "Help wanted", "Live audio", "AI assistance", "Privacy and safety", "Credits and collaborations", "Open to work", "Works on your phone", "In your language"]) {
+    for (const name of ["A profile that's yours", "Portfolio", "Music", "Feed", "Messages and group chat", "Friends and groups", "Help wanted", "Live audio", "AI assistance", "Privacy and safety", "Credits and collaborations", "Open to work", "Shareable profiles", "Works on your phone", "In your language"]) {
       expect(screen.getByRole("heading", { level: 2, name: new RegExp(name) })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("listitem")).toHaveLength(14);
+    expect(screen.getAllByRole("listitem")).toHaveLength(15);
   });
 
   it("is honest that AI content is labelled", () => {

@@ -57,7 +57,7 @@ test.describe("sharing the site with a QR code", () => {
     await page.getByRole("button", { name: "Share", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Share your profile" });
     await expect(dialog).toBeVisible();
-    expect(await scannedAddress(page)).toBe(`${baseURL}/u/${me.username}`);
+    expect(await scannedAddress(page)).toBe(`${baseURL}/p/${me.username}`); // by way of the preview page, which sends people on to the profile
 
     // the window keeps its own (dark) colours instead of inheriting the profile's light ones
     const colours = await dialog.evaluate((el) => ({ text: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor }));

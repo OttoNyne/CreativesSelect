@@ -14,7 +14,8 @@ export function siteOrigin(location: Pick<Location, "origin" | "hostname"> = win
 }
 
 export const siteUrl = () => siteOrigin();
-export const profileUrl = (username: string) => `${siteOrigin()}/u/${encodeURIComponent(username)}`;
+/** The link to a profile that gets shared. It goes by way of /p/, which the server answers with a preview for messages and social media and then sends people on to /u/. */
+export const profileUrl = (username: string) => `${siteOrigin()}/p/${encodeURIComponent(username)}`;
 /** The link a friend opens to join through someone's invite. */
 export const inviteUrl = (code: string) => `${siteOrigin()}/join/${encodeURIComponent(code)}`;
 export const liveUrl = (liveId: string) => `${siteOrigin()}/live/${encodeURIComponent(liveId)}`;

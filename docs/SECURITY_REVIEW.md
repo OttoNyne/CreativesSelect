@@ -1358,6 +1358,17 @@ Requests for work let people who aren't friends reach someone, so the review loo
 - **Tidy.** Waiting notifications are cleared when a request is answered or withdrawn; a person's requests go with their account; the data download lists what they sent, their answers and their open-to-work settings.
 - **Not covered:** a request can't be reported on its own yet (a person can block the sender, or switch open to work off, which stops new ones), and the budget isn't checked against any real figure.
 
+### 5.78 Shareable profiles: previews and search engines
+
+A link preview is a public page made from someone's profile, so the review asked what it could give away and what it could be used for.
+
+- **Only what a visitor could already see.** The preview has a public profile's name, bio, tags, offers and picture, nothing else. A private profile, a suspended one, a missing one and a name that couldn't be a username all get the identical bare page and a `200`, so the preview can't be used to find out which accounts exist or are private (tested).
+- **Nothing can break out of the page.** Every value is escaped for text and for attributes, the picture must be an `https` address, the description is cut to 200 whole characters, and the page's own policy (`default-src 'none'`) lets it load nothing at all (tested with markup in the bio and in the picture address). The policy also leaves out `upgrade-insecure-requests`, which in Safari had stopped the redirect to the profile on a plain-http developer machine; the browser tests caught it.
+- **Search engines only by choice.** Profiles are kept out of search engines (`noindex` in the page and header, and in the profile page's own tag) unless the owner switches listing on, and the sitemap names only those, never a private or suspended one (tested). Switching it off takes the profile out of the sitemap at once; a search engine's own copy follows its own schedule.
+- **Cost kept in check.** 600 previews an hour per address and a sitemap capped at 5000 profiles, with short caching, so the page can't be used to load the database.
+- **A public list, deliberately.** A public profile's blog list can now be read without signing in (it already could for portfolio pieces); a private profile's list still asks for a friend (tested). Nothing was loosened for posts, comments or messages.
+- **Not covered:** a profile's picture is shown by its own address, so the preview can only be as safe as the picture host; the preview isn't translated beyond the one sentence (the bio is the person's own words).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

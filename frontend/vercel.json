@@ -5,6 +5,14 @@
       "destination": "https://first-server-2y0v.onrender.com/api/:path*"
     },
     {
+      "source": "/p/:username",
+      "destination": "https://first-server-2y0v.onrender.com/api/preview/profile/:username"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://first-server-2y0v.onrender.com/api/preview/sitemap.xml"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -45,6 +45,7 @@ import { ProfileNames } from "../components/profile/ProfileNames";
 import { CSBadge } from "../components/common/CSBadge";
 import { OffersEditor, OpenToWorkBadge, WorkRequestForm } from "../components/profile/OpenToWork";
 import { WorkRequestsPanel } from "../components/profile/WorkRequestsPanel";
+import { useRobots } from "../lib/useRobots";
 import { t } from "../i18n";
 
 export function ProfilePage() {
@@ -71,6 +72,8 @@ export function ProfilePage() {
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
   const isOwner = viewer?.username === username;
+  // search engines that run the page are told whether this profile may be listed (its owner decides)
+  useRobots(profile && profile.username.toLowerCase() === username.toLowerCase() ? profile.listInSearchEngines === true : null);
 
   useEffect(() => {
     // Ignore the result of a request once we've moved on to a different profile.
@@ -311,7 +314,13 @@ export function ProfilePage() {
                 {t("profile.block")}
               </button>
             </>
-          ) : null}
+          ) : (
+            <p className="text-sm text-[var(--profile-muted)]">
+              {t("profile.joinToConnect", { name: profile.displayName })}{" "}
+              <Link to="/register" className="font-medium underline">{t("common.signUp")}</Link>{" "}
+              <Link to="/login" className="underline">{t("common.logIn")}</Link>
+            </p>
+          )}
         </div>
       </div>
 
@@ -373,6 +382,10 @@ export function ProfilePage() {
             <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input type="checkbox" checked={profile.showActivity !== false} onChange={(e) => saveProfile({ showActivity: e.target.checked })} />
               {t("profile.showMyFriendsWhen")}
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+              <input type="checkbox" checked={profile.listInSearchEngines === true} disabled={profile.isPrivate} onChange={(e) => saveProfile({ listInSearchEngines: e.target.checked })} />
+              {t("profile.listInSearch")}
             </label>
             <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input type="checkbox" checked={profile.profileViews === true} onChange={(e) => saveProfile({ profileViews: e.target.checked })} />

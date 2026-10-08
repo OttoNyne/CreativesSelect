@@ -313,6 +313,48 @@ describe("ProfilePage", () => {
     expect(profiles.updateMe).toHaveBeenLastCalledWith({ profileViews: false });
   });
 
+  it("lets the owner allow search engines to list the profile, saved straight away, and not while it is private", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    profiles.updateMe.mockResolvedValueOnce({ user: { ...me, listInSearchEngines: true } });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const box = screen.getByRole("checkbox", { name: "Let search engines like Google list my profile" });
+    expect(box).not.toBeChecked();
+    expect(box).toBeEnabled();
+    await userEvent.click(box);
+    expect(profiles.updateMe).toHaveBeenLastCalledWith({ listInSearchEngines: true });
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "Let search engines like Google list my profile" })).toBeChecked());
+  });
+
+  it("tells search engines to keep a profile out unless its owner allowed listing, and lets a listed one in", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    await screen.findByText("Zoe");
+    expect(document.head.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe("noindex,nofollow");
+    cleanup();
+    expect(document.head.querySelector('meta[name="robots"]')).toBeNull();
+    profiles.get.mockResolvedValue({ user: { ...zoe, listInSearchEngines: true } });
+    renderAs(me, "zoe");
+    await screen.findByText("Zoe");
+    expect(document.head.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe("index,follow");
+  });
+
+  it("invites someone who isn't signed in to join, with ways to sign up or log in", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(null, "zoe");
+    expect(await screen.findByText(/Join CreativesSelect to add Zoe as a friend/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign up" })).toHaveAttribute("href", "/register");
+    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute("href", "/login");
+    expect(screen.queryByRole("button", { name: "Add Friend" })).not.toBeInTheDocument();
+  });
+
+  it("doesn't invite someone who is already signed in to join", async () => {
+    profiles.get.mockResolvedValue({ user: zoe });
+    renderAs(me, "zoe");
+    await screen.findByText("Zoe");
+    expect(screen.queryByText(/Join CreativesSelect/)).not.toBeInTheDocument();
+  });
+
   it("opens the owner's own profile ready to edit when the address asks for it (the checklist's links)", async () => {
     profiles.get.mockResolvedValue({ user: me });
     renderAs(me, "me", "?edit=1");

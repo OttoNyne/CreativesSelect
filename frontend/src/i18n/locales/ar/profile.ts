@@ -176,4 +176,6 @@ export const profile: Translation<typeof en> = {
   "profile.blockConfirm": "هل تريد حظر @{username}؟ لن يتمكن من إضافتك صديقًا أو التعليق أو التفاعل معك.",
   "profile.shareOther": "شارك الملف الشخصي لـ{name}",
   "profile.commentCount": { zero: "لا تعليقات", one: "تعليق واحد", two: "تعليقان", few: "{n} تعليقات", many: "{n} تعليقًا", other: "{n} تعليق" },
+  "profile.listInSearch": "السماح لمحركات البحث مثل Google بعرض ملفي الشخصي",
+  "profile.joinToConnect": "انضم إلى CreativesSelect لإضافة {name} صديقًا ومراسلته ومشاهدة المزيد.",
 };

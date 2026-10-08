@@ -19,8 +19,8 @@ describe("which address gets shared", () => {
   });
 
   it("builds profile and live links from it, safely", () => {
-    expect(profileUrl("zoe_1")).toBe(`${window.location.origin}/u/zoe_1`);
-    expect(profileUrl("a/b c")).toBe(`${window.location.origin}/u/a%2Fb%20c`);
+    expect(profileUrl("zoe_1")).toBe(`${window.location.origin}/p/zoe_1`);
+    expect(profileUrl("a/b c")).toBe(`${window.location.origin}/p/a%2Fb%20c`);
     expect(liveUrl("abc123")).toBe(`${window.location.origin}/live/abc123`);
   });
 });

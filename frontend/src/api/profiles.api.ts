@@ -18,6 +18,7 @@ export interface UpdateProfileInput {
   showActivity?: boolean;
   profileViews?: boolean;
   showConnections?: boolean;
+  listInSearchEngines?: boolean;
   chatStatus?: boolean;
   language?: "en" | "es" | "ar";
   openToWork?: boolean;

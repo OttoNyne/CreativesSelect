@@ -176,4 +176,6 @@ export const profile: Translation<typeof en> = {
   "profile.blockConfirm": "¿Bloquear a @{username}? No podrá enviarte solicitudes de amistad, comentar ni interactuar contigo.",
   "profile.shareOther": "Comparte el perfil de {name}",
   "profile.commentCount": { one: "{n} comentario", other: "{n} comentarios" },
+  "profile.listInSearch": "Permitir que buscadores como Google muestren mi perfil",
+  "profile.joinToConnect": "Únete a CreativesSelect para añadir a {name} como amigo, escribirle y ver más.",
 };

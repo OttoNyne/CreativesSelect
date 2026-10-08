@@ -46,4 +46,6 @@ export const info = {
   "info.creditsText": "Credit the friends who worked on a piece (illustrator, producer, model, editor) and say what each did. They are asked first, so nobody can put their name on your work or yours on theirs by themselves, and once they accept the piece shows on their profile as a collaboration. Either of you can take a credit off again at any time.",
   "info.workTitle": "Open to work",
   "info.workText": "Say you take commissions or collaborations, list what you offer and add a short note. People can find you by searching only those open to work, and send a request with a short brief (what they need, a budget hint, a deadline). You answer yes or no with a note, and nothing is paid or promised through the site: it only gets you talking.",
+  "info.shareTitle": "Shareable profiles",
+  "info.shareText": "Every profile has a link that shows a proper preview (name, picture and a line about you) when you send it in a message or post it on social media, and takes whoever opens it to your profile. A private profile shows nothing in a preview. Search engines such as Google only list your profile if you switch that on in your profile settings.",
 } as const;

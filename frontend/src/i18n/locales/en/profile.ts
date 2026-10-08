@@ -174,4 +174,6 @@ export const profile = {
   "profile.blockConfirm": "Block @{username}? They won't be able to friend, comment, or interact with you.",
   "profile.shareOther": "Share {name}'s profile",
   "profile.commentCount": { one: "{n} comment", other: "{n} comments" },
+  "profile.listInSearch": "Let search engines like Google list my profile",
+  "profile.joinToConnect": "Join CreativesSelect to add {name} as a friend, message them and see more.",
 } as const;
