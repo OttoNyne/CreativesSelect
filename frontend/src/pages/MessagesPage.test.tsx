@@ -107,7 +107,7 @@ describe("MessagesPage", () => {
   it("opens a thread: messages in order, mine marked, seen shown", async () => {
     renderAt("/messages/zoe");
     expect(await screen.findByText("Free Friday?")).toBeInTheDocument();
-    expect(screen.getByText("See you then", { selector: "div.max-w-\\[80\\%\\]" })).toBeInTheDocument();
+    expect(screen.getByText("See you then", { selector: "div.max-w-\\[80\\%\\] span" })).toBeInTheDocument();
     expect(screen.getByText("Seen")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Zoe" })).toHaveAttribute("href", "/u/zoe");
     expect(api.thread).toHaveBeenCalledWith("zoe");

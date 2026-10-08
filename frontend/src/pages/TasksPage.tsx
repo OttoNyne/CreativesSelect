@@ -5,6 +5,8 @@ import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
 import type { BoardTask, Task } from "../types";
 import { t } from "../i18n";
+import { Linkified } from "../components/common/Linkified";
+import { MentionTextarea } from "../components/common/MentionField";
 import { shortAgo } from "../lib/when";
 
 
@@ -115,7 +117,7 @@ export function TasksPage() {
               <span className="text-xs text-white/60">{shortAgo(item.createdAt)}</span>
             </div>
             <div className="font-medium text-white">{item.title}</div>
-            {item.description && <p dir="auto" className="whitespace-pre-wrap text-sm text-white/70">{item.description}</p>}
+            {item.description && <p dir="auto" className="whitespace-pre-wrap text-sm text-white/70"><Linkified text={item.description} /></p>}
             {offered.has(item._id) ? (
               <button
                 type="button"
@@ -190,7 +192,7 @@ export function TasksPage() {
               {creating ? t("composer.posting") : t("composer.post")}
             </button>
           </div>
-          <textarea
+          <MentionTextarea
             placeholder={t("events.detailsOptional")}
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
@@ -218,7 +220,7 @@ export function TasksPage() {
                 {task.isPublic ? t("events.public") : t("misc.onlyMe")}
               </span>
             </div>
-            {task.description && <p dir="auto" className="whitespace-pre-wrap text-sm text-white/60">{task.description}</p>}
+            {task.description && <p dir="auto" className="whitespace-pre-wrap text-sm text-white/60"><Linkified text={task.description} /></p>}
             <div className="flex gap-3 text-xs">
               <button
                 type="button"

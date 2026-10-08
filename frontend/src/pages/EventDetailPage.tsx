@@ -12,6 +12,7 @@ import { isOver } from "../components/events/EventCard";
 import { formatWhen, untilText } from "../lib/when";
 import type { CommunityEvent, EventAnswer, User } from "../types";
 import { t } from "../i18n";
+import { Linkified } from "../components/common/Linkified";
 
 /** One group of guests (going, or maybe), fifty at a time. */
 function Guests({ eventId, status, total }: { eventId: string; status: EventAnswer; total: number }) {
@@ -197,7 +198,7 @@ export function EventDetailPage() {
             </div>
           </dl>
 
-          {event.description && <p dir="auto" className="whitespace-pre-line break-words text-sm text-white/80">{event.description}</p>}
+          {event.description && <p dir="auto" className="whitespace-pre-line break-words text-sm text-white/80"><Linkified text={event.description} /></p>}
           {over && <p className="text-sm text-amber-300">{t("events.thisEventIsOver")}</p>}
 
           <div className="flex flex-wrap items-center gap-3 border-t border-white/5 pt-3">

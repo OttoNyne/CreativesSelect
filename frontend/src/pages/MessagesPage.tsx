@@ -8,6 +8,8 @@ import { ActivityBadge } from "../components/common/ActivityBadge";
 import { EditBox } from "../components/common/EditBox";
 import { EditedMark } from "../components/common/EditedMark";
 import { locale, t } from "../i18n";
+import { Linkified } from "../components/common/Linkified";
+import { MentionTextarea } from "../components/common/MentionField";
 import { tRich } from "../i18n/rich";
 
 // How long after sending a message its sender can still change it (the server enforces this too).
@@ -262,7 +264,7 @@ function Thread({ username }: { username: string }) {
               {editing === m.id ? (
                 <EditBox text={m.body} maxText={MAX_MESSAGE_LENGTH} label={t("messages.editLabel")} rows={2} onSave={({ text }) => saveEdit(m.id, text)} onCancel={() => setEditing(null)} />
               ) : (
-                m.body
+                <Linkified text={m.body} linkClassName="text-white underline hover:opacity-80" />
               )}
               <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-white/60">
                 <span>{timeLabel(m.createdAt)}</span>
@@ -290,7 +292,9 @@ function Thread({ username }: { username: string }) {
         {peerTyping ? t("messages.typing", { name: other?.displayName ?? username }) : ""}
       </p>
       <form onSubmit={handleSend} className="flex items-end gap-2 border-t border-white/10 p-3">
-        <textarea
+        <MentionTextarea
+          wrapperClassName="relative flex-1"
+          listAbove
           value={draft}
           onChange={(e) => {
             setDraft(e.target.value);
@@ -312,7 +316,7 @@ function Thread({ username }: { username: string }) {
           dir="auto"
           placeholder={t("messages.placeholder")}
           aria-label={t("messages.inputLabel")}
-          className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
+          className="max-h-32 min-h-[2.25rem] w-full resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
         <button
           type="submit"

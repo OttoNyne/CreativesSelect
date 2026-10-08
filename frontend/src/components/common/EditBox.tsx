@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { t } from "../../i18n";
+import { MentionTextarea } from "./MentionField";
 
 interface Props {
   /** The words as they are now. */
@@ -44,7 +45,7 @@ export function EditBox({ text, maxText, label, title, maxTitle, rows = 4, onSav
   return (
     <form onSubmit={submit} className="mt-2 space-y-2">
       {hasTitle && <input dir="auto" value={titleDraft} onChange={(e) => setTitleDraft(e.target.value)} maxLength={maxTitle} aria-label={t("edit.titleLabel", { label })} className={field} />}
-      <textarea dir="auto" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={maxText} rows={rows} aria-label={label} className={field} autoFocus />
+      <MentionTextarea dir="auto" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={maxText} rows={rows} aria-label={label} className={field} autoFocus />
       <div className="flex items-center gap-2">
         <button type="submit" disabled={busy || unchanged} className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
           {busy ? t("common.saving") : t("common.save")}

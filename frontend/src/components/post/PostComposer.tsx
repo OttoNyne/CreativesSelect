@@ -8,6 +8,7 @@ import { ImageAdjuster } from "./ImageAdjuster";
 import { DEFAULT_FRAMING, type ImageFraming } from "../../lib/framing";
 import type { Post } from "../../types";
 import { t } from "../../i18n";
+import { MentionTextarea } from "../common/MentionField";
 
 export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   const [content, setContent] = useState("");
@@ -62,7 +63,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <textarea
+      <MentionTextarea
         id="post-composer"
         dir="auto"
         value={content}

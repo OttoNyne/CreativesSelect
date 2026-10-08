@@ -380,3 +380,11 @@ describe("NotificationBell: work requests", () => {
     expect(screen.getByRole("link", { name: "View requests" })).toHaveAttribute("href", "/u/me#work");
   });
 });
+
+describe("NotificationBell: mentions", () => {
+  it("says someone mentioned you and links to where", async () => {
+    await openWith([note({ id: "m", type: "mention", payload: { url: "/posts/p9" } })]);
+    expect(await screen.findByText("mentioned you")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See where" })).toHaveAttribute("href", "/posts/p9");
+  });
+});

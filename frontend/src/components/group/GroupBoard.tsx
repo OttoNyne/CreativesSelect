@@ -9,6 +9,8 @@ import { EditedMark } from "../common/EditedMark";
 import { formatDay } from "../../lib/when";
 import type { GroupReply, GroupTopic } from "../../types";
 import { t } from "../../i18n";
+import { Linkified } from "../common/Linkified";
+import { MentionTextarea } from "../common/MentionField";
 
 const field = "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 const small = "rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10 disabled:opacity-50";
@@ -109,7 +111,7 @@ export function GroupBoard({ groupId, canModerate }: { groupId: string; canModer
       {composing && (
         <form onSubmit={start} className="mt-3 space-y-2">
           <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_TOPIC_TITLE} placeholder={t("groups.topicTitle")} aria-label={t("groups.topicTitle")} className={field} />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX_TOPIC_BODY} rows={4} placeholder={t("groups.whatDoYouWant")} aria-label={t("groups.topicText")} className={field} />
+          <MentionTextarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX_TOPIC_BODY} rows={4} placeholder={t("groups.whatDoYouWant")} aria-label={t("groups.topicText")} className={field} />
           <div className="flex items-center gap-2">
             <button type="submit" disabled={busy} className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
               {busy ? t("composer.posting") : t("groups.startTopic")}
@@ -328,7 +330,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
           {editingTopic ? (
             <EditBox title={topic.title} maxTitle={MAX_TOPIC_TITLE} text={topic.body} maxText={MAX_TOPIC_BODY} label={t("groups.editTopic")} onSave={saveTopic} onCancel={() => setEditingTopic(false)} />
           ) : (
-            <p dir="auto" className="mt-3 whitespace-pre-line break-words text-sm text-white/90">{topic.body}</p>
+            <p dir="auto" className="mt-3 whitespace-pre-line break-words text-sm text-white/90"><Linkified text={topic.body} /></p>
           )}
           <div className="mt-3 flex gap-2">
             {topic.mine && !editingTopic && (
@@ -386,7 +388,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
                   <EditBox text={r.body} maxText={MAX_REPLY_BODY} label={t("groups.editReply")} rows={3} onSave={({ text }) => saveReply(r, text)} onCancel={() => setEditingReply(null)} />
                 ) : (
                   <p dir="auto" className="mt-1 whitespace-pre-line break-words text-sm text-white/90">
-                    {r.body} <EditedMark editedAt={r.editedAt} />
+                    <Linkified text={r.body} /> <EditedMark editedAt={r.editedAt} />
                   </p>
                 )}
               </li>
@@ -399,7 +401,7 @@ function TopicView({ groupId, topicId, canModerate, onBack }: { groupId: string;
           )}
 
           <form onSubmit={sendReply} className="mt-4 space-y-2">
-            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={MAX_REPLY_BODY} rows={3} placeholder={t("groups.writeAReply")} aria-label={t("groups.reply2")} className={field} />
+            <MentionTextarea value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={MAX_REPLY_BODY} rows={3} placeholder={t("groups.writeAReply")} aria-label={t("groups.reply2")} className={field} />
             <div className="flex items-center gap-2">
               <button type="submit" disabled={busy || !draft.trim()} className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">
                 {busy ? t("composer.posting") : t("groups.reply2")}

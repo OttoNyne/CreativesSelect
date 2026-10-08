@@ -5,6 +5,8 @@ import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
 import type { GroupChatMessage } from "../../types";
 import { t } from "../../i18n";
+import { Linkified } from "../common/Linkified";
+import { MentionTextarea } from "../common/MentionField";
 
 const POLL_MS = 5_000;
 
@@ -139,7 +141,7 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
                       </button>
                     )}
                   </div>
-                  <p dir="auto" className="whitespace-pre-wrap break-words text-sm text-white">{m.body}</p>
+                  <p dir="auto" className="whitespace-pre-wrap break-words text-sm text-white"><Linkified text={m.body} /></p>
                 </div>
               </div>
             ))}
@@ -147,7 +149,9 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
 
           {actionError && <p className="px-4 text-xs text-red-400">{actionError}</p>}
           <form onSubmit={handleSend} className="flex items-end gap-2 border-t border-white/10 p-3">
-            <textarea
+            <MentionTextarea
+              wrapperClassName="relative flex-1"
+              listAbove
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
@@ -160,7 +164,7 @@ export function GroupChat({ groupId, canModerate }: { groupId: string; canModera
               rows={1}
               placeholder={t("groups.messageTheGroup")}
               aria-label={t("groups.groupMessage")}
-              className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
+              className="max-h-32 min-h-[2.25rem] w-full resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
             />
             <button
               type="submit"

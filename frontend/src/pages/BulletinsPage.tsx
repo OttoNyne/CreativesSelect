@@ -9,6 +9,8 @@ import { EditedMark } from "../components/common/EditedMark";
 import { daysLeft, formatDay } from "../lib/when";
 import type { Bulletin } from "../types";
 import { t } from "../i18n";
+import { Linkified } from "../components/common/Linkified";
+import { MentionTextarea } from "../components/common/MentionField";
 
 const field = "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 
@@ -105,7 +107,7 @@ export function BulletinsPage() {
 
       <form onSubmit={handlePost} className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-4">
         <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_BULLETIN_TITLE} placeholder={t("events.title")} aria-label={t("misc.bulletinTitle")} className={field} />
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX_BULLETIN_BODY} rows={4} placeholder={t("misc.whatDoYourFriends")} aria-label={t("misc.bulletinText")} className={field} />
+        <MentionTextarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={MAX_BULLETIN_BODY} rows={4} placeholder={t("misc.whatDoYourFriends")} aria-label={t("misc.bulletinText")} className={field} />
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-white/60" aria-live="polite">
             {body.length} / {MAX_BULLETIN_BODY}
@@ -150,7 +152,7 @@ export function BulletinsPage() {
                   <h2 className="mt-2 font-semibold text-white">
                     {b.title} <EditedMark editedAt={b.editedAt} />
                   </h2>
-                  <p dir="auto" className="mt-1 whitespace-pre-line break-words text-sm text-white/85">{b.body}</p>
+                  <p dir="auto" className="mt-1 whitespace-pre-line break-words text-sm text-white/85"><Linkified text={b.body} /></p>
                 </>
               )}
               <div className="mt-3 flex gap-2">

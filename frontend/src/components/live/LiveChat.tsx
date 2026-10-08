@@ -5,6 +5,8 @@ import { ApiError } from "../../api/client";
 import { Avatar } from "../common/Avatar";
 import type { LiveComment } from "../../types";
 import { t } from "../../i18n";
+import { Linkified } from "../common/Linkified";
+import { MentionInput } from "../common/MentionField";
 
 const DEFAULT_POLL_MS = 3_000;
 const KEEP = 200; // comments kept on screen
@@ -105,7 +107,7 @@ export function LiveChat({
               ) : (
                 <span className="me-1.5 text-white/60">{t("groups.formerMember")}</span>
               )}
-              {c.body}
+              <Linkified text={c.body} />
             </p>
             {(c.mine || isHost) && (
               <button onClick={() => handleDelete(c.id)} aria-label={t("live.deleteComment")} className="text-xs text-white/60 hover:text-white">
@@ -118,13 +120,15 @@ export function LiveChat({
       {error && <p className="px-4 text-xs text-red-400">{error}</p>}
       {open ? (
         <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-white/10 p-3">
-          <input
+          <MentionInput
+            wrapperClassName="relative min-w-0 flex-1"
+            listAbove
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             maxLength={MAX_LIVE_COMMENT_LENGTH}
             placeholder={t("live.saySomething")}
             aria-label={t("live.comment")}
-            className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
+            className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
           />
           <button
             type="submit"

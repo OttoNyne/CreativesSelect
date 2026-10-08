@@ -4,6 +4,7 @@ import { blogApi, MAX_BLOG_BODY, MAX_BLOG_TITLE } from "../api/blog.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { t } from "../i18n";
+import { MentionTextarea } from "../components/common/MentionField";
 
 const field = "w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 
@@ -75,7 +76,7 @@ export function BlogEditorPage() {
       <form onSubmit={handleSubmit} className="space-y-3">
         <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={MAX_BLOG_TITLE} placeholder={t("events.title")} aria-label={t("misc.entryTitle")} className={field} />
         <div>
-          <textarea
+          <MentionTextarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             maxLength={MAX_BLOG_BODY}

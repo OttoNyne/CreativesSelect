@@ -14,6 +14,7 @@ import { ApiError } from "../../api/client";
 import { EditBox } from "../common/EditBox";
 import { EditedMark } from "../common/EditedMark";
 import { t } from "../../i18n";
+import { Linkified } from "../common/Linkified";
 import { shortAgo } from "../../lib/when";
 
 const MAX_POST = 5000;
@@ -85,7 +86,7 @@ export function PostCard({
         <EditBox text={content} maxText={MAX_POST} label={t("post.editLabel")} onSave={({ text }) => saveEdit(text)} onCancel={() => setEditing(false)} />
       ) : (
         <p dir="auto" className="mt-3 whitespace-pre-wrap break-words text-sm text-white/90">
-          {content} <EditedMark editedAt={editedAt} />
+          <Linkified text={content} /> <EditedMark editedAt={editedAt} />
         </p>
       )}
 

@@ -4,6 +4,7 @@ import { ApiError } from "../../api/client";
 import { earliestStart, toLocalInput } from "../../lib/when";
 import type { CommunityEvent } from "../../types";
 import { t } from "../../i18n";
+import { MentionTextarea } from "../common/MentionField";
 
 const field = "w-full min-w-0 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 const label = "block text-xs font-medium text-white/70";
@@ -114,7 +115,7 @@ export function EventForm({ event, onSaved, onCancel }: { event?: CommunityEvent
         <label htmlFor="event-description" className={label}>
           {t("events.detailsOptional")}
         </label>
-        <textarea id="event-description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={EVENT_LIMITS.description} rows={3} placeholder={t("events.whatToBringWho")} className={field} />
+        <MentionTextarea id="event-description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={EVENT_LIMITS.description} rows={3} placeholder={t("events.whatToBringWho")} className={field} />
         <p className="mt-1 text-end text-xs text-white/60">
           {description.length} / {EVENT_LIMITS.description}
         </p>

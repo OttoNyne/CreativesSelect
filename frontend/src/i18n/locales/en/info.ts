@@ -50,4 +50,6 @@ export const info = {
   "info.shareText": "Every profile has a link that shows a proper preview (name, picture and a line about you) when you send it in a message or post it on social media, and takes whoever opens it to your profile. A private profile shows nothing in a preview. Search engines such as Google only list your profile if you switch that on in your profile settings.",
   "info.challengeTitle": "Weekly challenge",
   "info.challengeText": "Every week has one short prompt, the same for everyone. Enter one piece from your portfolio, look through what others made, and react to the ones you love. Last week's most loved pieces are shown at the top of the next. Only public profiles can take part, because the gallery is open to everyone.",
+  "info.mentionsTitle": "Mentions",
+  "info.mentionsText": "Type @ in a post, comment, blog entry, group, event or request to name someone: a short list of friends and other people appears, and the name becomes a link to their profile. They get a notification, and a phone notification if they have those on, but only if they could see what you wrote, so naming someone never shows them something private or gets around a block. In messages and live chat the name is a link too, without a notification.",
 } as const;

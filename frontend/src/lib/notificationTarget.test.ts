@@ -147,3 +147,16 @@ describe("work requests", () => {
     expect(notificationTarget(n("work_request", {}), undefined)).toBeNull();
   });
 });
+
+describe("notificationTarget: mentions", () => {
+  it("goes to the place the server says, when that is an address inside the site", () => {
+    expect(notificationTarget(n("mention", { url: "/posts/p1?comment=c1" }), "ada")).toEqual({ to: "/posts/p1?comment=c1", label: "See where" });
+    expect(notificationTarget(n("mention", { url: "/u/zoe?piece=m1&comment=c2#portfolio" }), "ada")?.to).toBe("/u/zoe?piece=m1&comment=c2#portfolio");
+  });
+  it("never follows an address that could lead to another site, and falls back to the person who mentioned you", () => {
+    for (const url of ["//evil.example/x", "https://evil.example", "javascript:alert(1)", "posts/1", "/a\\b", "", undefined]) {
+      expect(notificationTarget(n("mention", { url }), "ada"), String(url)).toEqual({ to: "/u/zoe", label: "View profile" });
+    }
+    expect(notificationTarget(n("mention", {}, null), "ada")).toBeNull();
+  });
+});

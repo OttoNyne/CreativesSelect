@@ -1380,6 +1380,19 @@ The gallery can be read without signing in, so the review looked at who can be p
 - **Tidy.** Deleting a piece or an account removes the entries, and the data download lists them (tested).
 - **Not covered:** an entry can't be reported on its own (the piece itself can be reported through its owner's profile), and "most loved" counts every kind of reaction equally.
 
+### 5.80 @mentions: naming people in what you write
+
+A mention puts someone's name in front of that person, so the review asked how it could be used to reach people who don't want to be reached or to show them what they shouldn't see.
+
+- **Only what they could already open.** Each place that sends a notice says who may see the writing (a profile's visibility rules, friends for bulletins, an event's rules, group membership) and a named person who fails that test is not told, so naming someone in a private profile's post, a friends-only bulletin or a group they aren't in tells them nothing (tested for posts on a private profile, bulletins, groups and comments).
+- **Blocks hold.** Someone who blocked the writer, or whom the writer blocked, is never notified and never appears in the list while typing; suspended people are left out of both (tested).
+- **Not a spam tool.** At most 5 names count in one piece of writing, 60 notified people an hour per writer, and an edit only tells the names it adds (so editing the same comment again and again tells nobody twice); naming yourself, a name that doesn't exist, or something inside an email address does nothing (tested).
+- **The destination can't be turned against the reader.** The notice carries an address inside the site, written by the server from ids it holds, never from the text, and it is checked again before it is followed on the page and before a phone notification is sent: anything not starting with one `/`, or containing a backslash, is ignored (tested, including `//evil.example`, `javascript:` and full web addresses).
+- **Text, not markup.** A mention is drawn as a link built from the matched username only (letters, numbers and underscores, 3–30), the rest of the text stays text, so a post can't use it to inject a link or markup (tested).
+- **The list while typing** follows the same rules as search: no private strangers, blocked or suspended people, nothing about the viewer's own account, a rate limit of 900 requests an hour, and nothing for a query that isn't a plausible username (tested).
+- **A failure never costs the writer.** Delivering notices happens after the writing is saved and swallows its own errors, so a mention can't make a post fail (tested).
+- **Not covered:** a notification can't be switched off for mentions alone (it follows the "comments" phone switch and the bell), mentions in a private message to someone else are only links, and renaming a user does not update old mentions of the previous name.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

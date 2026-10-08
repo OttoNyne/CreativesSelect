@@ -6,6 +6,7 @@ import { CSBadge } from "./CSBadge";
 import { EditBox } from "./EditBox";
 import { EditedMark } from "./EditedMark";
 import { Linkified } from "./Linkified";
+import { MentionInput } from "./MentionField";
 import { CommentPicture } from "./CommentPicture";
 import { CommentPicturePicker } from "./CommentPicturePicker";
 import { useAuth } from "../../context/AuthContext";
@@ -203,13 +204,14 @@ export function CommentThread({ threadKey, load, add, update, removePicture, rem
       {user && (
         <form onSubmit={handleSubmit} className="space-y-1 pt-1">
           <div className="flex gap-2">
-            <input
+            <MentionInput
+              wrapperClassName="relative min-w-0 flex-1"
               dir="auto"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               maxLength={MAX_COMMENT}
               placeholder={t("comments.placeholder")}
-              className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent,#8b5cf6)] focus:outline-none"
+              className="w-full rounded-md border border-white/10 bg-black/30 px-2 py-1 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent,#8b5cf6)] focus:outline-none"
             />
             <button type="submit" className="rounded-md bg-[var(--profile-accent-fill,#7c3aed)] px-3 py-1 text-xs font-medium text-[var(--profile-on-accent,#ffffff)] hover:opacity-90">
               {t("composer.post")}

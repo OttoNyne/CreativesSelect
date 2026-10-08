@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import { EditBox } from "../common/EditBox";
 import { EditedMark } from "../common/EditedMark";
 import { Linkified } from "../common/Linkified";
+import { MentionInput } from "../common/MentionField";
 import { CommentPicture } from "../common/CommentPicture";
 import { CommentPicturePicker } from "../common/CommentPicturePicker";
 import { t } from "../../i18n";
@@ -112,12 +113,13 @@ export function ProfileComments({ username }: { username: string }) {
       {user && (
         <form onSubmit={handleSubmit} className="mt-3 space-y-1">
           <div className="flex gap-2">
-            <input
+            <MentionInput
+              wrapperClassName="relative flex-1"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               maxLength={MAX_COMMENT}
               placeholder={t("profile.leaveACommentOn")}
-              className="flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
+              className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-[var(--profile-accent)] focus:outline-none"
             />
             <button type="submit" className="rounded-md bg-[var(--profile-accent-fill)] px-3 py-1.5 text-xs font-medium text-[var(--profile-on-accent)]">
               {t("composer.post")}

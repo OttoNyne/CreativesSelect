@@ -47,6 +47,8 @@ import { OffersEditor, OpenToWorkBadge, WorkRequestForm } from "../components/pr
 import { WorkRequestsPanel } from "../components/profile/WorkRequestsPanel";
 import { useRobots } from "../lib/useRobots";
 import { t } from "../i18n";
+import { Linkified } from "../components/common/Linkified";
+import { MentionTextarea } from "../components/common/MentionField";
 
 export function ProfilePage() {
   const { username = "" } = useParams();
@@ -353,7 +355,7 @@ export function ProfilePage() {
             }}
           />
           <ThemeEditor theme={theme} onChange={setTheme} hasWallpaper={Boolean(wallpaperUrl)} />
-          <textarea
+          <MentionTextarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             rows={3}
@@ -488,7 +490,7 @@ export function ProfilePage() {
         </div>
       ) : (
         <>
-          <p className="mt-4 text-sm">{profile.bio || t("profile.noBioYet")}</p>
+          <p dir="auto" className="mt-4 whitespace-pre-line break-words text-sm">{profile.bio ? <Linkified text={profile.bio} /> : t("profile.noBioYet")}</p>
           <ProfileTags tags={profile.tags} />
         </>
       )}

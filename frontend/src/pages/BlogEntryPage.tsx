@@ -9,6 +9,7 @@ import { BlogComments } from "../components/blog/BlogComments";
 import { formatDay } from "../lib/when";
 import type { BlogEntry } from "../types";
 import { t } from "../i18n";
+import { Linkified } from "../components/common/Linkified";
 
 // One blog entry on its own page: where a notification about a new entry lands. The author can change or delete it;
 // anyone else can report it.
@@ -103,7 +104,7 @@ export function BlogEntryPage() {
           <div className="mt-5 space-y-4 text-white/90">
             {entry.body.split("\n\n").map((paragraph, i) => (
               <p key={i} dir="auto" className="whitespace-pre-line break-words leading-relaxed">
-                {paragraph}
+                <Linkified text={paragraph} />
               </p>
             ))}
           </div>
