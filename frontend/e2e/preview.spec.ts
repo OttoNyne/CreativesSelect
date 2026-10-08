@@ -64,6 +64,13 @@ test.describe("shareable profiles", () => {
     expect(await (await request.get("/sitemap.xml")).text()).not.toContain(`/u/${me.username}<`);
   });
 
+  test("addresses that only start with a p still open the app, not the preview page", async ({ page }) => {
+    for (const path of ["/posts/abc", "/profile-anything", "/p/two/parts"]) {
+      const html = await (await page.request.get(path)).text();
+      expect(html, path).toContain('id="root"');
+    }
+  });
+
   test("a private profile's preview shows nothing about the person", async ({ page, browser, baseURL }) => {
     const hidden = await apiUser(browser, baseURL!, "hidden");
     await hidden.request.patch("/api/profiles/me", { data: { bio: "A secret bio", isPrivate: true } });

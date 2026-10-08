@@ -17,7 +17,8 @@ export default defineConfig({
     proxy: {
       '/api': { target: process.env.E2E_API_URL ?? 'http://localhost:5000' },
       // what Vercel does with these two (see vercel.json): the server makes the link preview and the sitemap
-      '/p': { target: process.env.E2E_API_URL ?? 'http://localhost:5000', rewrite: (path) => `/api/preview/profile${path.slice(2)}` },
+      // (a key starting with ^ is a pattern; a plain '/p' would also catch /posts, /profile and every other address starting with p)
+      '^/p/[^/]+$': { target: process.env.E2E_API_URL ?? 'http://localhost:5000', rewrite: (path) => `/api/preview/profile${path.slice(2)}` },
       '/sitemap.xml': { target: process.env.E2E_API_URL ?? 'http://localhost:5000', rewrite: () => '/api/preview/sitemap.xml' },
     },
   },
