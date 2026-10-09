@@ -140,6 +140,11 @@ export function ExplorePage() {
         <Link to="/challenge" className="text-sm text-violet-300 hover:underline">
           {t("explore.challenge")}
         </Link>
+        {user && (
+          <Link to="/critiques" className="ms-4 text-sm text-violet-300 hover:underline">
+            {t("critique.exploreLink")}
+          </Link>
+        )}
       </header>
 
       <form onSubmit={search} className="flex gap-2">

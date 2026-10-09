@@ -41,6 +41,8 @@ import { CallPage } from "./pages/CallPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ProjectPage } from "./pages/ProjectPage";
 import { DigestUnsubscribePage } from "./pages/DigestUnsubscribePage";
+import { CritiquesPage } from "./pages/CritiquesPage";
+import { CritiquePage } from "./pages/CritiquePage";
 import { SavedPage } from "./pages/SavedPage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { usePageTitle } from "./lib/usePageTitle";
@@ -72,6 +74,8 @@ export default function App() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/calls" element={<CallsPage />} />
           <Route path="/calls/:id" element={<CallPage />} />
+          <Route path="/critiques" element={<CritiquesPage />} />
+          <Route path="/critiques/:id" element={<CritiquePage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:id" element={<ProjectPage />} />
 

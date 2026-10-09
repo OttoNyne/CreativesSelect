@@ -436,3 +436,17 @@ describe("NotificationBell: project rooms", () => {
     expect(screen.getAllByRole("link", { name: "Open project room" }).map((l) => l.getAttribute("href"))).toEqual(["/projects/r1", "/projects/r2"]);
   });
 });
+
+describe("NotificationBell: feedback on pieces", () => {
+  it("says someone gave feedback, and that they were thanked, each linking to the request", async () => {
+    await openWith([
+      note({ id: "c1", type: "critique_note", payload: { critiqueId: "q1", title: "A vase" } }),
+      note({ id: "c2", type: "critique_note", payload: { critiqueId: "q2", title: "" } }),
+      note({ id: "c3", type: "critique_thanks", payload: { critiqueId: "q3" } }),
+    ]);
+    expect(await screen.findByText("gave you feedback on your piece: A vase")).toBeInTheDocument();
+    expect(screen.getByText("gave you feedback on one of your pieces")).toBeInTheDocument();
+    expect(screen.getByText("thanked you for your feedback")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "View feedback" }).map((l) => l.getAttribute("href"))).toEqual(["/critiques/q1", "/critiques/q2", "/critiques/q3"]);
+  });
+});

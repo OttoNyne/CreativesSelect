@@ -25,6 +25,7 @@ const FEATURES = [
   { icon: "🧩", get title() { return t("info.processTitle"); }, get text() { return t("info.processText"); } },
   { icon: "📣", get title() { return t("info.callsTitle"); }, get text() { return t("info.callsText"); } },
   { icon: "🗂", get title() { return t("info.projectsTitle"); }, get text() { return t("info.projectsText"); } },
+  { icon: "💬", get title() { return t("info.critiqueTitle"); }, get text() { return t("info.critiqueText"); } },
   { icon: "🔔", get title() { return t("info.topicsTitle"); }, get text() { return t("info.topicsText"); } },
   { icon: "@", get title() { return t("info.mentionsTitle"); }, get text() { return t("info.mentionsText"); } },
   { icon: "🔗", get title() { return t("info.shareTitle"); }, get text() { return t("info.shareText"); } },

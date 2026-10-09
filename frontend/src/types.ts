@@ -238,6 +238,36 @@ export interface OpenCall {
   waitingCount?: number;
 }
 
+/** A request for feedback on one of the owner's pieces. */
+export interface Critique {
+  id: string;
+  question: string;
+  status: "open" | "closed";
+  closed: boolean;
+  createdAt: string;
+  owner: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
+  mine: boolean;
+  piece: { id: string; url: string; type: "image" | "audio" | "video" | "embed"; caption: string | null };
+  /** How many people have given feedback. */
+  noteCount?: number;
+  /** On the board: whether the viewer has given feedback. */
+  answered?: boolean;
+  /** The viewer's own feedback, if any (never anyone else's). */
+  myNote?: CritiqueNote | null;
+  /** Only for the owner: all the feedback. */
+  notes?: CritiqueNote[];
+}
+
+export interface CritiqueNote {
+  id: string;
+  working: string;
+  change: string;
+  thanked: boolean;
+  createdAt: string;
+  editedAt: string | null;
+  author?: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
+}
+
 /** A project room: a private chat and checklist for the people making something together. */
 export interface Project {
   id: string;
@@ -312,6 +342,8 @@ export interface MediaItem {
   saved?: boolean;
   /** Whether its owner features it (it comes first in the portfolio). */
   featured?: boolean;
+  /** An open request for feedback on it, with how many people have answered. */
+  critique?: { id: string; noteCount: number } | null;
   /** How many steps of how it was made its owner has added. */
   processCount?: number;
   /** The emoji reactions on it, and the signed-in viewer's own. */
@@ -499,7 +531,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "project_message" | "reaction";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "project_message" | "critique_note" | "critique_thanks" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

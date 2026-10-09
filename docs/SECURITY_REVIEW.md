@@ -1519,6 +1519,19 @@ Sharing someone's post puts it in front of the sharer's audience, and a saved li
 - Covered by 19 backend tests, 11 frontend tests and 4 browser flows on all three browsers. **Not covered:** the email is plain text through the mail provider, so its delivery and spam handling are the provider's; the schedule depends on the keep-warm check running (it re-enables itself with any commit).
 
 
+### 5.93 Requests for feedback: private words for one reader
+
+**Threats.** Reading feedback that was written for someone else, using the notes to harass the maker, feedback on a piece one can't see, a request that survives its piece, and flooding the bell or the board.
+
+**What stops it.**
+- **Two readers only.** A note is returned to its writer and to the maker and to no one else; everyone else gets a count, and a list of notes is never sent to anyone but the maker (tested with the writer, the maker and a third person). A request that is hidden for any reason (private profile, block either way, suspension) answers the same 404 as one that doesn't exist.
+- **The maker is protected too.** The maker can remove any note or close the request, can report a note (moderators can then read it), and is not told twice: one notice per note, never across a block. Notes are plain text, cleaned and limited to 500 characters a part.
+- **Only your own piece.** A request is made only for a piece the caller owns, one open per piece and three open per person; you can't give feedback on your own piece; one note per person per request.
+- **Cost.** 10 requests and 30 notes a day per person, 20 to a page on the board.
+- **Nothing left behind.** Deleting a piece, a request or an account removes the requests, notes and notices (the shared cleanup used for reports), and the data download lists what the person asked and wrote.
+- Covered by 22 backend tests, 22 frontend tests and 4 browser flows on all three browsers. **Not covered:** a writer can't unsend what a maker has already read, and a moderator who handles a report reads the reported note.
+
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

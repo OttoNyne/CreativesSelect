@@ -199,3 +199,12 @@ describe("notificationTarget: project rooms", () => {
     expect(notificationTarget(n("project_message", {}), "ada")).toEqual({ to: "/projects", label: "Open project room" });
   });
 });
+
+describe("notificationTarget: feedback", () => {
+  it("opens the request, or the list when none is named", () => {
+    for (const type of ["critique_note", "critique_thanks"] as const) {
+      expect(notificationTarget(n(type, { critiqueId: "q 1" }), "ada")).toEqual({ to: "/critiques/q%201", label: "View feedback" });
+      expect(notificationTarget(n(type, {}), "ada")).toEqual({ to: "/critiques", label: "View feedback" });
+    }
+  });
+});

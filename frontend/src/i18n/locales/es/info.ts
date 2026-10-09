@@ -70,6 +70,8 @@ export const info: Translation<typeof en> = {
   "info.callsText": "Cuenta qué estás buscando, como una voz, una ilustradora o un fotógrafo para una sesión, y las personas que podrían encajar responden con unas palabras y una de sus obras. El sitio sugiere a las personas que coinciden y les avisa, tú eliges con una nota breve, y el tablón te muestra las convocatorias que encajan con lo que ofreces. El sitio no gestiona pagos ni promesas.",
   "info.projectsTitle": "Salas de proyecto",
   "info.projectsText": "Cuando eliges a alguien en una convocatoria abierta, se abre una sala privada para las personas implicadas: un chat que admite palabras e imágenes, y una lista breve que cualquiera puede ir marcando. Solo la ven quienes están en ella; quien la creó puede cambiarle el nombre, archivarla cuando el trabajo termina o quitar a alguien, y cualquiera puede salir.",
+  "info.critiqueTitle": "Comentarios sobre tu trabajo",
+  "info.critiqueText": "Pide comentarios sobre una pieza, con una pregunta si quieres. Otras personas dejan dos notas breves, qué funciona y qué cambiarían, y solo tú y quien las escribió pueden leerlas. Puedes dar las gracias, quitar una nota o cerrar la solicitud.",
   "info.topicsTitle": "Temas y un resumen semanal",
   "info.topicsText": "Sigue un #tema y mira lo que se publica sobre él en Explorar. Si quieres, recibe un correo breve a la semana con cifras y títulos (nuevos seguidores, respuestas, mensajes de las salas de proyecto, convocatorias que encajan contigo, novedades de tus temas), solo cuando haya algo que contar y con un enlace en cada correo para desactivarlo.",
   "info.exploreTitle": "Hashtags y Explorar",

@@ -68,6 +68,8 @@ export const info = {
   "info.callsText": "Say what you are looking for, such as a vocalist, an illustrator or a photographer for a shoot, and people who might fit answer with a few words and one of their own pieces. The site suggests the people who match and tells them, you choose with a short note, and the board shows you the calls that fit what you offer. Nothing is paid or promised through the site.",
   "info.projectsTitle": "Project rooms",
   "info.projectsText": "When you choose someone for an open call, a private room opens for the people involved: a chat that takes words and pictures, and a short checklist anyone can tick off. Only the people in it can see it; the owner can rename it, archive it when the work is done, or remove someone, and anyone can leave.",
+  "info.critiqueTitle": "Feedback on your work",
+  "info.critiqueText": "Ask for feedback on a piece, with a question if you like. Others leave two short notes, what is working and what they would change, and only you and the writer can read them. You can say thanks, remove a note, or close the request.",
   "info.topicsTitle": "Topics and a weekly summary",
   "info.topicsText": "Follow a #topic and see what is posted about it under Explore. If you like, get one short email a week with counts and titles (new followers, replies, project room messages, calls that fit you, news in your topics), only when there is something to say, with a link in every email to turn it off.",
   "info.exploreTitle": "Hashtags and Explore",
