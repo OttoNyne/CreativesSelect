@@ -100,6 +100,32 @@ describe("ProfilePage", () => {
     expect(screen.getByLabelText("Followers and following")).toHaveTextContent("4 followers");
   });
 
+  it("keeps an unfollow that happens while the profile is being asked for again (the page asks again once it knows who is signed in)", async () => {
+    const stale = { ...zoe, followerCount: 1, followingCount: 0, iFollow: true } as User;
+    let answerLate!: (r: { user: User }) => void;
+    profiles.get.mockResolvedValueOnce({ user: stale }).mockReturnValueOnce(new Promise((resolve) => (answerLate = resolve)));
+    vi.mocked(followsApi.unfollow).mockResolvedValue(undefined as never);
+    const asEarly = { ...me, username: "early" } as User;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/u/zoe"]}>
+        <Routes>
+          <Route path="/u/:username" element={<ProfilePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    vi.mocked(useAuth).mockReturnValue({ user: asEarly, isLoading: false, setUser: vi.fn(), refresh: async () => {} });
+    const { rerender } = render(tree());
+    const stop = await screen.findByRole("button", { name: "Stop following Zoe" });
+    vi.mocked(useAuth).mockReturnValue({ user: me, isLoading: false, setUser: vi.fn(), refresh: async () => {} });
+    rerender(tree()); // a second request for the profile is now on its way
+    await waitFor(() => expect(profiles.get).toHaveBeenCalledTimes(2));
+    await userEvent.click(stop);
+    expect(await screen.findByRole("button", { name: "Follow Zoe" })).toBeInTheDocument();
+    answerLate({ user: stale }); // the late answer still says they follow
+    await waitFor(() => expect(screen.getByLabelText("Followers and following")).toHaveTextContent("0 followers"));
+    expect(screen.getByRole("button", { name: "Follow Zoe" })).toBeInTheDocument();
+  });
+
   it("offers no Follow button to a friend, on a private profile, on your own profile or when signed out", async () => {
     friends.list.mockResolvedValue({ friends: [zoe] as never });
     profiles.get.mockResolvedValue({ user: { ...zoe, followerCount: 1, followingCount: 0, iFollow: false } as User });

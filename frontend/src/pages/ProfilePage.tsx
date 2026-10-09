@@ -56,6 +56,9 @@ export function ProfilePage() {
   const { user: viewer, setUser: setViewer } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<User | null>(null);
+  // Follow or unfollow changes the profile on screen at once; a profile request already on its way (the page asks again once it knows who is signed in) would bring the old answer back over it.
+  const followEdit = useRef<{ count: number; iFollow: boolean; followerCount: number } | null>(null);
+  const followEdits = useRef(0);
   const [notFound, setNotFound] = useState(false);
   const [editing, setEditing] = useState(false);
   const [searchParams] = useSearchParams();
@@ -86,10 +89,13 @@ export function ProfilePage() {
     // already-loaded profile with "unavailable".)
     let cancelled = false;
     setNotFound(false);
+    const editsAtStart = followEdits.current;
     profilesApi
       .get(username)
-      .then(({ user }) => {
+      .then(({ user: fetched }) => {
         if (cancelled) return;
+        const changed = followEdit.current;
+        const user = changed && changed.count > editsAtStart ? { ...fetched, iFollow: changed.iFollow, followerCount: changed.followerCount } : fetched;
         setProfile(user);
         setBio(user.bio ?? "");
         setMood(user.mood ?? "");
@@ -312,7 +318,12 @@ export function ProfilePage() {
                   username={profile.username}
                   displayName={profile.displayName}
                   following={profile.iFollow === true}
-                  onChange={(now) => setProfile((p) => (p ? { ...p, iFollow: now, followerCount: Math.max(0, (p.followerCount ?? 0) + (now ? 1 : -1)) } : p))}
+                  onChange={(now) => {
+                    const followerCount = Math.max(0, (profile.followerCount ?? 0) + (now ? 1 : -1));
+                    followEdits.current += 1;
+                    followEdit.current = { count: followEdits.current, iFollow: now, followerCount };
+                    setProfile((p) => (p ? { ...p, iFollow: now, followerCount } : p));
+                  }}
                 />
               )}
               {profile.openToWork && (
