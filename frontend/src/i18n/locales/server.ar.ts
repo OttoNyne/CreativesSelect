@@ -420,4 +420,11 @@ export const serverAr: Record<string, string> = {
   "This poll has ended": "انتهى هذا الاستطلاع",
   "You're voting too fast — try again in a bit": "تصوّت بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
   "You have already voted in this poll": "لقد صوّتَّ في هذا الاستطلاع بالفعل",
+  "Muted words must be a list": "يجب أن تكون الكلمات المكتومة قائمة",
+  "Muted words must be text": "يجب أن تكون الكلمات المكتومة نصًا",
+  "A muted word can be up to {v1} characters": "يمكن أن تصل الكلمة المكتومة إلى {v1} حرفًا",
+  "You can mute up to {v1} words or phrases": "يمكنك كتم ما يصل إلى {v1} كلمة أو عبارة",
+  "You can't mute yourself": "لا يمكنك كتم نفسك",
+  "You can mute up to {v1} people — unmute someone first": "يمكنك كتم ما يصل إلى {v1} شخص؛ ألغِ كتم أحدهم أولًا",
+  "You're muting too fast — try again in a bit": "تكتم بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
 };

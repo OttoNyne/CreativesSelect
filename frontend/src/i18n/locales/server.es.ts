@@ -420,4 +420,11 @@ export const serverEs: Record<string, string> = {
   "This poll has ended": "Esta encuesta ha terminado",
   "You're voting too fast — try again in a bit": "Estás votando muy rápido; inténtalo de nuevo en un rato",
   "You have already voted in this poll": "Ya has votado en esta encuesta",
+  "Muted words must be a list": "Las palabras silenciadas deben ser una lista",
+  "Muted words must be text": "Las palabras silenciadas deben ser texto",
+  "A muted word can be up to {v1} characters": "Una palabra silenciada puede tener hasta {v1} caracteres",
+  "You can mute up to {v1} words or phrases": "Puedes silenciar hasta {v1} palabras o frases",
+  "You can't mute yourself": "No puedes silenciarte a ti mismo",
+  "You can mute up to {v1} people — unmute someone first": "Puedes silenciar hasta {v1} personas: deja de silenciar a alguien primero",
+  "You're muting too fast — try again in a bit": "Estás silenciando muy rápido; inténtalo de nuevo en un rato",
 };

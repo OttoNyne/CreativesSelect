@@ -39,6 +39,8 @@ export interface User {
   iFollow?: boolean;
   /** What the profile puts first: the post pinned to the top (shown where the whole profile is). */
   pinnedPost?: Post | null;
+  /** Whether the signed-in viewer has muted them (only on someone else's profile). */
+  iMute?: boolean;
   workNote?: string;
   username: string;
   displayName: string;

@@ -7,6 +7,7 @@ import { profilesApi } from "../api/profiles.api";
 import { friendsApi } from "../api/friends.api";
 import { followsApi } from "../api/follows.api";
 import { postsApi } from "../api/posts.api";
+import { mutesApi } from "../api/mutes.api";
 import { moderationApi } from "../api/moderation.api";
 import { profileViewsApi } from "../api/profileViews.api";
 import { ApiError } from "../api/client";
@@ -19,6 +20,7 @@ vi.mock("../api/friends.api", () => ({ friendsApi: { list: vi.fn(), request: vi.
 vi.mock("../api/moderation.api", () => ({ moderationApi: { block: vi.fn(), report: vi.fn() } }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
 vi.mock("../api/follows.api", () => ({ followsApi: { follow: vi.fn(), unfollow: vi.fn(), following: vi.fn(), followers: vi.fn() } }));
+vi.mock("../api/mutes.api", () => ({ mutesApi: { list: vi.fn().mockResolvedValue({ people: [], words: [] }), mute: vi.fn(), unmute: vi.fn(), setWords: vi.fn() } }));
 vi.mock("../api/ai.api", () => ({ aiApi: { generateText: vi.fn(), generateImage: vi.fn(), generateWallpaper: vi.fn(), discard: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 // The profile's sections have their own data loading and are tested on their own.
@@ -125,6 +127,20 @@ describe("ProfilePage", () => {
     answerLate({ user: stale }); // the late answer still says they follow
     await waitFor(() => expect(screen.getByLabelText("Followers and following")).toHaveTextContent("0 followers"));
     expect(screen.getByRole("button", { name: "Follow Zoe" })).toBeInTheDocument();
+  });
+
+  it("offers Mute on someone else's profile, which shows as muted once pressed, and not on your own", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, iMute: false } as User });
+    vi.mocked(mutesApi.mute).mockResolvedValue({ muted: true });
+    renderAs(me, "zoe");
+    await userEvent.click(await screen.findByRole("button", { name: /^Mute Zoe/ }));
+    expect(mutesApi.mute).toHaveBeenCalledWith("zoe");
+    expect(await screen.findByRole("button", { name: "Unmute Zoe" })).toHaveAttribute("aria-pressed", "true");
+    cleanup();
+    profiles.get.mockResolvedValue({ user: me });
+    renderAs(me, "me");
+    await screen.findByRole("heading", { name: "Me" });
+    expect(screen.queryByRole("button", { name: /^Mute / })).toBeNull();
   });
 
   it("shows the post its owner pinned at the top, under its own heading, with no Pin button for a visitor", async () => {

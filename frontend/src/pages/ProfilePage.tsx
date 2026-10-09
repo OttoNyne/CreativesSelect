@@ -48,6 +48,8 @@ import { WorkRequestsPanel } from "../components/profile/WorkRequestsPanel";
 import { useRobots } from "../lib/useRobots";
 import { FollowButton, FollowCounts, FollowLists } from "../components/follow/FollowControls";
 import { PostCard } from "../components/post/PostCard";
+import { MuteButton } from "../components/follow/MuteButton";
+import { MuteSettings } from "../components/profile/MuteSettings";
 import { t } from "../i18n";
 import { Linkified } from "../components/common/Linkified";
 import { MentionTextarea } from "../components/common/MentionField";
@@ -55,8 +57,8 @@ import { MentionTextarea } from "../components/common/MentionField";
 /** A profile the server sends back after a change has the person's own fields only; what was worked out for the page (counts, pinned post, featured piece) stays. */
 function keepExtras(now: User | null, next: User): User {
   if (!now) return next;
-  const { followerCount, followingCount, iFollow, pinnedPost } = now;
-  return { followerCount, followingCount, iFollow, pinnedPost, ...next };
+  const { followerCount, followingCount, iFollow, pinnedPost, iMute } = now;
+  return { followerCount, followingCount, iFollow, pinnedPost, iMute, ...next };
 }
 
 export function ProfilePage() {
@@ -342,6 +344,7 @@ export function ProfilePage() {
               <button onClick={handleReport} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
                 {t("common.report")}
               </button>
+              <MuteButton username={profile.username} displayName={profile.displayName} muted={profile.iMute === true} onChange={(now) => setProfile((p) => (p ? { ...p, iMute: now } : p))} />
               <button onClick={handleBlock} className="rounded-md border border-white/20 px-3 py-1.5 text-sm">
                 {t("profile.block")}
               </button>
@@ -511,6 +514,7 @@ export function ProfilePage() {
             <EmailStatus />
             <ChangeEmail />
             <PushSettings />
+            <MuteSettings />
             <PasskeysSettings />
             <TwoFactorSettings />
             <SignedInDevices />
