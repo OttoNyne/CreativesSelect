@@ -1,0 +1,32 @@
+import type { Translation } from "../../index";
+import type { saves as en } from "../en/saves";
+
+export const saves: Translation<typeof en> = {
+  "nav.saved": "المحفوظات",
+  "saves.save": "حفظ",
+  "saves.saved": "محفوظ",
+  "saves.savePost": "حفظ هذا المنشور",
+  "saves.unsavePost": "إزالة هذا المنشور من قائمة المحفوظات",
+  "saves.savePiece": "حفظ هذا العمل",
+  "saves.unsavePiece": "إزالة هذا العمل من قائمة المحفوظات",
+  "saves.failed": "تعذّر ذلك، حاول مرة أخرى.",
+  "saves.title": "المحفوظات",
+  "saves.intro": "المنشورات والأعمال التي حفظتها. أنت وحدك ترى هذه القائمة.",
+  "saves.kind": "ما الذي يُعرض",
+  "saves.posts": "المنشورات",
+  "saves.pieces": "الأعمال",
+  "saves.empty": "لم تحفظ شيئًا بعد. استخدم «حفظ» أسفل منشور أو عمل لتجده هنا.",
+  "saves.more": "عرض المزيد",
+  "saves.loading": "جارٍ التحميل…",
+  "saves.loadFailed": "تعذّر تحميل قائمة المحفوظات، حاول مرة أخرى.",
+  "post.share": "مشاركة",
+  "post.shareLabel": "مشاركة هذا المنشور في صفحتك الرئيسية",
+  "post.shareWords": "أضف كلماتك الخاصة (اختياري)",
+  "post.shareSend": "شارك في صفحتي",
+  "post.shareCancel": "إلغاء",
+  "post.shared": "تمت المشاركة في صفحتك الرئيسية.",
+  "post.sharedBy": "شارك منشورًا",
+  "post.originalGone": "هذا المنشور لم يعد متاحًا.",
+  "post.viewOriginal": "عرض المنشور",
+  "notif.repost": "شارك منشورك",
+};

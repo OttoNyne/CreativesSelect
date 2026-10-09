@@ -16,6 +16,9 @@ import { EditedMark } from "../common/EditedMark";
 import { t } from "../../i18n";
 import { Linkified } from "../common/Linkified";
 import { shortAgo } from "../../lib/when";
+import { SaveButton } from "../common/SaveButton";
+import { SharePost } from "./SharePost";
+import { SharedPost } from "./SharedPost";
 
 const MAX_POST = 5000;
 
@@ -25,8 +28,11 @@ export function PostCard({
   onDeleted,
   autoOpenComments = false,
   highlightCommentId = null,
+  onSavedChange,
 }: {
   post: Post;
+  /** Told when the signed-in person saves it or takes it out of their saved list. */
+  onSavedChange?: (saved: boolean) => void;
   onDeleted?: (id: string) => void;
   /** Start with the comments showing (used when arriving from a notification). */
   autoOpenComments?: boolean;
@@ -78,17 +84,24 @@ export function PostCard({
           <CSBadge verified={post.author.csVerified} size={14} className="ms-1" />
           <div className="text-xs text-white/60">
             <bdi>@{post.author.username}</bdi> · {shortAgo(post.createdAt)}
+            {post.isRepost && (
+              <>
+                {" · "}
+                <span aria-hidden="true">↻</span> {t("post.sharedBy")}
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {editing ? (
         <EditBox text={content} maxText={MAX_POST} label={t("post.editLabel")} onSave={({ text }) => saveEdit(text)} onCancel={() => setEditing(false)} />
-      ) : (
+      ) : content || !post.isRepost ? (
         <p dir="auto" className="mt-3 whitespace-pre-wrap break-words text-sm text-white/90">
           <Linkified text={content} /> <EditedMark editedAt={editedAt} />
         </p>
-      )}
+      ) : null}
+      {post.isRepost && post.repost && <SharedPost repost={post.repost} />}
 
       {post.imageUrl &&
         (post.imageAspect ? (
@@ -129,10 +142,12 @@ export function PostCard({
         )}
       </div>
 
-      <div className="mt-2 flex items-center gap-4 text-xs text-white/60">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/60">
         <button onClick={() => setShowComments((s) => !s)} className="hover:text-white">
           {t("post.comments", { n: commentCount })}
         </button>
+        {user && <SaveButton kind="posts" id={post.id} saved={post.saved === true} onChange={onSavedChange} />}
+        {user && !isOwner && (post.isRepost ? post.repost?.available === true && post.repost.authorId !== user.id : !post.author.isPrivate) && <SharePost postId={post.id} />}
         {isOwner && !editing && (
           <button onClick={() => setEditing(true)} className="ms-auto hover:text-white">
             {t("common.edit")}

@@ -395,3 +395,11 @@ describe("NotificationBell: follows", () => {
     expect(await screen.findByText("started following you")).toBeInTheDocument();
   });
 });
+
+describe("NotificationBell: shares", () => {
+  it("says someone shared your post and links to it", async () => {
+    await openWith([note({ id: "r", type: "repost", payload: { postId: "p9" } })]);
+    expect(await screen.findByText("shared your post")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View post" })).toHaveAttribute("href", "/posts/p9");
+  });
+});

@@ -402,4 +402,9 @@ export const serverEs: Record<string, string> = {
   "You're following people too fast — try again later.": "Estás siguiendo a demasiadas personas muy rápido; inténtalo más tarde.",
   "That isn't a topic you can search for": "Eso no es un tema que se pueda buscar",
   "You're looking around too fast — try again in a bit": "Estás explorando muy rápido; inténtalo de nuevo en un rato",
+  "You can save up to {v1} things — remove some first": "Puedes guardar hasta {v1} cosas: quita algunas primero",
+  "You're saving things too fast — try again in a bit": "Estás guardando muy rápido; inténtalo de nuevo en un rato",
+  "You can't share your own post": "No puedes compartir tu propia publicación",
+  "You've already shared this post": "Ya has compartido esta publicación",
+  "You're sharing too fast — try again in a bit.": "Estás compartiendo muy rápido; inténtalo de nuevo en un rato.",
 };

@@ -26,7 +26,8 @@ import { challenge } from "./en/challenge";
 import { mention } from "./en/mention";
 import { follow } from "./en/follow";
 import { explore } from "./en/explore";
+import { saves } from "./en/saves";
 
 // English is the source: every other language is checked against these keys, and anything not translated yet shows as it is here.
 // Each part of the site has its own file (en/, es/ and ar/ hold one per part).
-export const en = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore } satisfies Catalog;
+export const en = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves } satisfies Catalog;

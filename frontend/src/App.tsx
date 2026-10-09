@@ -36,6 +36,7 @@ import { PostPage } from "./pages/PostPage";
 import { FeaturesPage } from "./pages/FeaturesPage";
 import { ChallengePage } from "./pages/ChallengePage";
 import { ExplorePage } from "./pages/ExplorePage";
+import { SavedPage } from "./pages/SavedPage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { usePageTitle } from "./lib/usePageTitle";
 
@@ -67,6 +68,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<FeedPage />} />
             <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/saved" element={<SavedPage />} />
             <Route path="/posts/:id" element={<PostPage />} />
             <Route path="/bulletins" element={<BulletinsPage />} />
             <Route path="/events" element={<EventsPage />} />

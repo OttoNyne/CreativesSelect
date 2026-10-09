@@ -1414,6 +1414,17 @@ Explore shows posts to people who aren't signed in, so the review asked whether 
 - **Search engines.** The page asks to be left out (`noindex`), so showing public posts here doesn't make people searchable who didn't opt in.
 - **Not covered:** a hashtag can't be reported on its own (the post can), and a tag can't be hidden from Explore without making the profile private.
 
+### 5.83 Saving and sharing: what a copy of someone's post could expose
+
+Sharing someone's post puts it in front of the sharer's audience, and a saved list holds posts after their owner may have changed their mind, so the review asked what each could keep showing.
+
+- **A share holds a reference, never a copy.** The original is read and checked against the viewer every time a share is drawn: if its author is private, suspended, blocked either way with the viewer, or the post was deleted, the share shows only "not available" and none of its words (tested for each case, including that the original's text is absent from the response).
+- **Only public posts can be shared.** A post of a private profile, a suspended or blocking person, or one that can't be found all get the same `404`; your own post is refused; sharing is once per person per post, 30 an hour; the words are checked like a post's and notify mentions only to people who could see them.
+- **No chains.** Sharing a share shares the original, so a post can't be passed along in a way that hides where it came from.
+- **Saved lists are private and re-checked.** Only the owner can read a list; nothing is saved that the person couldn't open, and a listed item disappears while its owner is private, suspended or blocked and returns if that ends (tested). A list is capped at 2000 and saving is rate-limited.
+- **Tidy.** Saves go with the post, the piece or either account, a deleted share removes its notice, and the data download lists saved items and which posts are shares.
+- **Not covered:** a share can't be reported on its own (the sharer's words and the original can be reported as the posts they are), and the original's author can't stop their public post being shared (they can go private, or block the sharer).
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

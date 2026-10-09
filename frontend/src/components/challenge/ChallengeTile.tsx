@@ -4,6 +4,7 @@ import { ApiError, assetUrl } from "../../api/client";
 import { mediaApi } from "../../api/media.api";
 import { clipWindow, directVideoSrc, playableVideoUrl, videoPosterUrl, youtubeEmbedUrl } from "../../lib/video";
 import { ReactionBar } from "../common/ReactionBar";
+import { SaveButton } from "../common/SaveButton";
 import type { ChallengeEntry, MediaItem, ReactionKey } from "../../types";
 import { t } from "../../i18n";
 
@@ -46,7 +47,7 @@ function Piece({ item }: { item: MediaItem }) {
 }
 
 /** One entry in the gallery: the piece, who made it (linked to their profile), and the reactions on it. */
-export function ChallengeTile({ entry, canReact }: { entry: ChallengeEntry; canReact: boolean }) {
+export function ChallengeTile({ entry, canReact, onSavedChange }: { entry: ChallengeEntry; canReact: boolean; onSavedChange?: (saved: boolean) => void }) {
   const [reactions, setReactions] = useState(entry.item.reactions);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -72,6 +73,11 @@ export function ChallengeTile({ entry, canReact }: { entry: ChallengeEntry; canR
           {t("challenge.by", { name: entry.owner.displayName })} <bdi>(@{entry.owner.username})</bdi>
         </Link>
         <ReactionBar summary={reactions} canReact={canReact} onReact={react} />
+        {canReact && (
+          <div className="flex flex-wrap items-center text-xs text-white/60">
+            <SaveButton kind="pieces" id={entry.item.id} saved={entry.item.saved === true} onChange={onSavedChange} />
+          </div>
+        )}
         {problem && (
           <p role="alert" className="text-xs text-red-400">
             {problem}

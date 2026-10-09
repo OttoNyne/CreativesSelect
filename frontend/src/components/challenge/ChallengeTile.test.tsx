@@ -63,3 +63,18 @@ describe("ChallengeTile", () => {
     expect(screen.queryByRole("button", { name: "Add a reaction" })).toBeNull();
   });
 });
+
+vi.mock("../../api/saves.api", () => ({ savesApi: { save: vi.fn().mockResolvedValue({ saved: true }), unsave: vi.fn().mockResolvedValue(undefined) } }));
+
+describe("ChallengeTile: saving", () => {
+  it("lets a signed-in person save the piece, and shows nothing to someone who can't", async () => {
+    const { savesApi } = await import("../../api/saves.api");
+    const first = show(entry({}));
+    await userEvent.click(screen.getByRole("button", { name: "Save this piece" }));
+    expect(savesApi.save).toHaveBeenCalledWith("pieces", "m1");
+    expect(await screen.findByRole("button", { name: "Remove this piece from your saved list" })).toBeInTheDocument();
+    first.unmount();
+    show(entry({}), false);
+    expect(screen.queryByRole("button", { name: /Save this piece/ })).toBeNull();
+  });
+});

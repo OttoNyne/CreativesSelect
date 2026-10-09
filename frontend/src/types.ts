@@ -92,7 +92,17 @@ export interface Post {
   commentCount: number;
   /** The emoji reactions on it, and the signed-in viewer's own. */
   reactions?: ReactionSummary;
+  /** A repost shares another post (`repost`), with or without words of its own. */
+  isRepost?: boolean;
+  repost?: SharedPostView | null;
+  /** Whether the signed-in viewer has saved it. */
+  saved?: boolean;
 }
+
+/** The post a repost shares: the whole thing while it can still be shown, or just that it can't. */
+export type SharedPostView =
+  | { available: false }
+  | { available: true; id: string; authorId: string; author: User; content: string; imageUrl: string | null; imageAspect?: "original" | "1:1" | "4:3" | "16:9" | null; imageZoom?: number | null; imagePosition?: string | null; createdAt: string };
 
 export interface Comment {
   id: string;
@@ -183,6 +193,8 @@ export interface MediaItem {
   durationSeconds?: number | null;
   /** The album this piece is in, if any. */
   albumId?: string | null;
+  /** Whether the signed-in viewer has saved it. */
+  saved?: boolean;
   /** The emoji reactions on it, and the signed-in viewer's own. */
   reactions: ReactionSummary;
   /** How many comments the piece has. */
@@ -368,7 +380,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "reaction";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

@@ -1,0 +1,32 @@
+import type { Translation } from "../../index";
+import type { saves as en } from "../en/saves";
+
+export const saves: Translation<typeof en> = {
+  "nav.saved": "Guardados",
+  "saves.save": "Guardar",
+  "saves.saved": "Guardado",
+  "saves.savePost": "Guardar esta publicación",
+  "saves.unsavePost": "Quitar esta publicación de tu lista de guardados",
+  "saves.savePiece": "Guardar esta pieza",
+  "saves.unsavePiece": "Quitar esta pieza de tu lista de guardados",
+  "saves.failed": "No se pudo hacer, inténtalo de nuevo.",
+  "saves.title": "Guardados",
+  "saves.intro": "Publicaciones y piezas que guardaste. Solo tú ves esta lista.",
+  "saves.kind": "Qué mostrar",
+  "saves.posts": "Publicaciones",
+  "saves.pieces": "Piezas",
+  "saves.empty": "Todavía no has guardado nada. Usa Guardar bajo una publicación o una pieza para tenerla aquí.",
+  "saves.more": "Mostrar más",
+  "saves.loading": "Cargando…",
+  "saves.loadFailed": "No se pudo cargar tu lista de guardados, inténtalo de nuevo.",
+  "post.share": "Compartir",
+  "post.shareLabel": "Compartir esta publicación en tu inicio",
+  "post.shareWords": "Añade tus propias palabras (opcional)",
+  "post.shareSend": "Compartir en mi inicio",
+  "post.shareCancel": "Cancelar",
+  "post.shared": "Compartida en tu inicio.",
+  "post.sharedBy": "compartió una publicación",
+  "post.originalGone": "Esta publicación ya no está disponible.",
+  "post.viewOriginal": "Ver la publicación",
+  "notif.repost": "compartió tu publicación",
+};

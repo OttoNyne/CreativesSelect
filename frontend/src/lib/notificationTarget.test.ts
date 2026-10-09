@@ -167,3 +167,10 @@ describe("notificationTarget: follows", () => {
     expect(notificationTarget(n("follow", {}, null), "ada")).toBeNull();
   });
 });
+
+describe("notificationTarget: shares", () => {
+  it("opens the post that shares yours", () => {
+    expect(notificationTarget(n("repost", { postId: "p9" }), "ada")).toEqual({ to: "/posts/p9", label: "View post" });
+    expect(notificationTarget(n("repost", {}), "ada")).toEqual({ to: "/u/zoe", label: "View profile" });
+  });
+});

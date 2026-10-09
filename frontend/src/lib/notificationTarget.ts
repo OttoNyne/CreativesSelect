@@ -83,6 +83,10 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
     }
     case "follow":
       return actorProfile;
+    case "repost": {
+      const postId = str(n.payload.postId);
+      return postId ? { to: `/posts/${postId}`, label: t("target.viewPost") } : actorProfile;
+    }
     case "mention": {
       // the server says where, as an address inside the site; anything else is not followed
       const url = str(n.payload.url);

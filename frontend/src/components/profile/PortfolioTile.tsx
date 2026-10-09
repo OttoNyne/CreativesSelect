@@ -4,6 +4,7 @@ import { clipWindow, directVideoSrc, playableVideoUrl, videoPosterUrl, youtubeEm
 import type { Album, MediaCredit, MediaItem, ReactionKey } from "../../types";
 import { PieceCredits } from "./PieceCredits";
 import { ReactionBar } from "../common/ReactionBar";
+import { SaveButton } from "../common/SaveButton";
 import { t } from "../../i18n";
 
 
@@ -187,6 +188,7 @@ export function PortfolioTile({
 
       <div className="flex flex-wrap items-center gap-1 bg-black/20 px-2 py-1">
         <ReactionBar summary={item.reactions} canReact={canReact} onReact={(key) => onReact(item.id, key)} label={t("media.reactionsToThisPiece")} />
+        {canReact && <SaveButton kind="pieces" id={item.id} saved={item.saved === true} className="text-[11px] text-white/60" />}
         {onToggleComments && (
           <button
             type="button"

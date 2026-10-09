@@ -402,4 +402,9 @@ export const serverAr: Record<string, string> = {
   "You're following people too fast — try again later.": "تتابع الأشخاص بسرعة كبيرة؛ حاول لاحقًا.",
   "That isn't a topic you can search for": "هذا ليس موضوعًا يمكن البحث عنه",
   "You're looking around too fast — try again in a bit": "تتصفح بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
+  "You can save up to {v1} things — remove some first": "يمكنك حفظ ما يصل إلى {v1} عنصر؛ أزل بعضها أولًا",
+  "You're saving things too fast — try again in a bit": "تحفظ العناصر بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
+  "You can't share your own post": "لا يمكنك مشاركة منشورك أنت",
+  "You've already shared this post": "لقد شاركت هذا المنشور بالفعل",
+  "You're sharing too fast — try again in a bit.": "تشارك بسرعة كبيرة؛ حاول مرة أخرى بعد قليل.",
 };

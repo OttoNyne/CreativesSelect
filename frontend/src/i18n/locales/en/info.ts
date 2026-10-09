@@ -56,4 +56,6 @@ export const info = {
   "info.followText": "Follow anyone with a public profile to see their posts in your feed, without sending a friend request. They don't need to say yes, and following is one-way: it doesn't show them yours. Friends still see everything friends can; a private profile can't be followed, and if a followed profile goes private, or you block each other, its posts leave your feed. You see your own followers and the people you follow from your profile.",
   "info.exploreTitle": "Hashtags and Explore",
   "info.exploreText": "Put a #hashtag in a post or a caption and it becomes a link to everything about that topic. The Explore page shows the latest public posts and pieces from everyone, or those about one topic, and the topics trending this week. Anyone can look, signed in or not, but only people with public profiles appear, and search engines are asked to keep out of the page.",
+  "info.saveTitle": "Save and share",
+  "info.saveText": "Save any post or piece to a private list you can come back to (the Saved page in the top bar); nobody else can see it. Share a post to your own feed, with words of your own if you like, and the person who made it is told. A share shows the original inside it, and only while its owner is still public: if they go private or you block each other, it says the post isn't available any more.",
 } as const;
