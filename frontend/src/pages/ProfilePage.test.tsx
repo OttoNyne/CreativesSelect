@@ -5,6 +5,7 @@ import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { ProfilePage } from "./ProfilePage";
 import { profilesApi } from "../api/profiles.api";
 import { friendsApi } from "../api/friends.api";
+import { followsApi } from "../api/follows.api";
 import { moderationApi } from "../api/moderation.api";
 import { profileViewsApi } from "../api/profileViews.api";
 import { ApiError } from "../api/client";
@@ -16,6 +17,7 @@ vi.mock("../context/PlaybackContext", () => ({ usePlayback: () => ({ current: nu
 vi.mock("../api/friends.api", () => ({ friendsApi: { list: vi.fn(), request: vi.fn() } }));
 vi.mock("../api/moderation.api", () => ({ moderationApi: { block: vi.fn(), report: vi.fn() } }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
+vi.mock("../api/follows.api", () => ({ followsApi: { follow: vi.fn(), unfollow: vi.fn(), following: vi.fn(), followers: vi.fn() } }));
 vi.mock("../api/ai.api", () => ({ aiApi: { generateText: vi.fn(), generateImage: vi.fn(), generateWallpaper: vi.fn(), discard: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 // The profile's sections have their own data loading and are tested on their own.
@@ -81,6 +83,60 @@ describe("ProfilePage", () => {
     expect(screen.getByRole("button", { name: "Block" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit profile" })).not.toBeInTheDocument();
     expect(screen.getByText("guestbook")).toBeInTheDocument();
+  });
+
+  it("shows how many follow someone, and lets a visitor who isn't a friend follow and unfollow them", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, followerCount: 4, followingCount: 2, iFollow: false } as User });
+    vi.mocked(followsApi.follow).mockResolvedValue({ following: true });
+    vi.mocked(followsApi.unfollow).mockResolvedValue(undefined as never);
+    renderAs(me, "zoe");
+    expect(await screen.findByLabelText("Followers and following")).toHaveTextContent("4 followers · 2 following");
+    await userEvent.click(screen.getByRole("button", { name: "Follow Zoe" }));
+    expect(followsApi.follow).toHaveBeenCalledWith("zoe");
+    expect(await screen.findByRole("button", { name: "Stop following Zoe" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Followers and following")).toHaveTextContent("5 followers");
+    await userEvent.click(screen.getByRole("button", { name: "Stop following Zoe" }));
+    expect(await screen.findByRole("button", { name: "Follow Zoe" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Followers and following")).toHaveTextContent("4 followers");
+  });
+
+  it("offers no Follow button to a friend, on a private profile, on your own profile or when signed out", async () => {
+    friends.list.mockResolvedValue({ friends: [zoe] as never });
+    profiles.get.mockResolvedValue({ user: { ...zoe, followerCount: 1, followingCount: 0, iFollow: false } as User });
+    renderAs(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    await screen.findByText("✓ Friends");
+    expect(screen.queryByRole("button", { name: /Follow Zoe/ })).toBeNull();
+    cleanup();
+    friends.list.mockResolvedValue({ friends: [] });
+    profiles.get.mockResolvedValue({ user: { ...zoe, isPrivate: true } as User });
+    renderAs(me, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(screen.queryByRole("button", { name: /Follow Zoe/ })).toBeNull();
+    cleanup();
+    profiles.get.mockResolvedValue({ user: { ...me, followerCount: 2, followingCount: 1 } as User });
+    renderAs(me, "me");
+    await screen.findByRole("heading", { name: "Me" });
+    expect(screen.queryByRole("button", { name: /Follow Me/ })).toBeNull();
+    cleanup();
+    profiles.get.mockResolvedValue({ user: { ...zoe, followerCount: 1, followingCount: 0 } as User });
+    renderAs(null, "zoe");
+    await screen.findByRole("heading", { name: "Zoe" });
+    expect(screen.queryByRole("button", { name: /Follow Zoe/ })).toBeNull();
+  });
+
+  it("lets the owner open the list of who follows them and whom they follow", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, followerCount: 1, followingCount: 1 } as User });
+    vi.mocked(followsApi.followers).mockResolvedValue({ people: [{ id: "a", username: "ann", displayName: "Ann", avatarUrl: null, csVerified: false }], page: 1, hasMore: false });
+    vi.mocked(followsApi.following).mockResolvedValue({ people: [], page: 1, hasMore: false });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "1 follower" }));
+    expect(await screen.findByRole("region", { name: "Your followers" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /Ann/ })).toHaveAttribute("href", "/u/ann");
+    await userEvent.click(screen.getByRole("button", { name: "1 following" }));
+    expect(await screen.findByRole("region", { name: "People you follow" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("region", { name: "People you follow" })).toBeNull();
   });
 
   it("shows the CSverified badge beside the name of someone who has it", async () => {

@@ -63,6 +63,8 @@ function describe(n: Notification): string {
       return t("notif.creditAccepted");
     case "mention":
       return t("notif.mention");
+    case "follow":
+      return t("notif.follow");
     case "work_request":
       return t("notif.workRequest");
     case "work_reply":

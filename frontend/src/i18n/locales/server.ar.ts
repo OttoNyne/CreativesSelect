@@ -396,4 +396,8 @@ export const serverAr: Record<string, string> = {
   "You haven't entered this week's challenge": "لم تشارك في تحدي هذا الأسبوع",
   "Challenge not found": "التحدي غير موجود",
   "You've done that a lot — try again later.": "فعلت ذلك مرات كثيرة؛ حاول مرة أخرى لاحقًا.",
+  "That profile can't be followed": "لا يمكن متابعة هذا الملف الشخصي",
+  "You can't follow yourself": "لا يمكنك متابعة نفسك",
+  "You can follow up to {v1} people — unfollow someone first": "يمكنك متابعة ما يصل إلى {v1} شخص؛ ألغِ متابعة أحدهم أولًا",
+  "You're following people too fast — try again later.": "تتابع الأشخاص بسرعة كبيرة؛ حاول لاحقًا.",
 };

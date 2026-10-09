@@ -1,0 +1,20 @@
+// follow
+export const follow = {
+  "follow.follow": "Follow",
+  "follow.following": "Following",
+  "follow.followLabel": "Follow {name}",
+  "follow.unfollowLabel": "Stop following {name}",
+  "follow.unfollow": "Unfollow",
+  "follow.followers": { one: "{n} follower", other: "{n} followers" },
+  "follow.followingCount": "{n} following",
+  "follow.countsLabel": "Followers and following",
+  "follow.followersTitle": "Your followers",
+  "follow.followingTitle": "People you follow",
+  "follow.noFollowers": "No one follows you yet.",
+  "follow.noFollowing": "You don't follow anyone yet. Follow people with public profiles to see their posts in your feed.",
+  "follow.more": "Show more",
+  "follow.close": "Close",
+  "follow.failed": "Couldn't do that, try again.",
+  "follow.loading": "Loading…",
+  "notif.follow": "started following you",
+} as const;

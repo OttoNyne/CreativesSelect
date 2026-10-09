@@ -52,4 +52,6 @@ export const info = {
   "info.challengeText": "Every week has one short prompt, the same for everyone. Enter one piece from your portfolio, look through what others made, and react to the ones you love. Last week's most loved pieces are shown at the top of the next. Only public profiles can take part, because the gallery is open to everyone.",
   "info.mentionsTitle": "Mentions",
   "info.mentionsText": "Type @ in a post, comment, blog entry, group, event or request to name someone: a short list of friends and other people appears, and the name becomes a link to their profile. They get a notification, and a phone notification if they have those on, but only if they could see what you wrote, so naming someone never shows them something private or gets around a block. In messages and live chat the name is a link too, without a notification.",
+  "info.followTitle": "Follow",
+  "info.followText": "Follow anyone with a public profile to see their posts in your feed, without sending a friend request. They don't need to say yes, and following is one-way: it doesn't show them yours. Friends still see everything friends can; a private profile can't be followed, and if a followed profile goes private, or you block each other, its posts leave your feed. You see your own followers and the people you follow from your profile.",
 } as const;

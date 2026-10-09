@@ -396,4 +396,8 @@ export const serverEs: Record<string, string> = {
   "You haven't entered this week's challenge": "No has participado en el reto de esta semana",
   "Challenge not found": "Reto no encontrado",
   "You've done that a lot — try again later.": "Lo has hecho muchas veces; inténtalo de nuevo más tarde.",
+  "That profile can't be followed": "Ese perfil no se puede seguir",
+  "You can't follow yourself": "No puedes seguirte a ti mismo",
+  "You can follow up to {v1} people — unfollow someone first": "Puedes seguir hasta {v1} personas: deja de seguir a alguien primero",
+  "You're following people too fast — try again later.": "Estás siguiendo a demasiadas personas muy rápido; inténtalo más tarde.",
 };

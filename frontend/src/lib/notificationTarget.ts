@@ -81,6 +81,8 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const itemId = str(n.payload.itemId);
       return viewerUsername ? { to: `/u/${viewerUsername}${itemId ? `?piece=${encodeURIComponent(itemId)}` : ""}#portfolio`, label: t("target.viewCredit") } : null;
     }
+    case "follow":
+      return actorProfile;
     case "mention": {
       // the server says where, as an address inside the site; anything else is not followed
       const url = str(n.payload.url);

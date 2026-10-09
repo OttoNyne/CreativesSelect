@@ -46,6 +46,7 @@ import { CSBadge } from "../components/common/CSBadge";
 import { OffersEditor, OpenToWorkBadge, WorkRequestForm } from "../components/profile/OpenToWork";
 import { WorkRequestsPanel } from "../components/profile/WorkRequestsPanel";
 import { useRobots } from "../lib/useRobots";
+import { FollowButton, FollowCounts, FollowLists } from "../components/follow/FollowControls";
 import { t } from "../i18n";
 import { Linkified } from "../components/common/Linkified";
 import { MentionTextarea } from "../components/common/MentionField";
@@ -68,6 +69,7 @@ export function ProfilePage() {
   const [requestedWork, setRequestedWork] = useState(false);
   const [theme, setTheme] = useState<ProfileTheme>({});
   const [isFriend, setIsFriend] = useState(false);
+  const [listing, setListing] = useState<"followers" | "following" | null>(null);
   const [requestSent, setRequestSent] = useState(false);
   const [saving, setSaving] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -266,6 +268,7 @@ export function ProfilePage() {
           <ActivityBadge activity={profile.activity} className="text-[var(--profile-muted)]" />
           <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
           <OpenToWorkBadge profile={profile} />
+          {typeof profile.followerCount === "number" && <FollowCounts followers={profile.followerCount} following={profile.followingCount ?? 0} onOpen={isOwner ? (which) => setListing((now) => (now === which ? null : which)) : undefined} />}
         </div>
 
         <div className="ms-auto flex flex-wrap gap-2 pb-2">
@@ -304,6 +307,14 @@ export function ProfilePage() {
                   {requestSent ? t("mayKnow.requestSent") : t("profile.addFriend")}
                 </button>
               )}
+              {!isFriend && !profile.isPrivate && (
+                <FollowButton
+                  username={profile.username}
+                  displayName={profile.displayName}
+                  following={profile.iFollow === true}
+                  onChange={(now) => setProfile((p) => (p ? { ...p, iFollow: now, followerCount: Math.max(0, (p.followerCount ?? 0) + (now ? 1 : -1)) } : p))}
+                />
+              )}
               {profile.openToWork && (
                 <button onClick={() => setRequesting((r) => !r)} aria-expanded={requesting} className="rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: "var(--profile-accent)" }}>
                   {t("work.requestWork")}
@@ -326,6 +337,7 @@ export function ProfilePage() {
         </div>
       </div>
 
+      {isOwner && listing && <FollowLists which={listing} onClose={() => setListing(null)} onUnfollowed={() => setProfile((p) => (p ? { ...p, followingCount: Math.max(0, (p.followingCount ?? 1) - 1) } : p))} />}
       {!isOwner && viewer && profile.openToWork && requesting && (
         <WorkRequestForm
           to={profile}

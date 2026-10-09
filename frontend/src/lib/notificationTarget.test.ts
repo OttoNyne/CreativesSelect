@@ -160,3 +160,10 @@ describe("notificationTarget: mentions", () => {
     expect(notificationTarget(n("mention", {}, null), "ada")).toBeNull();
   });
 });
+
+describe("notificationTarget: follows", () => {
+  it("opens the profile of the person who followed", () => {
+    expect(notificationTarget(n("follow", {}), "ada")).toEqual({ to: "/u/zoe", label: "View profile" });
+    expect(notificationTarget(n("follow", {}, null), "ada")).toBeNull();
+  });
+});

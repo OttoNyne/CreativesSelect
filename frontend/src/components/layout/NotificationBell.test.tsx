@@ -388,3 +388,10 @@ describe("NotificationBell: mentions", () => {
     expect(screen.getByRole("link", { name: "See where" })).toHaveAttribute("href", "/posts/p9");
   });
 });
+
+describe("NotificationBell: follows", () => {
+  it("says someone started following you", async () => {
+    await openWith([note({ id: "f", type: "follow", payload: {} })]);
+    expect(await screen.findByText("started following you")).toBeInTheDocument();
+  });
+});

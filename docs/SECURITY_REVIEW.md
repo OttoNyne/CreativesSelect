@@ -1393,6 +1393,16 @@ A mention puts someone's name in front of that person, so the review asked how i
 - **A failure never costs the writer.** Delivering notices happens after the writing is saved and swallows its own errors, so a mention can't make a post fail (tested).
 - **Not covered:** a notification can't be switched off for mentions alone (it follows the "comments" phone switch and the bell), mentions in a private message to someone else are only links, and renaming a user does not update old mentions of the previous name.
 
+### 5.81 Following: seeing someone's posts without their yes
+
+Following lets one person see another's posts without a friendship, so the review looked at what that could expose and how it could be used to pester.
+
+- **Public only, and checked at read time.** Only a public profile can be followed (a private one gets the same "That profile can't be followed" as a missing, suspended or blocking one, so none can be told apart), and the feed keeps only followed authors who are public, not suspended and not blocked when it is read. A profile that goes private, or a block, takes its posts out of every follower's feed at once (tested), and the follow comes back to life if it is made public again.
+- **Nothing private is shown.** The lists of followers and followed are the owner's own only; other people see counts, which are shown only where the whole profile is shown (tested).
+- **Not a way to pester.** Following needs no yes but cannot be used to ping someone repeatedly: a person is notified at most once a week by the same follower (tested with unfollow and follow again), 60 follows an hour, 1000 followed in all.
+- **Blocks hold.** Blocking ends the follow in both directions and prevents a new one (tested). Deleting an account removes its follows, and the data download lists whom you follow.
+- **Not covered:** followers can't be removed one by one (blocking is the way), and there is no setting to hide the follower count.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
