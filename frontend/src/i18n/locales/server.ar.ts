@@ -427,4 +427,11 @@ export const serverAr: Record<string, string> = {
   "You can't mute yourself": "لا يمكنك كتم نفسك",
   "You can mute up to {v1} people — unmute someone first": "يمكنك كتم ما يصل إلى {v1} شخص؛ ألغِ كتم أحدهم أولًا",
   "You're muting too fast — try again in a bit": "تكتم بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
+  "A step must be text": "يجب أن تكون الخطوة نصًا",
+  "A step can be up to {v1} characters": "يمكن أن تصل الخطوة إلى {v1} حرفًا",
+  "A step can have up to {v1} links": "يمكن أن تحتوي الخطوة على ما يصل إلى {v1} روابط",
+  "A piece can have up to {v1} steps": "يمكن أن يكون للعمل ما يصل إلى {v1} خطوة",
+  "You're adding steps too fast — try again in a bit": "تضيف الخطوات بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
+  "Step not found": "لم يتم العثور على الخطوة",
+  "List every step once to put them in order": "اذكر كل خطوة مرة واحدة لترتيبها",
 };

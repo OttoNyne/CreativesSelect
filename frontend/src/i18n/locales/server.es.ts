@@ -427,4 +427,11 @@ export const serverEs: Record<string, string> = {
   "You can't mute yourself": "No puedes silenciarte a ti mismo",
   "You can mute up to {v1} people — unmute someone first": "Puedes silenciar hasta {v1} personas: deja de silenciar a alguien primero",
   "You're muting too fast — try again in a bit": "Estás silenciando muy rápido; inténtalo de nuevo en un rato",
+  "A step must be text": "Un paso debe ser texto",
+  "A step can be up to {v1} characters": "Un paso puede tener hasta {v1} caracteres",
+  "A step can have up to {v1} links": "Un paso puede tener hasta {v1} enlaces",
+  "A piece can have up to {v1} steps": "Una obra puede tener hasta {v1} pasos",
+  "You're adding steps too fast — try again in a bit": "Estás añadiendo pasos muy rápido; inténtalo de nuevo en un rato",
+  "Step not found": "Paso no encontrado",
+  "List every step once to put them in order": "Indica cada paso una vez para ordenarlos",
 };

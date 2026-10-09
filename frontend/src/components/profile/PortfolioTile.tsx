@@ -6,6 +6,7 @@ import { PieceCredits } from "./PieceCredits";
 import { ReactionBar } from "../common/ReactionBar";
 import { SaveButton } from "../common/SaveButton";
 import { PinButton } from "../common/PinButton";
+import { ProcessTimeline } from "./ProcessTimeline";
 import { t } from "../../i18n";
 
 
@@ -101,6 +102,9 @@ export function PortfolioTile({
   const embed = item.type === "embed" ? youtubeEmbedUrl(item.url, item.startSeconds ?? 0) : null;
   const isUploadedVideo = item.type === "video" && item.durationSeconds != null;
   const [editingCaption, setEditingCaption] = useState(false);
+  // how it was made: the steps open under the piece, which then takes the whole row
+  const [processOpen, setProcessOpen] = useState(false);
+  const [processCount, setProcessCount] = useState(item.processCount ?? 0);
 
   function onTimeUpdate(e: React.SyntheticEvent<HTMLVideoElement>) {
     // A linked video can't be measured, so it only plays a one-minute window.
@@ -113,7 +117,7 @@ export function PortfolioTile({
   }
 
   return (
-    <div id={`piece-${item.id}`} className={`scroll-mt-20 overflow-hidden rounded-lg border border-white/10 ${commentsOpen ? "col-span-full sm:flex" : isVideoish ? "col-span-2" : ""}`}>
+    <div id={`piece-${item.id}`} className={`scroll-mt-20 overflow-hidden rounded-lg border border-white/10 ${commentsOpen ? "col-span-full sm:flex" : processOpen ? "col-span-full" : isVideoish ? "col-span-2" : ""}`}>
       <div className={commentsOpen ? "sm:w-72 sm:shrink-0" : "min-w-0"}>
       <div className="relative">
         {item.type === "audio" ? (
@@ -199,6 +203,16 @@ export function PortfolioTile({
         <ReactionBar summary={item.reactions} canReact={canReact} onReact={(key) => onReact(item.id, key)} label={t("media.reactionsToThisPiece")} />
         {canReact && <SaveButton kind="pieces" id={item.id} saved={item.saved === true} className="text-[11px] text-white/60" />}
         {isOwner && onFeaturedChange && <PinButton kind="piece" id={item.id} on={item.featured === true} onChange={(now) => onFeaturedChange(item.id, now)} className="text-[11px] text-white/60" />}
+        {(processCount > 0 || isOwner) && (
+          <button
+            type="button"
+            onClick={() => setProcessOpen((open) => !open)}
+            aria-expanded={processOpen}
+            className={`rounded-md px-2 py-0.5 text-[11px] ${processOpen ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/10"}`}
+          >
+            {processCount > 0 ? t("process.show", { n: processCount }) : t("process.add")}
+          </button>
+        )}
         {onToggleComments && (
           <button
             type="button"
@@ -229,6 +243,7 @@ export function PortfolioTile({
           </select>
         </div>
       )}
+      {processOpen && <ProcessTimeline piece={item} isOwner={isOwner} onCountChange={setProcessCount} />}
       </div>
       {commentsOpen && comments && <div className="min-w-0 flex-1 border-t border-white/10 px-3 pb-3 sm:border-s sm:border-t-0">{comments}</div>}
     </div>

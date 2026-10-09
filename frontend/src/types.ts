@@ -201,6 +201,16 @@ export interface ReactionSummary {
   mine: ReactionKey | null;
 }
 
+/** One step in how a portfolio piece was made: words and/or a picture. */
+export interface ProcessStep {
+  id: string;
+  content: string;
+  imageUrl: string | null;
+  position: number;
+  createdAt: string;
+  editedAt: string | null;
+}
+
 export interface MediaItem {
   id: string;
   ownerId: string;
@@ -218,6 +228,8 @@ export interface MediaItem {
   saved?: boolean;
   /** Whether its owner features it (it comes first in the portfolio). */
   featured?: boolean;
+  /** How many steps of how it was made its owner has added. */
+  processCount?: number;
   /** The emoji reactions on it, and the signed-in viewer's own. */
   reactions: ReactionSummary;
   /** How many comments the piece has. */
