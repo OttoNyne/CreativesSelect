@@ -16,6 +16,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   const [framing, setFraming] = useState<ImageFraming>(DEFAULT_FRAMING);
   const [isAiText, setIsAiText] = useState(false);
   const [isAiImage, setIsAiImage] = useState(false);
+  const [alt, setAlt] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,7 +31,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
         content: content.trim(),
         imageUrl,
         // how the picture was framed, sent only when there is a picture
-        ...(imageUrl ? { imageAspect: framing.aspect, imageZoom: framing.zoom, imagePosition: framing.position } : {}),
+        ...(imageUrl ? { imageAspect: framing.aspect, imageZoom: framing.zoom, imagePosition: framing.position, ...(alt.trim() ? { imageAlt: alt.trim() } : {}) } : {}),
         isAiText,
         isAiImage,
       });
@@ -40,6 +41,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
       setFraming(DEFAULT_FRAMING);
       setIsAiText(false);
       setIsAiImage(false);
+      setAlt("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("composer.postFailed"));
     } finally {
@@ -83,12 +85,30 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
               setImageUrl(null);
               setFraming(DEFAULT_FRAMING);
               setIsAiImage(false);
+              setAlt("");
             }}
             className="absolute end-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-xs text-white"
           >
             ✕
           </button>
         </div>
+      )}
+      {imageUrl && (
+        <label className="mt-2 block text-xs text-white/70">
+          {t("composer.pictureDescription")}
+          <input
+            value={alt}
+            onChange={(e) => setAlt(e.target.value)}
+            maxLength={300}
+            dir="auto"
+            placeholder={t("composer.pictureDescriptionPlaceholder")}
+            aria-describedby="alt-hint"
+            className="mt-1 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
+          />
+          <span id="alt-hint" className="mt-1 block text-white/60">
+            {t("composer.pictureDescriptionHint")}
+          </span>
+        </label>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -107,6 +127,8 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
             setImageUrl(url);
             setFraming(DEFAULT_FRAMING);
             setIsAiImage(true);
+            // the picture was made from these words, so they describe it
+            setAlt(content.trim().slice(0, 300));
           }}
         />
         <button

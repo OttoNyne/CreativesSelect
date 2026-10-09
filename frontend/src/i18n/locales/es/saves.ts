@@ -29,4 +29,10 @@ export const saves: Translation<typeof en> = {
   "post.originalGone": "Esta publicación ya no está disponible.",
   "post.viewOriginal": "Ver la publicación",
   "notif.repost": "compartió tu publicación",
+  "composer.pictureDescription": "Describe la imagen (para quien no puede verla)",
+  "composer.pictureDescriptionPlaceholder": "Un jarrón azul sobre una mesa de madera, iluminado desde la izquierda…",
+  "composer.pictureDescriptionHint": "Opcional. Un lector de pantalla dice esto en lugar de la imagen.",
+  "post.addPictureDescription": "Describir la imagen",
+  "post.editPictureDescription": "Editar la descripción de la imagen",
+  "post.pictureDescriptionLabel": "Descripción de la imagen",
 };

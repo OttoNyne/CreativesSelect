@@ -19,6 +19,7 @@ import { shortAgo } from "../../lib/when";
 import { SaveButton } from "../common/SaveButton";
 import { SharePost } from "./SharePost";
 import { SharedPost } from "./SharedPost";
+import { PictureDescription } from "./PictureDescription";
 
 const MAX_POST = 5000;
 
@@ -45,6 +46,7 @@ export function PostCard({
   const [content, setContent] = useState(post.content);
   const [editedAt, setEditedAt] = useState(post.editedAt ?? null);
   const [editing, setEditing] = useState(false);
+  const [imageAlt, setImageAlt] = useState(post.imageAlt ?? "");
   const [reactions, setReactions] = useState<ReactionSummary>(post.reactions ?? emptyReactions());
   const [reactError, setReactError] = useState<string | null>(null);
   const isOwner = user?.id === post.authorId;
@@ -111,11 +113,12 @@ export function PostCard({
             aspect={post.imageAspect}
             zoom={post.imageZoom ?? 1}
             position={post.imagePosition ?? "50% 50%"}
+            alt={imageAlt}
             className="mt-3 rounded-lg"
           />
         ) : (
           // posted before framing existed: shown whole
-          <FramedImage src={assetUrl(post.imageUrl)} className="mt-3 rounded-lg" />
+          <FramedImage src={assetUrl(post.imageUrl)} alt={imageAlt} className="mt-3 rounded-lg" />
         ))}
 
       {(post.isAiText || post.isAiImage) && (
@@ -146,6 +149,7 @@ export function PostCard({
         <button onClick={() => setShowComments((s) => !s)} className="hover:text-white">
           {t("post.comments", { n: commentCount })}
         </button>
+        {isOwner && post.imageUrl && !post.isRepost && <PictureDescription postId={post.id} value={imageAlt} onSaved={setImageAlt} />}
         {user && <SaveButton kind="posts" id={post.id} saved={post.saved === true} onChange={onSavedChange} />}
         {user && !isOwner && (post.isRepost ? post.repost?.available === true && post.repost.authorId !== user.id : !post.author.isPrivate) && <SharePost postId={post.id} />}
         {isOwner && !editing && (

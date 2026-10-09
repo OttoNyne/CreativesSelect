@@ -7,6 +7,8 @@ export interface CreatePostInput {
   imageAspect?: "original" | "1:1" | "4:3" | "16:9";
   imageZoom?: number;
   imagePosition?: string;
+  /** What the picture shows, for people who can't see it (up to 300 characters). */
+  imageAlt?: string;
   isAiText?: boolean;
   isAiImage?: boolean;
 }
@@ -22,6 +24,8 @@ export const postsApi = {
   react: (id: string, emoji: ReactionKey | null) => api.put<{ reactions: ReactionSummary }>(`/posts/${encodeURIComponent(id)}/reaction`, { emoji }),
   /** Share someone else's post to your own feed, with words of your own if you like. */
   repost: (id: string, content?: string) => api.post<{ post: Post }>(`/posts/${encodeURIComponent(id)}/repost`, content ? { content } : {}),
+  /** Add, change or (empty) remove the description of your own post's picture. */
+  setPictureDescription: (id: string, imageAlt: string) => api.patch<{ post: Post }>(`/posts/${encodeURIComponent(id)}`, { imageAlt }),
   /** Change the words of your own post. */
   update: (id: string, content: string) => api.patch<{ post: Post }>(`/posts/${encodeURIComponent(id)}`, { content }),
   /** Twenty at a time, oldest first; `after` is the id of the last one you have. */

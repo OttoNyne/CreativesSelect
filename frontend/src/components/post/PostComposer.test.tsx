@@ -73,6 +73,7 @@ describe("PostComposer", () => {
       imageAspect: "original",
       imageZoom: 1,
       imagePosition: "50% 50%",
+      imageAlt: "An AI caption", // the picture was made from the words, so they describe it
       isAiText: true,
       isAiImage: true,
     });

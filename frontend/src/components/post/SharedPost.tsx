@@ -35,7 +35,7 @@ export function SharedPost({ repost }: { repost: NonNullable<Post["repost"]> }) 
           <Linkified text={repost.content} />
         </p>
       )}
-      {repost.imageUrl && <FramedImage src={assetUrl(repost.imageUrl)} aspect={repost.imageAspect ?? "original"} zoom={repost.imageZoom ?? 1} position={repost.imagePosition ?? "50% 50%"} className="mt-2 rounded-lg" />}
+      {repost.imageUrl && <FramedImage src={assetUrl(repost.imageUrl)} aspect={repost.imageAspect ?? "original"} zoom={repost.imageZoom ?? 1} position={repost.imagePosition ?? "50% 50%"} alt={repost.imageAlt ?? ""} className="mt-2 rounded-lg" />}
       <Link to={`/posts/${repost.id}`} className="mt-2 inline-block text-xs text-violet-300 hover:underline">
         {t("post.viewOriginal")}
       </Link>

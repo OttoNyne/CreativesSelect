@@ -84,6 +84,8 @@ export interface Post {
   imageAspect?: "original" | "1:1" | "4:3" | "16:9" | null;
   imageZoom?: number | null;
   imagePosition?: string | null;
+  /** The author's description of the picture, for people who can't see it. */
+  imageAlt?: string;
   isAiText: boolean;
   isAiImage: boolean;
   createdAt: string;
@@ -102,7 +104,7 @@ export interface Post {
 /** The post a repost shares: the whole thing while it can still be shown, or just that it can't. */
 export type SharedPostView =
   | { available: false }
-  | { available: true; id: string; authorId: string; author: User; content: string; imageUrl: string | null; imageAspect?: "original" | "1:1" | "4:3" | "16:9" | null; imageZoom?: number | null; imagePosition?: string | null; createdAt: string };
+  | { available: true; id: string; authorId: string; author: User; content: string; imageUrl: string | null; imageAspect?: "original" | "1:1" | "4:3" | "16:9" | null; imageZoom?: number | null; imagePosition?: string | null; imageAlt?: string; createdAt: string };
 
 export interface Comment {
   id: string;

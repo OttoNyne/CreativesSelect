@@ -27,4 +27,10 @@ export const saves = {
   "post.originalGone": "This post isn't available any more.",
   "post.viewOriginal": "View the post",
   "notif.repost": "shared your post",
+  "composer.pictureDescription": "Describe the picture (for people who can't see it)",
+  "composer.pictureDescriptionPlaceholder": "A blue vase on a wooden table, lit from the left…",
+  "composer.pictureDescriptionHint": "Optional. A screen reader says this instead of the picture.",
+  "post.addPictureDescription": "Describe picture",
+  "post.editPictureDescription": "Edit picture description",
+  "post.pictureDescriptionLabel": "Picture description",
 } as const;

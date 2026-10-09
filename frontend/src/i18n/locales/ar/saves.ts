@@ -29,4 +29,10 @@ export const saves: Translation<typeof en> = {
   "post.originalGone": "هذا المنشور لم يعد متاحًا.",
   "post.viewOriginal": "عرض المنشور",
   "notif.repost": "شارك منشورك",
+  "composer.pictureDescription": "صف الصورة (لمن لا يستطيع رؤيتها)",
+  "composer.pictureDescriptionPlaceholder": "مزهرية زرقاء على طاولة خشبية، تضيئها إضاءة من اليسار…",
+  "composer.pictureDescriptionHint": "اختياري. يقرأ قارئ الشاشة هذا الوصف بدل الصورة.",
+  "post.addPictureDescription": "وصف الصورة",
+  "post.editPictureDescription": "تعديل وصف الصورة",
+  "post.pictureDescriptionLabel": "وصف الصورة",
 };
