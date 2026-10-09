@@ -69,6 +69,8 @@ export function ProfilePage() {
   // Follow or unfollow changes the profile on screen at once; a profile request already on its way (the page asks again once it knows who is signed in) would bring the old answer back over it.
   const followEdit = useRef<{ count: number; iFollow: boolean; followerCount: number } | null>(null);
   const followEdits = useRef(0);
+  // The same for the owner's own changes: a save that lands while a request for the profile is on its way is newer than that request's answer.
+  const savedEdits = useRef(0);
   const [notFound, setNotFound] = useState(false);
   const [editing, setEditing] = useState(false);
   const [searchParams] = useSearchParams();
@@ -100,10 +102,11 @@ export function ProfilePage() {
     let cancelled = false;
     setNotFound(false);
     const editsAtStart = followEdits.current;
+    const savedAtStart = savedEdits.current;
     profilesApi
       .get(username)
       .then(({ user: fetched }) => {
-        if (cancelled) return;
+        if (cancelled || savedEdits.current !== savedAtStart) return;
         const changed = followEdit.current;
         const user = changed && changed.count > editsAtStart ? { ...fetched, iFollow: changed.iFollow, followerCount: changed.followerCount } : fetched;
         setProfile(user);
@@ -154,6 +157,7 @@ export function ProfilePage() {
     setSaving(true);
     try {
       const { user } = await profilesApi.updateMe(updates);
+      savedEdits.current += 1;
       setProfile((now) => keepExtras(now, user));
       if (isOwner) setViewer(user);
       return true;
@@ -382,6 +386,7 @@ export function ProfilePage() {
             key={profile.username}
             profile={profile}
             onChanged={(updated) => {
+              savedEdits.current += 1;
               setProfile((now) => keepExtras(now, updated));
               if (isOwner) setViewer(updated);
               // A new username is a new address: move to it.

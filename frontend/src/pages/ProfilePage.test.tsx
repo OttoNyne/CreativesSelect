@@ -129,6 +129,33 @@ describe("ProfilePage", () => {
     expect(screen.getByRole("button", { name: "Follow Zoe" })).toBeInTheDocument();
   });
 
+  it("keeps what the owner just saved when the profile is asked for again and the older answer comes last", async () => {
+    let answerLate!: (r: { user: User }) => void;
+    profiles.get.mockResolvedValueOnce({ user: me }).mockReturnValueOnce(new Promise((resolve) => (answerLate = resolve)));
+    profiles.updateMe.mockResolvedValue({ user: { ...me, openToWork: true } as User });
+    const tree = () => (
+      <MemoryRouter initialEntries={["/u/me?edit=1"]}>
+        <Routes>
+          <Route path="/u/:username" element={<ProfilePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    // the page first loads before it knows who is signed in, then asks again once it does
+    vi.mocked(useAuth).mockReturnValue({ user: null, isLoading: true, setUser: vi.fn(), refresh: async () => {} });
+    const { rerender } = render(tree());
+    await screen.findByRole("heading", { name: "Me" });
+    vi.mocked(useAuth).mockReturnValue({ user: me, isLoading: false, setUser: vi.fn(), refresh: async () => {} });
+    rerender(tree());
+    await waitFor(() => expect(profiles.get).toHaveBeenCalledTimes(2));
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Open to work: let people send me requests" }));
+    await waitFor(() => expect(profiles.updateMe).toHaveBeenCalled());
+    expect(await screen.findByRole("checkbox", { name: "Open to work: let people send me requests" })).toBeChecked();
+    answerLate({ user: me }); // the older answer, which doesn't have it
+    await waitFor(() => expect(profiles.get).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByRole("checkbox", { name: "Open to work: let people send me requests" })).toBeChecked();
+  });
+
   it("offers Mute on someone else's profile, which shows as muted once pressed, and not on your own", async () => {
     profiles.get.mockResolvedValue({ user: { ...zoe, iMute: false } as User });
     vi.mocked(mutesApi.mute).mockResolvedValue({ muted: true });
