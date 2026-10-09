@@ -24,6 +24,8 @@ const FEATURES = [
   { icon: "🔇", get title() { return t("info.mutingTitle"); }, get text() { return t("info.mutingText"); } },
   { icon: "🧩", get title() { return t("info.processTitle"); }, get text() { return t("info.processText"); } },
   { icon: "📣", get title() { return t("info.callsTitle"); }, get text() { return t("info.callsText"); } },
+  { icon: "🗂", get title() { return t("info.projectsTitle"); }, get text() { return t("info.projectsText"); } },
+  { icon: "🔔", get title() { return t("info.topicsTitle"); }, get text() { return t("info.topicsText"); } },
   { icon: "@", get title() { return t("info.mentionsTitle"); }, get text() { return t("info.mentionsText"); } },
   { icon: "🔗", get title() { return t("info.shareTitle"); }, get text() { return t("info.shareText"); } },
   { icon: "📱", get title() { return t("info.worksOnYourPhone"); }, get text() { return t("info.useItInAny"); } },

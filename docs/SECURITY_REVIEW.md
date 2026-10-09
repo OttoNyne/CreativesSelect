@@ -1485,6 +1485,39 @@ Sharing someone's post puts it in front of the sharer's audience, and a saved li
 - **Text is text.** Titles, details, terms, notes and replies are cleaned and length-checked, roles are tags with the profile tag rules, and everything is shown as text.
 - Covered by 31 backend tests (including the notification caps and visibility cases), 29 frontend tests and 4 browser flows on all three browsers. **Not covered:** nothing stops a person with several accounts from answering a call several times, and matching trusts what people say they offer.
 
+### 5.90 Reporting more kinds of things
+
+**Threats.** Content that could be harmful but couldn't be reported (a portfolio piece, a step, an open call, an answer to a call, a poll, a share), and a removal by a moderator that left parts behind.
+
+**What stops it.**
+- **Everything a person can see or be sent can be reported.** Posts (including polls and shares), portfolio pieces, steps, calls, answers and room messages each have a Report button for someone who isn't their owner, a reason box (at most 500 characters), and a reply that says a moderator will look. The existing limits hold: the thing must exist, reporting it twice while it waits is one report, 30 an hour.
+- **A moderator sees what the reporter saw.** A post's preview carries its poll options and the words of the post it shares; the others carry their words, picture and a link.
+- **Removal is the owner's deletion.** One shared cleanup (`services/removal.js`) removes a post, piece, call, step or answer with its comments and their pictures, reactions, saves, votes, pins, steps and notices, for the owner and for a moderator alike (tested: a removed post leaves no vote, save or pin). The author is told, and the reporters thanked, without details.
+- Covered by 7 backend tests, 8 frontend tests and 3 browser flows on all three browsers. **Not covered:** a reporter isn't told what was decided beyond a thank-you, and there is no appeal for the person whose content was removed.
+
+### 5.91 Project rooms: a private space made by a choice
+
+**Threats.** Reading or writing in a room one isn't in, using the chat to reach people who have blocked you, a picture that isn't the person's own, flooding the chat or the bell, and a room that holds data after people leave.
+
+**What stops it.**
+- **Members only, with one answer.** Every route (read, write, checklist, leave) answers the same 404 for someone outside the room as for a missing one, so a stranger can't tell which rooms exist; a room is created only by the server, when the call's owner chooses someone, never from a request that names members (tested for applicants who weren't chosen and for strangers).
+- **Blocks hold.** Messages from someone blocked either way are left out of the chat, and nobody is notified across a block.
+- **Pictures are the writer's own,** checked against the stored-files ledger exactly as for a comment, and deleted with the message, the room or the account.
+- **Cost.** 60 messages per 10 minutes, 40 checklist lines, 8 people a room, one notice per room while unread (counting up, so a busy chat can't flood anyone's bell), and live hints carrying only the room's id.
+- **Tidy and reportable.** The owner can archive (read-only), remove people or delete everything; a member can leave; deleting an account removes the rooms it owns and its words in the others, and the data download lists rooms and one's own messages. A member can report a message; a stranger can't (they get the answer for a missing one).
+- Covered by 20 backend tests, 18 frontend tests and 4 browser flows on all three browsers. **Not covered:** a moderator who handles a report can read the reported message (that is the point of a report), and what a member wrote stays when they leave, as a record of the project.
+
+### 5.92 Following topics and the weekly summary email
+
+**Threats.** A person's followed topics or summary setting being exposed, an email that leaks what someone wrote, mail sent to people who didn't ask or sent twice, a forged unsubscribe link or one that unsubscribes someone else, and a public run endpoint being abused.
+
+**What stops it.**
+- **Private to the person.** Followed topics and the summary setting are read and written only through the person's own session and appear in no profile; a followed tag is checked as a plain word before it is stored (30 at most).
+- **The email says counts and titles, never words** (tested: a comment's text, a call's details and a post's text are absent), only to confirmed addresses, only for people who turned it on, never to suspended accounts, in the person's own language, and nothing is sent when there is nothing to say.
+- **Once a week, even if the schedule fires twice.** Each person is claimed with one database update before anything is built, so overlapping runs can't send two (tested), a run does at most 25, and the run endpoint ignores calls less than five minutes apart. Anyone can call it, because asking cannot make anyone due earlier.
+- **Unsubscribing is signed.** The link carries a token the site signed for that person and purpose; a forged, expired, wrong-purpose or missing token all get the same 400 and change nothing (tested, including a sign-in token), the token sits in the address fragment so it isn't sent to any server or leaked in a Referer, and tries are limited per address.
+- Covered by 19 backend tests, 11 frontend tests and 4 browser flows on all three browsers. **Not covered:** the email is plain text through the mail provider, so its delivery and spam handling are the provider's; the schedule depends on the keep-warm check running (it re-enables itself with any commit).
+
 
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
