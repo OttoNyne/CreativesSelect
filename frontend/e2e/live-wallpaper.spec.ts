@@ -135,8 +135,9 @@ test.describe("live wallpapers made with AI", () => {
 
     await choose(page, "Still");
     await expect(page.getByTestId("moving-wallpaper")).toHaveCount(0);
-    // a still wallpaper is the page's background again
-    const bg = await page.locator("[data-wallpaper='true']").first().evaluate((el) => getComputedStyle(el).backgroundImage);
+    // a still wallpaper is a fixed layer behind the page again, showing the whole picture
+    await expect(page.getByTestId("still-wallpaper")).toHaveCount(1);
+    const bg = await page.getByTestId("still-wallpaper-whole").evaluate((el) => getComputedStyle(el).backgroundImage);
     expect(bg).toContain("url(");
   });
 

@@ -101,8 +101,8 @@ export function PostCard({
             className="mt-3 rounded-lg"
           />
         ) : (
-          // posted before framing existed: shown as it always was
-          <img src={assetUrl(post.imageUrl)} alt="" className="mt-3 max-h-96 w-full rounded-lg object-cover" />
+          // posted before framing existed: shown whole
+          <FramedImage src={assetUrl(post.imageUrl)} className="mt-3 rounded-lg" />
         ))}
 
       {(post.isAiText || post.isAiImage) && (

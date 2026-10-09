@@ -14,7 +14,8 @@ describe("FramedImage", () => {
     const { img, box } = frame();
     expect(box.style.aspectRatio).toBe("");
     expect(img.style.transform).toBe("");
-    expect(img.className).toMatch(/max-h-96/);
+    expect(img.className).toContain("max-h-[75vh]");
+    expect(img.className).toContain("object-contain"); // a tall or wide picture is never cut off
     expect(img.src).toBe("https://cdn.example.com/p.jpg");
   });
 

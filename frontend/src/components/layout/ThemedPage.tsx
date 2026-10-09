@@ -5,7 +5,7 @@ import { PANEL_STYLE, WALLPAPER_SCRIM } from "../../theme/contrast";
 import { profileThemeStyle, readableTheme } from "../../theme/applyProfileTheme";
 import { motionOf } from "../../lib/wallpaperMotion";
 import { styleAttributes } from "../../lib/profileStyle";
-import { MovingWallpaper } from "../profile/MovingWallpaper";
+import { MovingWallpaper, StillWallpaper } from "../profile/MovingWallpaper";
 
 type Look = Pick<User, "theme" | "wallpaperUrl" | "wallpaperType" | "wallpaperPosition" | "wallpaperMotion">;
 
@@ -35,9 +35,12 @@ export function ThemedPage({
 }) {
   const wallpaperUrl = assetUrl(look.wallpaperUrl);
   const isVideoWallpaper = look.wallpaperType === "video" && Boolean(wallpaperUrl);
-  // A picture that moves is drawn as its own layer behind the page; a still one is the page's background.
+  // A picture, still or moving, is drawn as its own layer fixed behind the page (a fixed CSS background is ignored on iPhones and
+  // iPads, where the picture was stretched over the whole page and cut off). A still one is also kept as the page's own background,
+  // which the layer completely covers: it is what the contrast checks (which cannot see through a picture) have always been run against.
   const motion = motionOf(look.wallpaperMotion);
   const isMovingWallpaper = Boolean(wallpaperUrl) && !isVideoWallpaper && motion !== "none";
+  const isStillWallpaper = Boolean(wallpaperUrl) && !isVideoWallpaper && motion === "none";
 
   // data-scheme="light" flips the page's white-on-dark styling for a bright background (see index.css), so text stays readable.
   const { scheme, panel } = readableTheme(look.theme, Boolean(wallpaperUrl));
@@ -49,6 +52,7 @@ export function ThemedPage({
 
   return (
     <div data-scheme={scheme} data-wallpaper={wallpaperUrl ? "true" : undefined} {...(backgroundOnly ? {} : styleAttributes(look.theme))} style={style} className="isolate min-h-[calc(100vh-56px)]">
+      {isStillWallpaper && <StillWallpaper url={wallpaperUrl!} position={look.wallpaperPosition ?? "50% 50%"} />}
       {isMovingWallpaper && <MovingWallpaper url={wallpaperUrl!} position={look.wallpaperPosition} motion={motion} />}
       {isVideoWallpaper && (
         <>

@@ -48,7 +48,8 @@ test.describe("the feed is on the same background as the profile", () => {
     expect((await page.request.patch("/api/profiles/me", { data: { wallpaperUrl: PIXEL, wallpaperType: "image" } })).status()).toBe(200);
     await page.goto("/");
     await expect(backdrop(page)).toHaveAttribute("data-wallpaper", "true");
-    expect(await backdrop(page).evaluate((el) => getComputedStyle(el).backgroundImage)).toContain("data:image/png");
+    // drawn as a layer behind the page (the whole picture, fitted to the screen), not as the page's own background
+    expect(await page.getByTestId("still-wallpaper-whole").evaluate((el) => getComputedStyle(el).backgroundImage)).toContain("data:image/png");
     // the feed still works on it
     await page.getByPlaceholder(/Share what you're working on/).fill("Posting on a wallpaper");
     await page.getByRole("button", { name: "Post", exact: true }).click();

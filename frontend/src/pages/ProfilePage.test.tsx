@@ -663,12 +663,13 @@ describe("ProfilePage: moving wallpapers", () => {
     expect(root).toHaveAttribute("data-scheme", "dark");
   });
 
-  it("keeps a still picture wallpaper as the page's background", async () => {
+  it("draws a still picture wallpaper as a fixed layer behind the page, not as its background", async () => {
     profiles.get.mockResolvedValue({ user: withWallpaper({ wallpaperMotion: "none" }) });
     renderAs(me, "zoe");
     const root = await rootOf();
     expect(screen.queryByTestId("moving-wallpaper")).not.toBeInTheDocument();
-    expect(root.style.backgroundImage).toContain("https://x/w.jpg");
+    expect((screen.getByTestId("still-wallpaper").firstElementChild as HTMLElement).style.backgroundImage).toContain("https://x/w.jpg");
+    expect(root.style.backgroundImage).toContain("https://x/w.jpg"); // also the page's own background, beneath the layer that covers it
   });
 
   it("treats a profile saved before wallpapers could move as still", async () => {

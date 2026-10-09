@@ -55,12 +55,26 @@ describe("ThemedPage", () => {
     expect(container.firstElementChild).toHaveAttribute("data-scheme");
   });
 
-  it("uses a still wallpaper as the page's background, under a dark scrim", () => {
+  it("draws a still wallpaper as a layer fixed behind the page, under a dark scrim, not as a CSS background", () => {
     const { frame } = renderPage({ wallpaperUrl: "https://cdn.example.com/w.jpg", wallpaperPosition: "20% 80%" });
     expect(frame).toHaveAttribute("data-wallpaper", "true");
     expect(frame).toHaveAttribute("data-scheme", "dark");
-    expect(frame.style.backgroundImage).toContain("https://cdn.example.com/w.jpg");
-    expect(frame.style.backgroundPosition).toBe("20% 80%");
+    const layer = screen.getByTestId("still-wallpaper");
+    const backdrop = layer.firstElementChild as HTMLElement;
+    expect(backdrop.style.backgroundSize).toBe("100% 100%, cover");
+    expect(backdrop.style.backgroundPosition).toBe("0px 0px, 20% 80%");
+    expect(backdrop.style.backgroundImage).toContain("https://cdn.example.com/w.jpg");
+    expect(backdrop.style.backgroundImage).toContain("rgba(0, 0, 0, 0.55)"); // the dark scrim is part of the layer
+    // the whole picture is shown, fitted to the screen, with a blurred copy filling what it leaves (so nothing is cut off)
+    const whole = screen.getByTestId("still-wallpaper-whole");
+    expect(whole.style.backgroundSize).toBe("100% 100%, contain");
+    expect(whole.style.backgroundPosition).toBe("0px 0px, 20% 80%");
+    expect(whole.style.backgroundRepeat).toBe("no-repeat");
+    expect(whole.style.backgroundImage).toContain("https://cdn.example.com/w.jpg");
+    expect(whole.style.backgroundImage).toContain("rgba(0, 0, 0, 0.55)");
+    expect((layer.firstElementChild as HTMLElement).style.filter).toContain("blur");
+    expect(layer).toHaveClass("fixed", "inset-0");
+    expect(frame.style.backgroundImage).toContain("https://cdn.example.com/w.jpg"); // beneath the layer, which covers it
     expect(screen.queryByTestId("moving-wallpaper")).not.toBeInTheDocument();
   });
 

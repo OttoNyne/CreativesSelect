@@ -87,11 +87,11 @@ describe("PostCard", () => {
     expect((img.parentElement as HTMLElement).style.aspectRatio).toBe("16 / 9");
   });
 
-  it("keeps showing pictures from before framing existed exactly as they were", () => {
+  it("shows pictures from before framing existed whole, not cropped", () => {
     renderCard(makePost({ imageUrl: "https://cdn.example.com/old.jpg", imageAspect: null, imageZoom: null, imagePosition: null }), "u2");
     const img = document.querySelector('img[src="https://cdn.example.com/old.jpg"]') as HTMLImageElement;
     expect(img.style.transform).toBe("");
-    expect(img.className).toMatch(/max-h-96/);
+    expect(img.className).toContain("object-contain");
     expect((img.parentElement as HTMLElement).style.aspectRatio).toBe("");
   });
 

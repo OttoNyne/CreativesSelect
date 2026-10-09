@@ -181,7 +181,7 @@ describe("FeedPage: the background", () => {
     renderPage();
     await screen.findByText(/No posts yet/);
     expect(frame()).toHaveAttribute("data-wallpaper", "true");
-    expect(frame()!.style.backgroundImage).toContain("https://cdn.example.com/w.jpg");
+    expect((screen.getByTestId("still-wallpaper").firstElementChild as HTMLElement).style.backgroundImage).toContain("https://cdn.example.com/w.jpg");
   });
 
   it("flips for a bright colour, as the profile does", async () => {
