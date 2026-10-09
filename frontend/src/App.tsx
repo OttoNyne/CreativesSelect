@@ -40,6 +40,7 @@ import { CallsPage } from "./pages/CallsPage";
 import { CallPage } from "./pages/CallPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ProjectPage } from "./pages/ProjectPage";
+import { DigestUnsubscribePage } from "./pages/DigestUnsubscribePage";
 import { SavedPage } from "./pages/SavedPage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { usePageTitle } from "./lib/usePageTitle";
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/digest/unsubscribe" element={<DigestUnsubscribePage />} />
           <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
           <Route path="/undo-email-change" element={<UndoEmailChangePage />} />
           <Route path="/about" element={<AboutPage />} />

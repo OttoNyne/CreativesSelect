@@ -34,7 +34,8 @@ import { making } from "./ar/process";
 import { calls } from "./ar/calls";
 import { report } from "./ar/report";
 import { projects } from "./ar/projects";
+import { topics } from "./ar/topics";
 
 // Arabic (right to left). Each part of the site has its own file in ar/; the server's own (English) messages, shown on the page, are in server.ar.ts.
-export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects };
+export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects, ...topics };
 export { serverAr as server } from "./server.ar";

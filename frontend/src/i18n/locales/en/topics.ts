@@ -1,0 +1,23 @@
+// following topics, and the weekly summary email
+export const topics = {
+  "topics.follow": "Follow topic",
+  "topics.following": "Following topic",
+  "topics.followLabel": "Follow the topic {tag}",
+  "topics.unfollowLabel": "Stop following the topic {tag}",
+  "topics.yours": "Your topics",
+  "topics.noneFollowed": "You aren't following any topics yet. Open a topic and follow it.",
+  "topics.everything": "Everything",
+  "topics.fromYours": "From your topics",
+  "topics.emptyMine": "Nothing new in your topics yet.",
+  "topics.failed": "Couldn't do that, try again.",
+  "digest.title": "Weekly summary",
+  "digest.label": "Email me a short summary once a week",
+  "digest.help": "A few counts and titles: new followers, comments and replies, messages in your project rooms, open calls that fit what you offer, and news in the topics you follow. Nothing is sent when there is nothing to say, and every email has a link to turn it off.",
+  "digest.unconfirmed": "Confirm your email address first: summaries are only sent to confirmed addresses.",
+  "digest.failed": "Couldn't change that, try again.",
+  "digest.unsubWorking": "Turning off your weekly summary…",
+  "digest.unsubDone": "Done. You won't get the weekly summary any more.",
+  "digest.unsubDoneHint": "You can turn it back on in your profile settings.",
+  "digest.unsubFailed": "That link isn't valid any more. You can turn the summary off in your profile settings.",
+  "digest.home": "Go to CreativesSelect",
+} as const;

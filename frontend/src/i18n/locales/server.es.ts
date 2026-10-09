@@ -471,4 +471,12 @@ export const serverEs: Record<string, string> = {
   "You're adding things too fast — try again in a bit": "Estás añadiendo cosas muy rápido; inténtalo de nuevo en un rato",
   "done must be true or false": "«done» debe ser verdadero o falso",
   "This project room is full": "Esta sala de proyecto está llena",
+  "That isn't a topic you can follow": "Ese no es un tema que puedas seguir",
+  "You can follow up to {v1} topics — unfollow one first": "Puedes seguir hasta {v1} temas: deja de seguir uno primero",
+  "You're following topics too fast — try again in a bit": "Estás siguiendo temas muy rápido; inténtalo de nuevo en un rato",
+  "Sign in to see your topics": "Inicia sesión para ver tus temas",
+  "enabled must be true or false": "«enabled» debe ser verdadero o falso",
+  "You've changed that a lot — try again later.": "Has cambiado eso muchas veces; inténtalo más tarde.",
+  "Too many tries — try again in a few minutes.": "Demasiados intentos; inténtalo de nuevo en unos minutos.",
+  "That link isn't valid any more": "Ese enlace ya no es válido",
 };

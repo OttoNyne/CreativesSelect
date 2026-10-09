@@ -471,4 +471,12 @@ export const serverAr: Record<string, string> = {
   "You're adding things too fast — try again in a bit": "تضيف عناصر بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
   "done must be true or false": "يجب أن تكون «done» صحيحة أو خاطئة",
   "This project room is full": "غرفة المشروع هذه ممتلئة",
+  "That isn't a topic you can follow": "هذا ليس موضوعًا يمكنك متابعته",
+  "You can follow up to {v1} topics — unfollow one first": "يمكنك متابعة ما يصل إلى {v1} موضوعًا؛ ألغِ متابعة أحدها أولًا",
+  "You're following topics too fast — try again in a bit": "تتابع المواضيع بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
+  "Sign in to see your topics": "سجّل الدخول لترى مواضيعك",
+  "enabled must be true or false": "يجب أن تكون «enabled» صحيحة أو خاطئة",
+  "You've changed that a lot — try again later.": "غيّرت ذلك كثيرًا؛ حاول لاحقًا.",
+  "Too many tries — try again in a few minutes.": "محاولات كثيرة جدًا؛ حاول مرة أخرى بعد بضع دقائق.",
+  "That link isn't valid any more": "هذا الرابط لم يعد صالحًا",
 };

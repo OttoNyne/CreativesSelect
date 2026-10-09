@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { exploreApi, type ExploreKind, type TrendingTag } from "../api/explore.api";
+import { topicsApi } from "../api/topics.api";
 import { ChallengeTile } from "../components/challenge/ChallengeTile";
 import { PostCard } from "../components/post/PostCard";
 import { useAuth } from "../context/AuthContext";
@@ -22,6 +23,10 @@ export function ExplorePage() {
   const [params, setParams] = useSearchParams();
   const tag = cleanTag(params.get("tag"));
   const kind: ExploreKind = params.get("type") === "pieces" ? "pieces" : "posts";
+  // what is posted about the topics you follow (only for someone signed in, and not while looking at one topic)
+  const mineOnly = params.get("mine") === "1" && Boolean(user) && !tag;
+  const [followed, setFollowed] = useState<string[] | null>(null);
+  const [topicProblem, setTopicProblem] = useState<string | null>(null);
   const [draft, setDraft] = useState(tag ?? "");
   const [badTag, setBadTag] = useState(false);
   const [trending, setTrending] = useState<TrendingTag[] | null>(null);
@@ -36,6 +41,18 @@ export function ExplorePage() {
   useRobots(false);
 
   useEffect(() => setDraft(tag ?? ""), [tag]);
+
+  useEffect(() => {
+    if (!user) return setFollowed(null);
+    let live = true;
+    topicsApi
+      .list()
+      .then((r) => live && setFollowed(r.topics))
+      .catch(() => live && setFollowed([]));
+    return () => {
+      live = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     let live = true;
@@ -54,7 +71,7 @@ export function ExplorePage() {
     setPieces(null);
     setError(null);
     exploreApi
-      .list({ type: kind, tag })
+      .list({ type: kind, tag, ...(mineOnly ? { mine: true } : {}) })
       .then((r) => {
         if (!live) return;
         setPosts(r.posts ?? null);
@@ -66,12 +83,13 @@ export function ExplorePage() {
     return () => {
       live = false;
     };
-  }, [kind, tag]);
+  }, [kind, tag, mineOnly]);
 
   const change = useCallback(
-    (nextTag: string | null, nextKind: ExploreKind) => {
+    (nextTag: string | null, nextKind: ExploreKind, nextMine = false) => {
       const q = new URLSearchParams();
       if (nextTag) q.set("tag", nextTag);
+      else if (nextMine) q.set("mine", "1");
       if (nextKind === "pieces") q.set("type", "pieces");
       setParams(q);
     },
@@ -89,7 +107,7 @@ export function ExplorePage() {
   async function more() {
     setLoadingMore(true);
     try {
-      const r = await exploreApi.list({ type: kind, tag, before: next });
+      const r = await exploreApi.list({ type: kind, tag, before: next, ...(mineOnly ? { mine: true } : {}) });
       if (r.posts) setPosts((old) => [...(old ?? []), ...r.posts!.filter((p) => !(old ?? []).some((o) => o.id === p.id))]);
       if (r.pieces) setPieces((old) => [...(old ?? []), ...r.pieces!.filter((p) => !(old ?? []).some((o) => o.id === p.id))]);
       setHasMore(r.hasMore);
@@ -98,6 +116,18 @@ export function ExplorePage() {
       setError(err instanceof ApiError ? err.message : t("explore.loadFailed"));
     } finally {
       setLoadingMore(false);
+    }
+  }
+
+  async function toggleTopic(topic: string) {
+    setTopicProblem(null);
+    const on = followed?.includes(topic) === true;
+    try {
+      if (on) await topicsApi.unfollow(topic);
+      else await topicsApi.follow(topic);
+      setFollowed((old) => (on ? (old ?? []).filter((x) => x !== topic) : [topic, ...(old ?? [])]));
+    } catch (err) {
+      setTopicProblem(err instanceof ApiError ? err.message : t("topics.failed"));
     }
   }
 
@@ -155,6 +185,34 @@ export function ExplorePage() {
         )}
       </section>
 
+      {user && followed && (
+        <section aria-label={t("topics.yours")} className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-medium text-white">{t("topics.yours")}</h2>
+            <div role="group" aria-label={t("topics.yours")} className="flex gap-2">
+              {([false, true] as const).map((only) => (
+                <button key={String(only)} type="button" onClick={() => change(null, kind, only)} aria-pressed={!tag && mineOnly === only} className={`rounded-full border px-3 py-1 text-xs ${!tag && mineOnly === only ? "border-violet-400 bg-violet-500/20 text-white" : "border-white/20 text-white/70 hover:bg-white/10"}`}>
+                  {only ? t("topics.fromYours") : t("topics.everything")}
+                </button>
+              ))}
+            </div>
+          </div>
+          {followed.length === 0 ? (
+            <p className="text-xs text-white/60">{t("topics.noneFollowed")}</p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {followed.map((topic) => (
+                <li key={topic}>
+                  <Link to={`/explore?tag=${encodeURIComponent(topic)}`} className="rounded-full border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+                    <bdi>#{topic}</bdi>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div role="group" aria-label={t("explore.kind")} className="flex gap-2">
           {(["posts", "pieces"] as const).map((k) => (
@@ -175,6 +233,11 @@ export function ExplorePage() {
             <button type="button" onClick={() => change(null, kind)} className="text-xs text-violet-300 hover:underline">
               {t("explore.clear")}
             </button>
+            {user && followed && (
+              <button type="button" onClick={() => toggleTopic(tag)} aria-pressed={followed.includes(tag)} aria-label={followed.includes(tag) ? t("topics.unfollowLabel", { tag }) : t("topics.followLabel", { tag })} className="rounded-md border border-white/20 px-2.5 py-1 text-xs text-white hover:bg-white/10">
+                {followed.includes(tag) ? t("topics.following") : t("topics.follow")}
+              </button>
+            )}
           </p>
         )}
       </div>
@@ -185,7 +248,12 @@ export function ExplorePage() {
         </p>
       )}
       {items === null && !error && <p className="text-sm text-white/60">{t("explore.loading")}</p>}
-      {items?.length === 0 && <p className="text-sm text-white/60">{tag ? t("explore.emptyTag", { tag }) : t("explore.empty")}</p>}
+      {topicProblem && (
+        <p role="alert" className="text-xs text-red-400">
+          {topicProblem}
+        </p>
+      )}
+      {items?.length === 0 && <p className="text-sm text-white/60">{tag ? t("explore.emptyTag", { tag }) : mineOnly ? t("topics.emptyMine") : t("explore.empty")}</p>}
       {kind === "posts" && posts && posts.length > 0 && (
         <div className="space-y-3">
           {posts.map((post) => (

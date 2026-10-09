@@ -50,6 +50,7 @@ import { FollowButton, FollowCounts, FollowLists } from "../components/follow/Fo
 import { PostCard } from "../components/post/PostCard";
 import { MuteButton } from "../components/follow/MuteButton";
 import { MuteSettings } from "../components/profile/MuteSettings";
+import { DigestSettings } from "../components/profile/DigestSettings";
 import { t } from "../i18n";
 import { Linkified } from "../components/common/Linkified";
 import { MentionTextarea } from "../components/common/MentionField";
@@ -520,6 +521,7 @@ export function ProfilePage() {
             <ChangeEmail />
             <PushSettings />
             <MuteSettings />
+            <DigestSettings />
             <PasskeysSettings />
             <TwoFactorSettings />
             <SignedInDevices />

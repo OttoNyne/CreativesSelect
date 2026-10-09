@@ -20,6 +20,7 @@ vi.mock("../api/friends.api", () => ({ friendsApi: { list: vi.fn(), request: vi.
 vi.mock("../api/moderation.api", () => ({ moderationApi: { block: vi.fn(), report: vi.fn() } }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
 vi.mock("../api/follows.api", () => ({ followsApi: { follow: vi.fn(), unfollow: vi.fn(), following: vi.fn(), followers: vi.fn() } }));
+vi.mock("../api/topics.api", () => ({ digestApi: { get: vi.fn().mockResolvedValue({ enabled: false, emailVerified: true }), set: vi.fn(), unsubscribe: vi.fn() }, topicsApi: {} }));
 vi.mock("../api/mutes.api", () => ({ mutesApi: { list: vi.fn().mockResolvedValue({ people: [], words: [] }), mute: vi.fn(), unmute: vi.fn(), setWords: vi.fn() } }));
 vi.mock("../api/ai.api", () => ({ aiApi: { generateText: vi.fn(), generateImage: vi.fn(), generateWallpaper: vi.fn(), discard: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));

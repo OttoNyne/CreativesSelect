@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { ExplorePage, cleanTag } from "./ExplorePage";
 import { exploreApi } from "../api/explore.api";
+import { topicsApi } from "../api/topics.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { ChallengeEntry, MediaItem, Post, User } from "../types";
 
 vi.mock("../api/explore.api", () => ({ exploreApi: { list: vi.fn(), trending: vi.fn() } }));
+vi.mock("../api/topics.api", () => ({ topicsApi: { list: vi.fn(), follow: vi.fn(), unfollow: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("../components/post/PostCard", () => ({ PostCard: ({ post }: { post: Post }) => <article>{post.content}</article> }));
 vi.mock("../components/challenge/ChallengeTile", () => ({
@@ -38,6 +40,9 @@ function show(start = "/explore", signedIn = true) {
 }
 
 beforeEach(() => {
+  vi.mocked(topicsApi.list).mockReset().mockResolvedValue({ topics: [] });
+  vi.mocked(topicsApi.follow).mockReset().mockResolvedValue({ following: true });
+  vi.mocked(topicsApi.unfollow).mockReset().mockResolvedValue(undefined as never);
   api.list.mockReset();
   api.trending.mockReset();
   api.trending.mockResolvedValue({
@@ -146,5 +151,56 @@ describe("ExplorePage", () => {
     api.trending.mockRejectedValue(new Error("down"));
     show();
     expect(await screen.findByRole("alert")).toHaveTextContent("looking around too fast");
+  });
+});
+
+describe("ExplorePage: topics you follow", () => {
+  it("says so when none are followed, and lists the ones that are, linking to each", async () => {
+    show();
+    expect(await screen.findByText("You aren't following any topics yet. Open a topic and follow it.")).toBeInTheDocument();
+    cleanup();
+    vi.mocked(topicsApi.list).mockResolvedValue({ topics: ["clay", "glaze"] });
+    show();
+    expect(await screen.findByRole("link", { name: "#clay" })).toHaveAttribute("href", "/explore?tag=clay");
+    expect(screen.getByRole("link", { name: "#glaze" })).toBeInTheDocument();
+  });
+
+  it("follows a topic from its page, and stops following it", async () => {
+    show("/explore?tag=clay");
+    await userEvent.click(await screen.findByRole("button", { name: "Follow the topic clay" }));
+    expect(topicsApi.follow).toHaveBeenCalledWith("clay");
+    const stop = await screen.findByRole("button", { name: "Stop following the topic clay" });
+    expect(stop).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(stop);
+    expect(topicsApi.unfollow).toHaveBeenCalledWith("clay");
+    expect(await screen.findByRole("button", { name: "Follow the topic clay" })).toBeInTheDocument();
+  });
+
+  it("says why a topic couldn't be followed", async () => {
+    vi.mocked(topicsApi.follow).mockRejectedValue(new ApiError(400, "You can follow up to 30 topics — unfollow one first"));
+    show("/explore?tag=clay");
+    await userEvent.click(await screen.findByRole("button", { name: "Follow the topic clay" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("up to 30 topics");
+  });
+
+  it("shows only what is about your topics when asked, and says so when there is nothing", async () => {
+    vi.mocked(topicsApi.list).mockResolvedValue({ topics: ["clay"] });
+    show();
+    await screen.findByRole("link", { name: "#clay" });
+    api.list.mockResolvedValue({ type: "posts", tag: null, posts: [], hasMore: false, next: null });
+    await userEvent.click(screen.getByRole("button", { name: "From your topics" }));
+    expect(api.list).toHaveBeenLastCalledWith({ type: "posts", tag: null, mine: true });
+    expect(screen.getByTestId("where")).toHaveTextContent("/explore?mine=1");
+    expect(await screen.findByText("Nothing new in your topics yet.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Everything" }));
+    expect(screen.getByTestId("where")).toHaveTextContent("/explore");
+  });
+
+  it("offers a visitor who is not signed in none of this", async () => {
+    show("/explore?tag=clay", false);
+    await screen.findByText(/First post/);
+    expect(screen.queryByRole("button", { name: /Follow the topic/ })).toBeNull();
+    expect(screen.queryByText("Your topics")).toBeNull();
+    expect(topicsApi.list).not.toHaveBeenCalled();
   });
 });
