@@ -97,6 +97,11 @@ export function TasksPage() {
         <p className="text-xs text-white/60">
           {t("misc.openRequestsFromOther")}
         </p>
+        <p className="text-xs">
+          <Link to="/calls" className="text-violet-300 hover:underline">
+            {t("calls.fromHelpWanted")}
+          </Link>
+        </p>
         {board.length === 0 && (
           <p className="text-sm text-white/60">{t("misc.noOpenRequestsFrom")}</p>
         )}

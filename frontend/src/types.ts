@@ -211,6 +211,53 @@ export interface ProcessStep {
   editedAt: string | null;
 }
 
+/** An open call: someone says what they are looking for, and people who might fit answer it. */
+export interface OpenCall {
+  id: string;
+  title: string;
+  details: string;
+  lookingFor: string[];
+  budget: string;
+  /** The last day to answer, "2026-12-31", or null. */
+  deadline: string | null;
+  status: "open" | "closed";
+  /** Closed by its owner, or past its last day. */
+  closed: boolean;
+  createdAt: string;
+  owner: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
+  mine: boolean;
+  /** Which of the roles it looks for fit what the viewer offers. */
+  match?: string[];
+  /** The viewer's answer to it: waiting, chosen or passed (null if they haven't answered). */
+  applied?: "waiting" | "chosen" | "passed" | null;
+  myApplication?: { id: string; note: string; status: "waiting" | "chosen" | "passed"; reply: string; pieceId: string | null } | null;
+  /** For its owner: how many have answered, and how many are still waiting. */
+  applicantCount?: number;
+  waitingCount?: number;
+}
+
+/** One person's answer to a call, as its owner sees it. */
+export interface CallApplicationRow {
+  id: string;
+  applicant: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean };
+  note: string;
+  piece: { id: string; url: string; type: "image" | "audio" | "video" | "embed"; caption: string | null } | null;
+  status: "waiting" | "chosen" | "passed";
+  reply: string;
+  createdAt: string;
+}
+
+/** Someone who might fit a call, with the roles they match. */
+export interface CallPerson {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  csVerified: boolean;
+  matched: string[];
+  workNote: string;
+}
+
 export interface MediaItem {
   id: string;
   ownerId: string;
@@ -415,7 +462,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "reaction";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

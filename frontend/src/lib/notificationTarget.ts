@@ -81,6 +81,12 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const itemId = str(n.payload.itemId);
       return viewerUsername ? { to: `/u/${viewerUsername}${itemId ? `?piece=${encodeURIComponent(itemId)}` : ""}#portfolio`, label: t("target.viewCredit") } : null;
     }
+    case "call_match":
+    case "call_application":
+    case "call_answer": {
+      const callId = str(n.payload.callId);
+      return callId ? { to: `/calls/${encodeURIComponent(callId)}`, label: t("target.viewCall") } : { to: "/calls", label: t("target.viewCall") };
+    }
     case "follow":
       return actorProfile;
     case "reply": {

@@ -411,3 +411,19 @@ describe("NotificationBell: replies", () => {
     expect(screen.getByRole("link", { name: "View reply" })).toHaveAttribute("href", "/blog/b1?comment=c3");
   });
 });
+
+describe("NotificationBell: open calls", () => {
+  it("says a call fits what you offer, that someone answered yours, and how yours was answered, each linking to the call", async () => {
+    await openWith([
+      note({ id: "m", type: "call_match", payload: { callId: "c1", title: "A vocalist" } }),
+      note({ id: "a", type: "call_application", payload: { callId: "c2", title: "A drummer" } }),
+      note({ id: "y", type: "call_answer", payload: { callId: "c3", title: "A mixer", chosen: true } }),
+      note({ id: "n", type: "call_answer", payload: { callId: "c4", title: "A cover", chosen: false } }),
+    ]);
+    expect(await screen.findByText("posted an open call that fits what you offer: A vocalist")).toBeInTheDocument();
+    expect(screen.getByText("answered your open call: A drummer")).toBeInTheDocument();
+    expect(screen.getByText("chose you for the open call: A mixer")).toBeInTheDocument();
+    expect(screen.getByText("answered your reply to the open call: A cover")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "View call" }).map((l) => l.getAttribute("href"))).toEqual(["/calls/c1", "/calls/c2", "/calls/c3", "/calls/c4"]);
+  });
+});

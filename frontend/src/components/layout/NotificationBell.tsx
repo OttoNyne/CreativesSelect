@@ -63,6 +63,12 @@ function describe(n: Notification): string {
       return t("notif.creditAccepted");
     case "mention":
       return t("notif.mention");
+    case "call_match":
+      return t("notif.callMatch", { title: String(n.payload.title ?? "") });
+    case "call_application":
+      return t("notif.callApplication", { title: String(n.payload.title ?? "") });
+    case "call_answer":
+      return n.payload.chosen === true ? t("notif.callChosen", { title: String(n.payload.title ?? "") }) : t("notif.callPassed", { title: String(n.payload.title ?? "") });
     case "follow":
       return t("notif.follow");
     case "repost":

@@ -20,11 +20,12 @@ const NAV_LINKS: { to: string; label: Key }[] = [
   { to: "/live", label: "nav.live" },
   { to: "/help-wanted", label: "nav.helpWanted" },
   { to: "/explore", label: "nav.explore" },
+  { to: "/calls", label: "nav.calls" },
   { to: "/saved", label: "nav.saved" },
 ];
 
 // shown as icons, not words, on the wide bar
-const ICON_LINKS = new Set(["/search", "/saved"]);
+const ICON_LINKS = new Set(["/search", "/calls", "/saved"]);
 
 export function NavBar() {
   const { user, setUser } = useAuth();
@@ -59,7 +60,7 @@ export function NavBar() {
           <>
             {/* The full row is for wide viewports (1280px and up): with every link, the messages link and the person's own name it
                 needs about 1050px, so anything narrower gets the dropdown below rather than links that wrap or crowd each other. */}
-            <div className="hidden items-center gap-2 text-[13px] xl:flex">
+            <div className="hidden items-center gap-1.5 text-[13px] xl:flex">
               {/* Search and Saved are small icons on the wide bar: with words, the row was too wide for Spanish and Arabic on some fonts. The menu below lists them in words. */}
               {NAV_LINKS.filter((link) => !ICON_LINKS.has(link.to)).map((link) => (
                 <Link key={link.to} to={link.to} className="whitespace-nowrap text-white/70 hover:text-white">
@@ -79,12 +80,15 @@ export function NavBar() {
                   <path d="M13 13l5 5" />
                 </svg>
               </Link>
+              <Link to="/calls" aria-label={t("nav.calls")} title={t("nav.calls")} className="flex h-8 w-8 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white">
+                <span aria-hidden="true">📣</span>
+              </Link>
               <Link to="/saved" aria-label={t("nav.saved")} title={t("nav.saved")} className="flex h-8 w-8 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white">
                 <span aria-hidden="true">★</span>
               </Link>
               <Link to={`/u/${user.username}`} className="flex items-center gap-2 whitespace-nowrap text-white/90 hover:text-white">
                 <Avatar username={user.username} displayName={user.displayName} avatarUrl={user.avatarUrl} size={28} />
-                <span className="max-w-[7rem] truncate">{user.displayName}</span>
+                <span className="max-w-[6rem] truncate">{user.displayName}</span>
               </Link>
               <button
                 onClick={handleLogout}

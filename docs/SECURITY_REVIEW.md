@@ -1464,6 +1464,27 @@ Sharing someone's post puts it in front of the sharer's audience, and a saved li
 - **Muted people really are quiet.** Their posts are excluded in the feed query and in Explore, their notices are left out of the list, and push delivery skips anyone who muted the person the note is about.
 - Covered by 22 backend tests (including the push check and whole-word matching in other alphabets), 10 frontend tests and 4 browser flows on all three browsers.
 
+### 5.88 Process timelines: more writing and pictures on a portfolio piece
+
+**Threats.** Adding steps to someone else's piece, using someone else's uploaded picture (or any address) as a step's picture, steps on a piece the visitor shouldn't see, and a long list used to fill storage.
+
+**What stops it.**
+- **Only the owner writes.** Adding, changing, ordering and deleting all answer the same `404` for anyone else's piece or step as for a missing one, so a stranger can't tell which exist.
+- **Pictures are never typed addresses.** A step's picture must be one the person uploaded themselves (checked against the stored-files ledger, the same check as a comment's picture), can be taken off but not swapped, and is deleted with the step, the piece or the account unless something else still shows it.
+- **Seen only where the piece is.** Reading the steps goes through the same visibility check as the piece (a private profile or a block answers `404`), and 12 steps of at most 500 characters, 60 an hour, bound what one piece can hold.
+- Covered by 16 backend tests, 15 frontend tests and 3 browser flows on all three browsers. **Not covered:** a real upload isn't exercised in the browser tests (the test servers have no storage account); the upload path is covered by the backend tests with a fake storage service.
+
+### 5.89 Open calls: a public board that tells people
+
+**Threats.** Using a call to notify or harass many people, applying with someone else's work, seeing a call (or who answered it) one may not, and spam on the board.
+
+**What stops it.**
+- **Telling people is capped and targeted.** A new call notifies at most 20 people, only those who said they are open to work and whose own offers or tags match what it looks for, never someone blocked either way, a private stranger, or anyone who muted the owner; an owner can have 5 open calls and post 10 a day.
+- **Applications carry only your own work.** The piece must be one of the applicant's own (`400` otherwise), there is one answer per person (a unique index, so two taps can't make two), at most 100 per call, 20 a day per person; the owner answers each once, and the applicant sees only the short note the owner chose to write.
+- **Same visibility as the owner's profile.** A call, its answers and its suggestions answer the same `404` as a missing one where the owner can't be seen; the list of who answered and the suggestions are the owner's alone, and people blocked either way are left out of both.
+- **Text is text.** Titles, details, terms, notes and replies are cleaned and length-checked, roles are tags with the profile tag rules, and everything is shown as text.
+- Covered by 31 backend tests (including the notification caps and visibility cases), 29 frontend tests and 4 browser flows on all three browsers. **Not covered:** nothing stops a person with several accounts from answering a call several times, and matching trusts what people say they offer.
+
 
 ## 6. Operational incident: a stale DB hostname caused a production outage
 

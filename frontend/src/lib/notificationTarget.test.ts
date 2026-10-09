@@ -183,3 +183,12 @@ describe("notificationTarget: replies", () => {
     }
   });
 });
+
+describe("notificationTarget: open calls", () => {
+  it("opens the call, or the list when no call is named", () => {
+    for (const type of ["call_match", "call_application", "call_answer"] as const) {
+      expect(notificationTarget(n(type, { callId: "c 1" }), "ada")).toEqual({ to: "/calls/c%201", label: "View call" });
+      expect(notificationTarget(n(type, {}), "ada")).toEqual({ to: "/calls", label: "View call" });
+    }
+  });
+});
