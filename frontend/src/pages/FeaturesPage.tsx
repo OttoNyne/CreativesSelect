@@ -15,6 +15,7 @@ const FEATURES = [
   { icon: "🤝", get title() { return t("info.creditsTitle"); }, get text() { return t("info.creditsText"); } },
   { icon: "💼", get title() { return t("info.workTitle"); }, get text() { return t("info.workText"); } },
   { icon: "🏆", get title() { return t("info.challengeTitle"); }, get text() { return t("info.challengeText"); } },
+  { icon: "#", get title() { return t("info.exploreTitle"); }, get text() { return t("info.exploreText"); } },
   { icon: "➕", get title() { return t("info.followTitle"); }, get text() { return t("info.followText"); } },
   { icon: "@", get title() { return t("info.mentionsTitle"); }, get text() { return t("info.mentionsText"); } },
   { icon: "🔗", get title() { return t("info.shareTitle"); }, get text() { return t("info.shareText"); } },

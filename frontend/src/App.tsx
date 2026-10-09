@@ -35,6 +35,7 @@ import { BlogEditorPage } from "./pages/BlogEditorPage";
 import { PostPage } from "./pages/PostPage";
 import { FeaturesPage } from "./pages/FeaturesPage";
 import { ChallengePage } from "./pages/ChallengePage";
+import { ExplorePage } from "./pages/ExplorePage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { usePageTitle } from "./lib/usePageTitle";
 
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/challenge" element={<ChallengePage />} />
+          <Route path="/explore" element={<ExplorePage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<FeedPage />} />

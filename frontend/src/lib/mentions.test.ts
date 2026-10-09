@@ -50,3 +50,23 @@ describe("splitMentions", () => {
     expect(splitMentions("")).toEqual([]);
   });
 });
+
+describe("splitMentions: hashtags", () => {
+  it("finds #hashtags beside @names, lower-cased for the address and keeping the text as written", () => {
+    expect(splitMentions("Thanks @sam for the #Ceramics tips")).toEqual([
+      { kind: "text", text: "Thanks " },
+      { kind: "mention", username: "sam", text: "@sam" },
+      { kind: "text", text: " for the " },
+      { kind: "hashtag", tag: "ceramics", text: "#Ceramics" },
+      { kind: "text", text: " tips" },
+    ]);
+  });
+  it("works for tags in Spanish and Arabic", () => {
+    expect(splitMentions("Mi #cerámica y #الخزف").filter((p) => p.kind === "hashtag").map((p) => (p as { tag: string }).tag)).toEqual(["cerámica", "الخزف"]);
+  });
+  it("leaves numbers, entities, glued words, a bare # and too-short tags alone, and loses nothing", () => {
+    for (const text of ["issue #12", "&#39;quoted&#39;", "abc#def", "##double", "#", "# space", "#a"]) expect(splitMentions(text).every((p) => p.kind === "text"), text).toBe(true);
+    const original = "a #tag b @bob c #x d #ok_2 e";
+    expect(splitMentions(original).map((p) => p.text).join("")).toBe(original);
+  });
+});

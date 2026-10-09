@@ -400,4 +400,6 @@ export const serverEs: Record<string, string> = {
   "You can't follow yourself": "No puedes seguirte a ti mismo",
   "You can follow up to {v1} people — unfollow someone first": "Puedes seguir hasta {v1} personas: deja de seguir a alguien primero",
   "You're following people too fast — try again later.": "Estás siguiendo a demasiadas personas muy rápido; inténtalo más tarde.",
+  "That isn't a topic you can search for": "Eso no es un tema que se pueda buscar",
+  "You're looking around too fast — try again in a bit": "Estás explorando muy rápido; inténtalo de nuevo en un rato",
 };

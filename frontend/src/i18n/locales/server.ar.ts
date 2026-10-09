@@ -400,4 +400,6 @@ export const serverAr: Record<string, string> = {
   "You can't follow yourself": "لا يمكنك متابعة نفسك",
   "You can follow up to {v1} people — unfollow someone first": "يمكنك متابعة ما يصل إلى {v1} شخص؛ ألغِ متابعة أحدهم أولًا",
   "You're following people too fast — try again later.": "تتابع الأشخاص بسرعة كبيرة؛ حاول لاحقًا.",
+  "That isn't a topic you can search for": "هذا ليس موضوعًا يمكن البحث عنه",
+  "You're looking around too fast — try again in a bit": "تتصفح بسرعة كبيرة؛ حاول مرة أخرى بعد قليل",
 };

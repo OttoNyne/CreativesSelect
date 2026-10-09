@@ -1403,6 +1403,17 @@ Following lets one person see another's posts without a friendship, so the revie
 - **Blocks hold.** Blocking ends the follow in both directions and prevents a new one (tested). Deleting an account removes its follows, and the data download lists whom you follow.
 - **Not covered:** followers can't be removed one by one (blocking is the way), and there is no setting to hide the follower count.
 
+### 5.82 Hashtags and Explore: a public view of public things
+
+Explore shows posts to people who aren't signed in, so the review asked whether it could show anything a profile would not.
+
+- **Same rules as a profile.** Only posts and pieces of people with public profiles who aren't suspended, and not blocked either way with the viewer, appear (tested with private, suspended and blocked authors, for posts and pieces). A person who goes private disappears from Explore and from trending at once, because both are read live.
+- **Tags come from the words, never from the request.** The server works them out from the content (and re-works them on every edit), so a tag can't be attached to something that doesn't contain it; the tag asked for is checked as a plain word before it is used (tested with markup and spaces), and an invalid one is a 400.
+- **Trending can't be pushed around by one person.** A tag counts once per person, only public unsuspended people are counted, only the last week and the most recent 3000 items are looked at, and the answer is cached for five minutes.
+- **Cost.** Both routes are rate-limited (300 an hour per person or address), a page scans at most 180 candidates, and the tag lookup uses an index.
+- **Search engines.** The page asks to be left out (`noindex`), so showing public posts here doesn't make people searchable who didn't opt in.
+- **Not covered:** a hashtag can't be reported on its own (the post can), and a tag can't be hidden from Explore without making the profile private.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

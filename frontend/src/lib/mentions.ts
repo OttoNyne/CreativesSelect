@@ -23,16 +23,21 @@ export function insertMention(text: string, caret: number, start: number, userna
   return { text: next, caret: start + inserted.length + (after.startsWith(" ") ? 1 : 0) };
 }
 
-export type MentionPiece = { kind: "text"; text: string } | { kind: "mention"; username: string; text: string };
+// A #hashtag as the server counts it: 2 to 30 letters, numbers or underscores with at least one letter, starting a word.
+const HASHTAG = /(?<![\p{L}\p{N}_#&])#(?=[\p{N}_]*\p{L})([\p{L}\p{N}_]{2,30})(?![\p{L}\p{N}_])/u;
+const RICH = new RegExp(`${MENTION.source}|${HASHTAG.source}`, "gu");
 
-/** Text cut into plain text and @mentions, in order, losing nothing. */
+export type MentionPiece = { kind: "text"; text: string } | { kind: "mention"; username: string; text: string } | { kind: "hashtag"; tag: string; text: string };
+
+/** Text cut into plain text, @mentions and #hashtags, in order, losing nothing. */
 export function splitMentions(text: string): MentionPiece[] {
   const pieces: MentionPiece[] = [];
   let last = 0;
-  for (const match of text.matchAll(MENTION)) {
+  for (const match of text.matchAll(RICH)) {
     const start = match.index ?? 0;
     if (start > last) pieces.push({ kind: "text", text: text.slice(last, start) });
-    pieces.push({ kind: "mention", username: match[1], text: match[0] });
+    if (match[1] !== undefined) pieces.push({ kind: "mention", username: match[1], text: match[0] });
+    else pieces.push({ kind: "hashtag", tag: match[2].toLocaleLowerCase(), text: match[0] });
     last = start + match[0].length;
   }
   if (last < text.length) pieces.push({ kind: "text", text: text.slice(last) });

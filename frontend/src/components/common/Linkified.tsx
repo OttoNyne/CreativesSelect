@@ -19,8 +19,24 @@ function Mention({ username, text, className }: { username: string; text: string
   );
 }
 
+/** A #hashtag, as a link to the posts and pieces about that topic on Explore. */
+function Hashtag({ tag, text, className }: { tag: string; text: string; className?: string }) {
+  const inRouter = useInRouterContext();
+  const to = `/explore?tag=${encodeURIComponent(tag)}`;
+  const classes = className ?? `${linkClass} no-underline hover:underline`;
+  return inRouter ? (
+    <Link to={to} className={classes}>
+      {text}
+    </Link>
+  ) : (
+    <a href={to} className={classes}>
+      {text}
+    </a>
+  );
+}
+
 /**
- * Text with its web addresses made into links and its @names into links to those people's profiles. Everything is drawn as text by React
+ * Text with its web addresses made into links, its @names into links to those people's profiles and its #hashtags into links to Explore. Everything is drawn as text by React
  * (never as markup), a web link shows the address it goes to (shortened if long, the whole address in its title), and opens in a new tab
  * without telling the other site where it came from.
  */
@@ -30,7 +46,13 @@ export function Linkified({ text, linkClassName }: { text: string; linkClassName
       {splitLinks(text).map((piece, i) =>
         piece.kind === "text" ? (
           splitMentions(piece.text).map((part, j) =>
-            part.kind === "text" ? <span key={`${i}-${j}`}>{part.text}</span> : <Mention key={`${i}-${j}`} username={part.username} text={part.text} className={linkClassName} />
+            part.kind === "text" ? (
+              <span key={`${i}-${j}`}>{part.text}</span>
+            ) : part.kind === "mention" ? (
+              <Mention key={`${i}-${j}`} username={part.username} text={part.text} className={linkClassName} />
+            ) : (
+              <Hashtag key={`${i}-${j}`} tag={part.tag} text={part.text} className={linkClassName} />
+            )
           )
         ) : (
           <a key={i} href={piece.url} target="_blank" rel="noopener noreferrer nofollow ugc" title={piece.url} className={`break-all ${linkClassName ?? linkClass}`}>

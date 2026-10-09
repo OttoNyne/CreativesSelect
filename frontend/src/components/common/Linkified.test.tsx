@@ -47,3 +47,23 @@ describe("Linkified", () => {
     expect(screen.getByRole("link", { name: "@sam" })).toHaveClass("text-white");
   });
 });
+
+describe("Linkified: hashtags", () => {
+  it("makes #hashtags into links to the topic on Explore", () => {
+    render(
+      <MemoryRouter>
+        <p data-testid="t">
+          <Linkified text="Throwing #Pots today, see #glaze_tips" />
+        </p>
+      </MemoryRouter>
+    );
+    expect(screen.getByRole("link", { name: "#Pots" })).toHaveAttribute("href", "/explore?tag=pots");
+    expect(screen.getByRole("link", { name: "#glaze_tips" })).toHaveAttribute("href", "/explore?tag=glaze_tips");
+    expect(screen.getByTestId("t")).toHaveTextContent("Throwing #Pots today, see #glaze_tips");
+  });
+  it("leaves '#12' and glued '#' as text, and works without a router", () => {
+    render(<Linkified text="issue #12 and page#top and #real" />);
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "#real" })).toHaveAttribute("href", "/explore?tag=real");
+  });
+});
