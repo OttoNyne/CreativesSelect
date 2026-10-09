@@ -23,7 +23,10 @@ test.describe("mood, listening to and tags", () => {
     await tagBox.fill(tag);
     await tagBox.press("Enter");
     await expect(page.getByRole("list", { name: "Your tags" })).toContainText(`#${tag}`);
+    // wait for the save to be answered before leaving edit mode (leaving at once raced the save on a slow machine)
+    const saved = page.waitForResponse((r) => r.url().includes("/api/profiles/me") && r.request().method() === "PATCH");
     await page.getByRole("button", { name: "Save changes" }).click();
+    expect((await saved).status()).toBe(200);
 
     await page.getByRole("button", { name: "Done editing" }).click();
     await expect(page.getByText("feeling creative")).toBeVisible();
