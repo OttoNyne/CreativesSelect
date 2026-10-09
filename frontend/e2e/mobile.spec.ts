@@ -53,4 +53,19 @@ test.describe("on a phone", () => {
     await page.getByRole("group", { name: "Pick a reaction" }).getByRole("button", { name: "Love", exact: true }).tap();
     await expect(page.getByRole("button", { name: "Love: 1, your reaction" })).toHaveAttribute("aria-pressed", "true");
   });
+
+  test("the box for describing an image to generate in the portfolio takes the width of the screen, with its buttons under it", async ({ page }) => {
+    const user = newUser("describer");
+    await signUpViaUi(page, user);
+    await page.goto(`/u/${user.username}#portfolio`);
+    const box = page.getByLabel("Describe an image to generate…");
+    await expect(box).toBeVisible();
+    const field = await box.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(field!.width, "the box was squeezed by the buttons beside it").toBeGreaterThan(viewport.width * 0.7);
+    const generate = await page.getByRole("button", { name: /Generate$/ }).boundingBox();
+    expect(generate!.y, "the buttons sit under the box").toBeGreaterThan(field!.y + field!.height - 1);
+    await page.getByRole("button", { name: "Start from a photo" }).first().tap();
+    await expectNoHorizontalOverflow(page);
+  });
 });
