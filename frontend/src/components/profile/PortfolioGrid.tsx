@@ -287,14 +287,15 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
             aria-label={t("media.captionForTheNext2")}
             className={`${field} w-full`}
           />
-          {/* on a phone the box takes the whole width with the AI buttons under it; side by side the buttons squeezed the box to a sliver */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          {/* the box takes the whole width with the AI buttons under it, on every screen: beside it, the buttons (and the photo options or an
+              error message that open under them) squeezed the box to a sliver */}
+          <div className="flex flex-col gap-2">
             <input
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={t("media.describeAnImageTo")}
               aria-label={t("media.describeAnImageTo")}
-              className={`${field} w-full min-w-0 sm:flex-1`}
+              className={`${field} w-full min-w-0`}
             />
             <GenerateImageButton kind="post" getPrompt={() => prompt} onGenerated={handleAiGenerated} label={t("media.generate")} />
           </div>

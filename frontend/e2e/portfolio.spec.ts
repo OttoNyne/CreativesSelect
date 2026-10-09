@@ -124,4 +124,15 @@ test.describe("portfolio videos", () => {
       await expect(page.getByText("No portfolio pieces yet.")).toBeVisible();
     }
   });
+
+  test("the box for describing an image to generate keeps the full width, also when the photo options open", async ({ page }) => {
+    await openOwnProfile(page, "wide");
+    const width = async (hint: string) => Math.round((await page.getByPlaceholder(hint).boundingBox())!.width);
+    const caption = await width("Caption for the next piece you add (optional)");
+    const describe = "Describe an image to generate…";
+    expect(await width(describe), "same width as the caption box above it").toBeGreaterThanOrEqual(caption - 1);
+    await page.getByRole("button", { name: "Start from a photo" }).click();
+    await expect(page.getByText("Choose a reference photo")).toBeVisible();
+    expect(await width(describe), "not squeezed by the photo options").toBeGreaterThanOrEqual(caption - 1);
+  });
 });
