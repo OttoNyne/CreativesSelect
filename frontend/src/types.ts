@@ -76,6 +76,15 @@ export interface User {
   theme: ProfileTheme;
 }
 
+/** A poll in a post: its options with their votes, when it closes, and which option the signed-in viewer chose (null if none yet). */
+export interface PostPoll {
+  options: { text: string; votes: number }[];
+  total: number;
+  endsAt: string;
+  closed: boolean;
+  myVote: number | null;
+}
+
 export interface Post {
   id: string;
   authorId: string;
@@ -90,6 +99,8 @@ export interface Post {
   imageAlt?: string;
   /** Whether its author has pinned it to the top of their profile. */
   pinned?: boolean;
+  /** The poll it asks, if it is one. */
+  poll?: PostPoll | null;
   isAiText: boolean;
   isAiImage: boolean;
   createdAt: string;

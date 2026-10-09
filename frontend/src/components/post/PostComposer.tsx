@@ -9,6 +9,7 @@ import { DEFAULT_FRAMING, type ImageFraming } from "../../lib/framing";
 import type { Post } from "../../types";
 import { t } from "../../i18n";
 import { MentionTextarea } from "../common/MentionField";
+import { PollEditor, type PollDays } from "./PollEditor";
 
 export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   const [content, setContent] = useState("");
@@ -17,6 +18,9 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   const [isAiText, setIsAiText] = useState(false);
   const [isAiImage, setIsAiImage] = useState(false);
   const [alt, setAlt] = useState("");
+  // a poll being written: its options and how long it stays open (null when the post has none)
+  const [pollOptions, setPollOptions] = useState<string[] | null>(null);
+  const [pollDays, setPollDays] = useState<PollDays>(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,6 +28,8 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!content.trim()) return;
+    const options = (pollOptions ?? []).map((o) => o.trim()).filter(Boolean);
+    if (pollOptions && options.length < 2) return setError(t("polls.needTwo"));
     setSubmitting(true);
     setError(null);
     try {
@@ -34,6 +40,7 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
         ...(imageUrl ? { imageAspect: framing.aspect, imageZoom: framing.zoom, imagePosition: framing.position, ...(alt.trim() ? { imageAlt: alt.trim() } : {}) } : {}),
         isAiText,
         isAiImage,
+        ...(pollOptions ? { poll: { options, days: pollDays } } : {}),
       });
       onPosted(post);
       setContent("");
@@ -42,6 +49,8 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
       setIsAiText(false);
       setIsAiImage(false);
       setAlt("");
+      setPollOptions(null);
+      setPollDays(1);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("composer.postFailed"));
     } finally {
@@ -111,6 +120,8 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
         </label>
       )}
 
+      {pollOptions && <PollEditor options={pollOptions} days={pollDays} onOptions={setPollOptions} onDays={setPollDays} onRemove={() => setPollOptions(null)} />}
+
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <GenerateTextButton
           kind="caption"
@@ -139,6 +150,11 @@ export function PostComposer({ onPosted }: { onPosted: (post: Post) => void }) {
           {t("composer.attach")}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        {!pollOptions && (
+          <button type="button" onClick={() => setPollOptions(["", ""])} className="rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10">
+            {t("polls.add")}
+          </button>
+        )}
 
         <button
           type="submit"

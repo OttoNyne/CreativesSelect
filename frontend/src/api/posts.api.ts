@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { Comment, Post, ReactionKey, ReactionSummary } from "../types";
+import type { Comment, Post, PostPoll, ReactionKey, ReactionSummary } from "../types";
 
 export interface CreatePostInput {
   content: string;
@@ -9,6 +9,8 @@ export interface CreatePostInput {
   imagePosition?: string;
   /** What the picture shows, for people who can't see it (up to 300 characters). */
   imageAlt?: string;
+  /** A poll to ask: two to four options, open for 1, 3 or 7 days. */
+  poll?: { options: string[]; days: 1 | 3 | 7 };
   isAiText?: boolean;
   isAiImage?: boolean;
 }
@@ -24,6 +26,8 @@ export const postsApi = {
   react: (id: string, emoji: ReactionKey | null) => api.put<{ reactions: ReactionSummary }>(`/posts/${encodeURIComponent(id)}/reaction`, { emoji }),
   /** Share someone else's post to your own feed, with words of your own if you like. */
   repost: (id: string, content?: string) => api.post<{ post: Post }>(`/posts/${encodeURIComponent(id)}/repost`, content ? { content } : {}),
+  /** Vote in a post's poll (final): `option` is the place of the option in its list. Answers with how the poll stands. */
+  vote: (id: string, option: number) => api.put<{ poll: PostPoll }>(`/posts/${encodeURIComponent(id)}/poll/vote`, { option }),
   /** Put your own post at the top of your profile (replacing the one pinned now), or take it down. */
   pin: (id: string) => api.put<{ pinned: boolean }>(`/posts/${encodeURIComponent(id)}/pin`, {}),
   unpin: (id: string) => api.delete<void>(`/posts/${encodeURIComponent(id)}/pin`),

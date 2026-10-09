@@ -21,6 +21,7 @@ import { SharePost } from "./SharePost";
 import { SharedPost } from "./SharedPost";
 import { PictureDescription } from "./PictureDescription";
 import { PinButton } from "../common/PinButton";
+import { PostPoll } from "./PostPoll";
 
 const MAX_POST = 5000;
 
@@ -125,6 +126,8 @@ export function PostCard({
           // posted before framing existed: shown whole
           <FramedImage src={assetUrl(post.imageUrl)} alt={imageAlt} className="mt-3 rounded-lg" />
         ))}
+
+      {post.poll && <PostPoll postId={post.id} poll={post.poll} />}
 
       {(post.isAiText || post.isAiImage) && (
         <div className="mt-2 flex gap-1.5">
