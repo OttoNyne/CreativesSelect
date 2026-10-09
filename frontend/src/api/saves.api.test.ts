@@ -26,3 +26,18 @@ describe("savesApi and sharing", () => {
     expect(JSON.parse(String(fetchFn.mock.calls[5][1].body))).toEqual({});
   });
 });
+
+describe("answering a comment", () => {
+  it("sends which comment it answers only when it is an answer, for posts, pieces and blog entries", async () => {
+    const { mediaApi } = await import("./media.api");
+    const { blogApi } = await import("./blog.api");
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchFn);
+    await postsApi.addComment("p1", "hi");
+    await postsApi.addComment("p1", "hi", undefined, "c1");
+    await mediaApi.addComment("m1", "hi", undefined, "c2");
+    await blogApi.addComment("b1", "hi", "https://pic", "c3");
+    const bodies = fetchFn.mock.calls.map(([, init]) => JSON.parse(String(init.body)));
+    expect(bodies).toEqual([{ content: "hi" }, { content: "hi", parent: "c1" }, { content: "hi", parent: "c2" }, { content: "hi", imageUrl: "https://pic", parent: "c3" }]);
+  });
+});

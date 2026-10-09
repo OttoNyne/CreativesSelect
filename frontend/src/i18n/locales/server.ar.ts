@@ -407,4 +407,5 @@ export const serverAr: Record<string, string> = {
   "You can't share your own post": "لا يمكنك مشاركة منشورك أنت",
   "You've already shared this post": "لقد شاركت هذا المنشور بالفعل",
   "You're sharing too fast — try again in a bit.": "تشارك بسرعة كبيرة؛ حاول مرة أخرى بعد قليل.",
+  "That comment can't be replied to": "لا يمكن الرد على هذا التعليق",
 };

@@ -67,6 +67,8 @@ function describe(n: Notification): string {
       return t("notif.follow");
     case "repost":
       return t("notif.repost");
+    case "reply":
+      return t("notif.reply");
     case "work_request":
       return t("notif.workRequest");
     case "work_reply":

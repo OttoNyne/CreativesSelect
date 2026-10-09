@@ -35,4 +35,11 @@ export const saves: Translation<typeof en> = {
   "post.addPictureDescription": "Describir la imagen",
   "post.editPictureDescription": "Editar la descripción de la imagen",
   "post.pictureDescriptionLabel": "Descripción de la imagen",
+  "comments.reply": "Responder",
+  "comments.replyAria": "Responder a {name}",
+  "comments.replyingTo": "Respondiendo a {name}",
+  "comments.cancelReply": "Cancelar",
+  "comments.replyPlaceholder": "Escribe una respuesta…",
+  "notif.reply": "respondió a tu comentario",
+  "target.viewReply": "Ver respuesta",
 };

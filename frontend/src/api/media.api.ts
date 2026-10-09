@@ -53,7 +53,7 @@ export const mediaApi = {
   react: (id: string, emoji: ReactionKey | null) => api.put<{ reactions: ReactionSummary }>(`/media/${id}/reaction`, { emoji }),
   /** Comments on a piece, oldest first, a page at a time (`after` is the last comment you have). */
   comments: (id: string, after?: string) => api.get<{ comments: Comment[]; hasMore?: boolean }>(`/media/${id}/comments${after ? `?after=${encodeURIComponent(after)}` : ""}`),
-  addComment: (id: string, content: string, imageUrl?: string) => api.post<{ comment: Comment }>(`/media/${id}/comments`, { content, ...(imageUrl ? { imageUrl } : {}) }),
+  addComment: (id: string, content: string, imageUrl?: string, parent?: string) => api.post<{ comment: Comment }>(`/media/${id}/comments`, { content, ...(imageUrl ? { imageUrl } : {}), ...(parent ? { parent } : {}) }),
   /** Take the picture off your comment (the words stay). */
   removeCommentPicture: (commentId: string) => api.patch<{ comment: Comment }>(`/media/comments/${encodeURIComponent(commentId)}`, { imageUrl: null }),
   updateComment: (commentId: string, content: string) => api.patch<{ comment: Comment }>(`/media/comments/${encodeURIComponent(commentId)}`, { content }),

@@ -32,7 +32,7 @@ export function BlogComments({
     <CommentThread
       threadKey={entryId}
       load={(after) => (after ? blogApi.comments(entryId, after) : blogApi.comments(entryId))}
-      add={(text, imageUrl) => (imageUrl ? blogApi.addComment(entryId, text, imageUrl) : blogApi.addComment(entryId, text))}
+      add={(text, imageUrl, parent) => (parent ? blogApi.addComment(entryId, text, imageUrl, parent) : imageUrl ? blogApi.addComment(entryId, text, imageUrl) : blogApi.addComment(entryId, text))}
       update={(id, text) => blogApi.updateComment(id, text)}
       removePicture={(id) => blogApi.removeCommentPicture(id)}
       remove={(id) => blogApi.removeComment(id)}

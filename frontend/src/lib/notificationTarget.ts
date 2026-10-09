@@ -83,6 +83,11 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
     }
     case "follow":
       return actorProfile;
+    case "reply": {
+      // the server says where, as an address inside the site
+      const url = str(n.payload.url);
+      return url && url.startsWith("/") && !url.startsWith("//") && !url.includes("\\") ? { to: url, label: t("target.viewReply") } : actorProfile;
+    }
     case "repost": {
       const postId = str(n.payload.postId);
       return postId ? { to: `/posts/${postId}`, label: t("target.viewPost") } : actorProfile;

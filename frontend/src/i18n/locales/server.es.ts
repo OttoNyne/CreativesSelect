@@ -407,4 +407,5 @@ export const serverEs: Record<string, string> = {
   "You can't share your own post": "No puedes compartir tu propia publicación",
   "You've already shared this post": "Ya has compartido esta publicación",
   "You're sharing too fast — try again in a bit.": "Estás compartiendo muy rápido; inténtalo de nuevo en un rato.",
+  "That comment can't be replied to": "No se puede responder a ese comentario",
 };

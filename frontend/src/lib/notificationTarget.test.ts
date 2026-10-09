@@ -174,3 +174,12 @@ describe("notificationTarget: shares", () => {
     expect(notificationTarget(n("repost", {}), "ada")).toEqual({ to: "/u/zoe", label: "View profile" });
   });
 });
+
+describe("notificationTarget: replies", () => {
+  it("opens the place the server names, inside the site only", () => {
+    expect(notificationTarget(n("reply", { url: "/posts/p1?comment=c2" }), "ada")).toEqual({ to: "/posts/p1?comment=c2", label: "View reply" });
+    for (const url of ["//evil.example", "https://evil.example", "posts/1", "", undefined]) {
+      expect(notificationTarget(n("reply", { url }), "ada"), String(url)).toEqual({ to: "/u/zoe", label: "View profile" });
+    }
+  });
+});

@@ -33,4 +33,11 @@ export const saves = {
   "post.addPictureDescription": "Describe picture",
   "post.editPictureDescription": "Edit picture description",
   "post.pictureDescriptionLabel": "Picture description",
+  "comments.reply": "Reply",
+  "comments.replyAria": "Reply to {name}",
+  "comments.replyingTo": "Replying to {name}",
+  "comments.cancelReply": "Cancel",
+  "comments.replyPlaceholder": "Write a reply…",
+  "notif.reply": "replied to your comment",
+  "target.viewReply": "View reply",
 } as const;

@@ -32,7 +32,7 @@ export function PieceComments({
     <CommentThread
       threadKey={mediaId}
       load={(after) => (after ? mediaApi.comments(mediaId, after) : mediaApi.comments(mediaId))}
-      add={(text, imageUrl) => (imageUrl ? mediaApi.addComment(mediaId, text, imageUrl) : mediaApi.addComment(mediaId, text))}
+      add={(text, imageUrl, parent) => (parent ? mediaApi.addComment(mediaId, text, imageUrl, parent) : imageUrl ? mediaApi.addComment(mediaId, text, imageUrl) : mediaApi.addComment(mediaId, text))}
       update={(id, text) => mediaApi.updateComment(id, text)}
       removePicture={(id) => mediaApi.removeCommentPicture(id)}
       remove={(id) => mediaApi.removeComment(id)}

@@ -61,7 +61,7 @@ test.describe("the feed", () => {
 
     await post.getByRole("button", { name: /0 comments/ }).click();
     await post.getByPlaceholder("Write a comment…").fill("Complementary colours, always.");
-    await post.getByRole("button", { name: "Post" }).click();
+    await post.getByRole("button", { name: "Post", exact: true }).click();
     await expect(post.getByText("Complementary colours, always.")).toBeVisible();
     await expect(post.getByRole("button", { name: /1 comment$/ })).toBeVisible();
 

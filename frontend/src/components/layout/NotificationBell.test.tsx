@@ -403,3 +403,11 @@ describe("NotificationBell: shares", () => {
     expect(screen.getByRole("link", { name: "View post" })).toHaveAttribute("href", "/posts/p9");
   });
 });
+
+describe("NotificationBell: replies", () => {
+  it("says someone replied to your comment and links to the reply", async () => {
+    await openWith([note({ id: "rp", type: "reply", payload: { url: "/blog/b1?comment=c3" } })]);
+    expect(await screen.findByText("replied to your comment")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View reply" })).toHaveAttribute("href", "/blog/b1?comment=c3");
+  });
+});

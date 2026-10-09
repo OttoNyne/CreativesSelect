@@ -16,7 +16,7 @@ export const blogApi = {
   remove: (id: string) => api.delete<void>(`/blog/${encodeURIComponent(id)}`),
   /** Comments on an entry, oldest first, a page at a time (`after` is the last comment you have). */
   comments: (id: string, after?: string) => api.get<{ comments: Comment[]; hasMore?: boolean }>(`/blog/${encodeURIComponent(id)}/comments${after ? `?after=${encodeURIComponent(after)}` : ""}`),
-  addComment: (id: string, content: string, imageUrl?: string) => api.post<{ comment: Comment }>(`/blog/${encodeURIComponent(id)}/comments`, { content, ...(imageUrl ? { imageUrl } : {}) }),
+  addComment: (id: string, content: string, imageUrl?: string, parent?: string) => api.post<{ comment: Comment }>(`/blog/${encodeURIComponent(id)}/comments`, { content, ...(imageUrl ? { imageUrl } : {}), ...(parent ? { parent } : {}) }),
   updateComment: (commentId: string, content: string) => api.patch<{ comment: Comment }>(`/blog/comments/${encodeURIComponent(commentId)}`, { content }),
   /** Take the picture off your comment (the words stay). */
   removeCommentPicture: (commentId: string) => api.patch<{ comment: Comment }>(`/blog/comments/${encodeURIComponent(commentId)}`, { imageUrl: null }),
