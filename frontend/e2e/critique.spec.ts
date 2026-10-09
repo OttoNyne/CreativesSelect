@@ -52,7 +52,7 @@ test.describe("feedback on pieces", () => {
     // a third person can see that someone answered, but not what was said
     const bystander = await secondBrowserUser(browser, baseURL!, "bystander");
     await bystander.page.goto("/critiques");
-    await expect(bystander.page.getByText("1 person gave feedback")).toBeVisible();
+    await expect(bystander.page.locator("article").filter({ hasText: question }).getByText("1 person gave feedback")).toBeVisible();
     await bystander.page.getByRole("link", { name: question }).click();
     await expect(bystander.page.getByText("The rim looks uneven.")).toHaveCount(0);
     await bystander.context.close();

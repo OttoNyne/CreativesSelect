@@ -34,7 +34,7 @@ test.describe("credits on portfolio pieces", () => {
     await page.getByRole("button", { name: "+ Credit someone" }).click();
     await page.getByRole("combobox", { name: "Who worked on it" }).selectOption({ label: friend.user.displayName });
     await page.getByRole("textbox", { name: "What they did (e.g. illustrator)" }).fill("Lettering");
-    await page.getByRole("button", { name: "Ask" }).click();
+    await page.getByRole("button", { name: "Ask", exact: true }).click();
     const withList = page.getByRole("list", { name: "Who worked on this" });
     await expect(withList).toContainText(friend.user.displayName);
     await expect(withList).toContainText("waiting for them");
