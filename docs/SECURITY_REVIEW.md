@@ -1425,6 +1425,46 @@ Sharing someone's post puts it in front of the sharer's audience, and a saved li
 - **Tidy.** Saves go with the post, the piece or either account, a deleted share removes its notice, and the data download lists saved items and which posts are shares.
 - **Not covered:** a share can't be reported on its own (the sharer's words and the original can be reported as the posts they are), and the original's author can't stop their public post being shared (they can go private, or block the sharer).
 
+### 5.84 Picture descriptions and replies: two more places to write
+
+**Threats.** A description is text that ends up in an HTML attribute and in other people's screen readers; a reply names a parent comment, so a crafted id could tie a comment to a thread it doesn't belong in, or notify someone who has blocked the writer.
+
+**What stops it.**
+- **A description is plain text.** One line, cleaned of hidden characters, up to 300 characters, only on a post that has a picture; React writes it as an attribute value, never as markup, and `PATCH` lets only the author change it (`404` otherwise).
+- **A reply's parent is checked, not trusted.** The parent must be a comment on the same post, piece or entry (otherwise `400`) and is flattened to one level on the server, so nobody can build deep or cross-thread chains. The notice to the person answered is skipped when they have blocked the writer or the writer answers themselves, and a comment taken down takes its replies and their notices with it.
+- **Not covered:** a description is the author's word and nothing checks that it matches the picture (a picture made with AI starts with its prompt, which the author may edit).
+
+### 5.85 Pinned post and featured piece: choosing what comes first
+
+**Threats.** Pinning someone else's post to your own profile (to show it where it doesn't belong or to learn whether it exists), or a pointer that outlives the thing it points to.
+
+**What stops it.**
+- **Only your own things.** Pinning or featuring takes an id and answers the same `404` for a post or piece that doesn't exist and one that is someone else's; the pointer is stored on the user, so there is exactly one of each and no id from the request is ever written to another person's record.
+- **Shown only where the profile is.** The pinned post is added to `GET /profiles/:username` only where the whole profile is shown (not for a private profile to a stranger, which is refused before it), and it is read again from the post each time, so an edit or a deletion shows at once; deleting the post or piece clears the pointer.
+- Covered by 7 backend tests, 13 frontend tests and 4 browser flows on all three browsers.
+
+### 5.86 Polls: counting votes without trusting the page
+
+**Threats.** Voting twice, voting after a poll closes, voting in a poll you can't see, flooding a poll, and an oversized or malformed poll.
+
+**What stops it.**
+- **One final vote each.** A unique index on (post, person) decides it, so two taps at once can't both count and the second gets `409`; there is no way to change a vote.
+- **The server decides when it closes** (`endsAt` is set by the server from 1, 3 or 7 days; a client can't send a date), and votes after that are `400`.
+- **The same visibility rule as the post:** a post the person can't see (private profile, a block either way) answers `404 Poll not found`, like a poll that doesn't exist. 120 votes an hour per person.
+- **Checked on the way in:** two to four different options, one line each, up to 60 characters, cleaned of hidden characters; options are stored as text and shown as text. Votes are removed with the post and with either account. Covered by 15 backend tests, 10 frontend tests and 3 browser flows on all three browsers.
+- **Not covered:** a person with several accounts can vote several times (the same as for reactions); results are visible to everyone before voting ends.
+
+### 5.87 Muting: hiding without telling, and not leaking the list
+
+**Threats.** Someone learning they were muted (or what a person muted), a muted word list used to attack the server (very long patterns, regex injection), and muted people still reaching the person by push.
+
+**What stops it.**
+- **Private to the person.** The lists are read and written only through their own session (`/api/mutes` needs sign-in and only ever uses the signed-in person's id); nothing about a mute appears on the other person's side, in any profile or in any notice, and `iMute` is added only to the response of the person who muted. Muted words are never in a profile or in `/auth/me`.
+- **Words can't become patterns.** Each word is cleaned to one line of up to 40 characters, at most 30 are kept, and every one is escaped before it is joined into the single test the feed uses, so a word such as `(a+)+$` is matched as typed and can't slow the server down.
+- **Muted people really are quiet.** Their posts are excluded in the feed query and in Explore, their notices are left out of the list, and push delivery skips anyone who muted the person the note is about.
+- Covered by 22 backend tests (including the push check and whole-word matching in other alphabets), 10 frontend tests and 4 browser flows on all three browsers.
+
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

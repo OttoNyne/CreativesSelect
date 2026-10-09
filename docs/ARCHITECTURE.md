@@ -213,13 +213,13 @@ if logged in), **auth** (`requireAuth` — `401` without a valid session cookie)
 ### Posts — `/api/posts` (entire router requires auth)
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/feed?before=` | Self + accepted friends' posts, newest first, 20 a page (`hasMore`; `before=<post id>` for older ones; anything that isn't an id is ignored) |
+| GET | `/feed?before=` | Self + accepted friends' + followed public profiles' posts (less muted people and posts with muted words), newest first, 20 a page (`hasMore`; `before=<post id>` for older ones; anything that isn't an id is ignored) |
 | GET | `/user/:username?before=` | Gated by the same visibility check as profiles; paged the same way |
 | GET | `/:id` | One post (where a comment notification lands). Same visibility gate as the feed; a post that is missing, deleted, private or from a blocked author is the same `404 Post not found` |
 | POST | `/` | `{content (≤5000), imageUrl?, imageAspect?, imageZoom?, imagePosition?, isAiText?, isAiImage?}` → `201`; text is cleaned of hidden characters, empty or over-long is `400`, 20 per 10 minutes (`429`). The framing fields are checked (`400` for an unknown shape, a zoom outside 1–3, or a position that isn't `"x% y%"` with each 0–100) and ignored on a post with no picture |
 | PATCH | `/:id` | Author only (`404` for anyone else): `{content}` → `{post}` with `editedAt` set. Same text checks as creating; only the words change, never the picture, author or date |
 | PUT | `/:id/reaction` | The same as for a portfolio piece: `{emoji}` → `{reactions}`; `404` unless the post's author is visible to you (private, blocked); 300 an hour shared with pictures (`429`); the author is told once about each person's first reaction. Every post in the feed, a profile, or on its own carries `reactions` |
-| DELETE | `/:id` | Author only; also removes its reactions and the notes about them, and deletes the post's AI-generated image from Cloudinary if that user generated it and nothing else still uses it |
+| DELETE | `/:id` | Author only; also removes its reactions, votes, saves and the notes about them, clears the pin, and deletes the post's AI-generated image from Cloudinary if that user generated it and nothing else still uses it |
 
 **What a comment may hold** (comments on posts, testimonials, comments on portfolio pieces — one check for all three, `utils/commentInput.js`). Words (`content`, ≤1000, hidden characters removed, at most 3 web addresses, `400` for a fourth) and at most one picture (`imageUrl`), either or both. The picture is never an address the sender typed: it must be a file this site stored for the same person from the `comments` upload, recorded as an uploaded image (`400` "Add a picture by uploading it first" for any other address, someone else's file, an AI image or a video). Changing a comment can change its words or take the picture off (`imageUrl: null`), never swap or add one, and can't leave it with nothing. When a comment goes (deleted by its author or the owner of the page, removed by a moderator, or taken with its post, piece or account), its picture is removed from storage if nothing else shows it, including other people's pictures in what went with an account.
 
@@ -432,6 +432,37 @@ Following is one-way and needs no yes from the person followed: a follower sees 
 
 `GET /profiles/:username` carries `followerCount`, `followingCount` and (for a signed-in visitor) `iFollow` wherever the whole profile is shown. The feed asks for the followed authors again each time, keeping only those still public, not suspended and not blocked, so a profile that goes private (or a block) takes its posts out of every follower's feed at once and putting it back public restores them. Blocking removes the follow in both directions; deleting an account removes its follows; the data download lists whom you follow.
 
+### Picture descriptions, replies, pinning, polls and muting
+Five smaller features that change posts, comments and profiles rather than adding a router of their own (except muting).
+
+**Picture descriptions (alt text).** A post has `imageAlt` (one line, up to 300 characters, cleaned like other text). `POST /posts` takes it with the picture, and `PATCH /posts/:id` can change the description alone (`400` if the post has no picture). It is shown as the picture's `alt`, in shares, Explore and the data download. A picture made with AI starts with its prompt as the description, because the site can't look at a picture to describe it.
+
+**Replies in comment threads.** Comments on posts, on portfolio pieces and blog entries take `parent` (the id of the comment answered). The server checks that it is a comment on the same thing and flattens it to one level (an answer to a reply goes under the same top comment), so a thread is a list of comments, each with its replies under it (`utils/commentReplies.js`). The person answered is told once (`reply`, not through a block, not for answering yourself); taking a comment down takes its replies with it; the notice opens the thread at the reply.
+
+**Pinned post and featured piece.** `pinnedPost` and `featuredPiece` on the user (one of each, their own things only).
+| Method | Path | Notes |
+|---|---|---|
+| PUT / DELETE | `/posts/:id/pin` | Pin your own post to the top of your profile (replacing the one pinned now) / take it down (`204` whether or not it was). `404` for anyone else's post |
+| PUT / DELETE | `/media/:id/feature` | The same for a portfolio piece: the featured piece comes first in `GET /media/user/:username` and carries `featured` |
+
+`GET /profiles/:username` carries `pinnedPost` (the whole post, where the whole profile is shown) and a post carries `pinned`. Both pointers are cleared when the post or piece is deleted.
+
+**Polls.** A post can carry `poll: { options: ["Blue", "Green"], days: 1 }` when created: two to four different one-line options (up to 60 characters each) open for 1, 3 or 7 days (`utils/polls.js`; the words of the post are the question). Votes are kept apart (`PollVote`, one per person per post by a unique index).
+| Method | Path | Notes |
+|---|---|---|
+| PUT | `/posts/:id/poll/vote` | `{option: 0}` → `201` with how the poll stands. A vote is final: `409` the second time. `400` for an option that isn't there or once the poll has closed; `404` for a post without a poll or one the person can't see (private profile, block); 120 an hour |
+
+A post shows `poll: { options: [{text, votes}], total, endsAt, closed, myVote }` in the feed, Explore, the saved list, a pinned post and a single post (counted in one query per page, `pollTallies`). A repost shows the words of the original, not its poll. Votes go with the post and with either account; the data download lists the polls someone asked and their own votes with the option chosen.
+
+**Muting** — `/api/mutes` (auth, private to the person). Quieter than blocking: nobody is told and nothing changes for the person muted.
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/` | `{people, words}` |
+| PUT / DELETE | `/people/:username` | Mute (`201`, `200` if already; `400` for yourself or at 500; 120 an hour) / unmute (always `204`) |
+| PUT | `/words` | Replace the list: `{words: [...]}`, each one line up to 40 characters, lower-cased, no repeats, at most 30 |
+
+Muted people are left out of the feed (in the query) and Explore, and out of the notification list and push notifications (no notice about them reaches the person's devices); their profile, posts opened directly and the saved list are not touched. Muted words hide a post in the feed and Explore when any of them appears as a whole word in any capitals ("art" is not found in "start"; phrases and `#tags` match as written; Unicode-aware, so other alphabets work) in the post's words, its poll options or the words of a post it shares, and a piece when it is in the caption. With words muted the feed looks at up to four batches of 60 posts to fill a page. `GET /profiles/:username` carries `iMute` for the signed-in visitor. Mutes go with either account and the data download lists them with the words.
+
 ### @mentions — `/api/mentions` (auth)
 Writing `@username` names a person. The text stays plain text on the server (nothing is stored for a mention but the notification); the page turns `@name` into a link to `/u/name`, and a field offers people while you type.
 | Method | Path | Notes |
@@ -610,7 +641,7 @@ What is sent, and when: every notification (the bell) is made with `Notification
 | Live audio (big lives) | [LiveKit](https://livekit.io) media server (free LiveKit Cloud project) | Needs `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` as Render settings; `LIVE_MAX_LISTENERS` (50 by default, up to 100) is optional. Includes the relay servers phones on mobile networks need. Without these the site falls back to the browser-to-browser mode below |
 | Live audio (small lives) | WebRTC between browsers; public STUN | Works for most networks. Networks that block direct connections need a TURN relay: put its details in `LIVE_ICE_SERVERS` (a JSON array) on Render, no frontend change needed |
 | Database | MongoDB Atlas, free tier | Network Access allow-list set to `0.0.0.0/0` — Render's free tier has no static egress IP, so per-IP allow-listing isn't an option |
-| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (315 tests × 3 browsers, 945 runs — four phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
+| CI | GitHub Actions, both repos | On every push and pull request. Backend: tests against a throwaway MongoDB 7 service container (no secrets, never Atlas) + `npm audit --audit-level=high`. Frontend: `oxlint`, `npm run build` (which runs `tsc -b`, type-checking the tests — the same command Vercel runs), the Vitest suite, and `npm audit`. Dependabot proposes weekly npm and monthly Actions updates, and CI runs on those PRs too. **Deploy gating:** frontend — enforced as above (verified: one push produced exactly one production deploy, from CI). Backend — `render.yaml` sets `autoDeployTrigger: checksPass`, and the Render service's Auto-Deploy setting must be "After CI Checks Pass" for it to take effect. A separate `keep-warm` workflow pings `/api/health` every 10 minutes (public repos run scheduled workflows free) so Render's free tier rarely sleeps; the frontend also pings it on page load. **Browser end-to-end job (both repos):** Playwright drives the built frontend in desktop Chrome, desktop WebKit (Safari's engine) and an iPhone-sized WebKit against a real API and a throwaway MongoDB (332 tests × 3 browsers, 996 runs — four phone-only tests run only on the iPhone project, and the live-audio tests need Chrome's fake microphone so they skip on the two WebKit projects). The frontend repo runs it against the latest API and the API repo against the latest frontend; the frontend deploy waits for it, and a failure uploads the Playwright report, traces, screenshots and the API log |
 | Media storage | Cloudinary, free tier | Avatars/wallpapers/portfolio/tracks stream directly here (explained below); nothing is written to the backend's own filesystem |
 
 **Why Cloudinary, not local disk.** Render's free-tier filesystem is
@@ -832,11 +863,11 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 1282 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 1357 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).
-(2) *Frontend units*: Vitest + Testing Library in jsdom — 1674 tests with the `api/*`
+(2) *Frontend units*: Vitest + Testing Library in jsdom — 1731 tests with the `api/*`
 modules mocked, so they check what the UI does with server responses (errors shown,
 buttons disabled, requests sent). Every page and nearly every component is covered:
 login, register, forgot/reset password, confirm email (page, reminder banner, profile status), the About/Features/How it works pages and footer, feed, the picture adjuster,  friends, messages, groups, group detail and group chat, the Live page and room, live chat, the WebRTC and media-server host and listener logic (against fake connections), the music player, profile, search, Help wanted,
@@ -1039,6 +1070,14 @@ an Arabic page still reads correctly. **Emails** follow the person's language to
 **Tags are stored on the post, worked out by the server, and Explore only shows what a profile page already shows.** The client never says what a post's tags are, so a tag can't be added to something that doesn't contain it; storing them (rather than searching the words) lets one index answer a topic. Explore is deliberately open to visitors but filtered by the same rules as a profile (public, not suspended, not blocked) and kept out of search engines, so a person's opt-in to being listed still means something. "Trending" counts distinct people, so repeating a tag doesn't make it trend.
 
 **Following is a separate, one-way relationship, and the feed re-checks it every time.** A friendship needs both people's yes and shows everything friends can see; following needs no yes, shows only what is public, and can be undone by either side's privacy (going private) or a block. Rather than clean up follows whenever a profile changes, the feed keeps only followed authors who are public, not suspended and not blocked at that moment, so there is no state to get out of step. The person followed is told at most once a week by the same follower.
+
+**Replies are one level deep, and the server flattens them.** A reply to a reply could be shown as a deeper tree, but a tree needs more screen than a phone has and a thread nobody can follow. A comment names its `parent`, the server checks it belongs to the same post, piece or entry and replaces a reply's parent with its top comment, so the page is always a list of comments each with a flat list of replies, and a bad id can't build a chain across threads.
+
+**Pinned and featured are pointers on the person, not flags on the thing.** One pinned post and one featured piece per person is a rule about the person, so it lives on the user (replacing is one write, and there is nothing to un-flag on the old one). The pinned post is read again each time the profile loads, so it is never a stale copy, and a pointer to something deleted is cleared at the deletion.
+
+**A poll's vote is final, and its count is never trusted from the page.** Votes are rows with a unique index on (post, person), so "one each" is enforced by the database even for two taps at once, and the page shows what the server last counted. Votes can't be changed because a changeable vote needs a second rule (how often, and the count going down); the author's choice of 1, 3 or 7 days is turned into a date by the server. A repost shows the original's words, not its poll, so a vote is always cast where the poll was asked.
+
+**Muting is a private filter, not a relationship.** A block changes what both people can see and is known to both; a mute changes only what one person is shown, and nothing is written anywhere the other person can read. It is therefore applied when something is read or sent (the feed query, Explore, the notification list, the push delivery) and never when it is made, so unmuting brings everything back and no notice is lost. Muted words match whole words in any capitals rather than any run of letters, because a word like "art" would otherwise hide "start" and "party"; people who want a looser match can add the longer words.
 
 **A mention is text plus a notification, not a stored link.** Storing "who is mentioned" per post would need keeping in step with edits, deletions, renames and privacy changes. Instead the words stay as the person wrote them, the page recognises `@name` when it draws them (so a mention keeps working after a rename of the *post*, and simply leads to "not found" if the name no longer exists), and the only thing stored is the notification, which is made once per newly named person. The rule that matters is on the sending side: nobody is told about something they could not open, so a mention can never be used to show someone a private post or to reach someone who blocked you. The list while typing is a separate, small, rate-limited route with the same rules about private profiles and blocks as search.
 
