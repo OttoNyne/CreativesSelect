@@ -13,8 +13,8 @@ const unique = (label: string) => `${label} ${randomBytes(3).toString("hex")}`;
 // the post page opens with its comments showing (it is where a notification leads); anywhere else the toggle has to be pressed
 async function openComments(page: Page) {
   const box = page.getByPlaceholder(/Write a (comment|reply)|اكتب/);
-  await page.getByText(/comments|تعليق/i).first().waitFor();
-  if (!(await box.isVisible())) await page.getByRole("button", { name: /comments|تعليق/i }).first().click();
+  await page.getByText(/comment|تعليق/i).first().waitFor();
+  if (!(await box.isVisible())) await page.getByRole("button", { name: /comment|تعليق/i }).first().click();
   await expect(box).toBeVisible();
 }
 

@@ -24,6 +24,9 @@ export const postsApi = {
   react: (id: string, emoji: ReactionKey | null) => api.put<{ reactions: ReactionSummary }>(`/posts/${encodeURIComponent(id)}/reaction`, { emoji }),
   /** Share someone else's post to your own feed, with words of your own if you like. */
   repost: (id: string, content?: string) => api.post<{ post: Post }>(`/posts/${encodeURIComponent(id)}/repost`, content ? { content } : {}),
+  /** Put your own post at the top of your profile (replacing the one pinned now), or take it down. */
+  pin: (id: string) => api.put<{ pinned: boolean }>(`/posts/${encodeURIComponent(id)}/pin`, {}),
+  unpin: (id: string) => api.delete<void>(`/posts/${encodeURIComponent(id)}/pin`),
   /** Add, change or (empty) remove the description of your own post's picture. */
   setPictureDescription: (id: string, imageAlt: string) => api.patch<{ post: Post }>(`/posts/${encodeURIComponent(id)}`, { imageAlt }),
   /** Change the words of your own post. */

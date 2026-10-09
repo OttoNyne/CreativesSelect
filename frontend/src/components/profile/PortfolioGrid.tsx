@@ -58,6 +58,14 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
     setSelected(ALL);
   }, [username]);
 
+  // One piece is featured at a time, and it comes first.
+  const changeFeatured = (id: string, featured: boolean) =>
+    setItems((list) => {
+      const marked = list.map((item) => ({ ...item, featured: featured && item.id === id }));
+      const rest = marked.filter((item) => !item.featured).sort((x, y) => (y.createdAt ?? "").localeCompare(x.createdAt ?? "")); // the others go back to newest first
+      return [...marked.filter((item) => item.featured), ...rest];
+    });
+
   const changeCredits = (id: string, credits: MediaCredit[]) => setItems((list) => list.map((item) => (item.id === id ? { ...item, credits } : item)));
 
   const counts: Record<string, number> = {};
@@ -331,6 +339,7 @@ export function PortfolioGrid({ username, isOwner, focusPiece = null, focusComme
             onMove={moveItem}
             onCaption={handleCaption}
             onCredits={changeCredits}
+            onFeaturedChange={changeFeatured}
             commentsOpen={commentsOpenFor === item.id}
             onToggleComments={(id) => setCommentsOpenFor((open) => (open === id ? null : id))}
             comments={

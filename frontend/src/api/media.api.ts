@@ -45,6 +45,9 @@ export const mediaApi = {
   byUser: (username: string) => api.get<{ media: MediaItem[] }>(`/media/user/${username}`),
   create: (input: CreateMediaItemInput) => api.post<{ mediaItem: MediaItem }>("/media", input),
   remove: (id: string) => api.delete<void>(`/media/${id}`),
+  /** Put your own piece first in your portfolio (replacing the one featured now), or take it off. */
+  feature: (id: string) => api.put<{ featured: boolean }>(`/media/${encodeURIComponent(id)}/feature`, {}),
+  unfeature: (id: string) => api.delete<void>(`/media/${encodeURIComponent(id)}/feature`),
   /** Give a piece a caption, change it, or (null, or only spaces) take it off. */
   setCaption: (id: string, caption: string | null) => api.patch<{ item: MediaItem }>(`/media/${id}`, { caption }),
   /** Put a piece in one of your albums, or (null) take it out of its album. */

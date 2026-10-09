@@ -20,6 +20,7 @@ import { SaveButton } from "../common/SaveButton";
 import { SharePost } from "./SharePost";
 import { SharedPost } from "./SharedPost";
 import { PictureDescription } from "./PictureDescription";
+import { PinButton } from "../common/PinButton";
 
 const MAX_POST = 5000;
 
@@ -30,8 +31,11 @@ export function PostCard({
   autoOpenComments = false,
   highlightCommentId = null,
   onSavedChange,
+  onPinChange,
 }: {
   post: Post;
+  /** Told when its author pins it to their profile or takes it down (the owner sees a Pin button). */
+  onPinChange?: (pinned: boolean) => void;
   /** Told when the signed-in person saves it or takes it out of their saved list. */
   onSavedChange?: (saved: boolean) => void;
   onDeleted?: (id: string) => void;
@@ -47,6 +51,7 @@ export function PostCard({
   const [editedAt, setEditedAt] = useState(post.editedAt ?? null);
   const [editing, setEditing] = useState(false);
   const [imageAlt, setImageAlt] = useState(post.imageAlt ?? "");
+  const [pinned, setPinned] = useState(post.pinned === true);
   const [reactions, setReactions] = useState<ReactionSummary>(post.reactions ?? emptyReactions());
   const [reactError, setReactError] = useState<string | null>(null);
   const isOwner = user?.id === post.authorId;
@@ -151,6 +156,17 @@ export function PostCard({
         </button>
         {isOwner && post.imageUrl && !post.isRepost && <PictureDescription postId={post.id} value={imageAlt} onSaved={setImageAlt} />}
         {user && <SaveButton kind="posts" id={post.id} saved={post.saved === true} onChange={onSavedChange} />}
+        {isOwner && (
+          <PinButton
+            kind="post"
+            id={post.id}
+            on={pinned}
+            onChange={(now) => {
+              setPinned(now);
+              onPinChange?.(now);
+            }}
+          />
+        )}
         {user && !isOwner && (post.isRepost ? post.repost?.available === true && post.repost.authorId !== user.id : !post.author.isPrivate) && <SharePost postId={post.id} />}
         {isOwner && !editing && (
           <button onClick={() => setEditing(true)} className="ms-auto hover:text-white">

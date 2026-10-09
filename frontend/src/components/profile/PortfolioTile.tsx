@@ -5,6 +5,7 @@ import type { Album, MediaCredit, MediaItem, ReactionKey } from "../../types";
 import { PieceCredits } from "./PieceCredits";
 import { ReactionBar } from "../common/ReactionBar";
 import { SaveButton } from "../common/SaveButton";
+import { PinButton } from "../common/PinButton";
 import { t } from "../../i18n";
 
 
@@ -72,6 +73,7 @@ export function PortfolioTile({
   onMove,
   onCaption,
   onCredits,
+  onFeaturedChange,
   commentsOpen = false,
   onToggleComments,
   comments,
@@ -88,6 +90,8 @@ export function PortfolioTile({
   onCaption?: (id: string, caption: string | null) => Promise<string | null>;
   /** Told when the people credited on the piece change (credited, accepted, removed). */
   onCredits?: (id: string, credits: MediaCredit[]) => void;
+  /** Told when the owner features this piece or stops (the owner sees a Feature button). */
+  onFeaturedChange?: (id: string, featured: boolean) => void;
   /** Whether the comments are showing, how to show or hide them, and what to show. */
   commentsOpen?: boolean;
   onToggleComments?: (id: string) => void;
@@ -146,6 +150,11 @@ export function PortfolioTile({
             {t("media.ai")}
           </span>
         )}
+        {item.featured && (
+          <span className="absolute bottom-1 start-1 rounded-full bg-violet-700 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            <span aria-hidden="true">📌</span> {t("pinned.featured")}
+          </span>
+        )}
         {isOwner && (
           <button
             type="button"
@@ -189,6 +198,7 @@ export function PortfolioTile({
       <div className="flex flex-wrap items-center gap-1 bg-black/20 px-2 py-1">
         <ReactionBar summary={item.reactions} canReact={canReact} onReact={(key) => onReact(item.id, key)} label={t("media.reactionsToThisPiece")} />
         {canReact && <SaveButton kind="pieces" id={item.id} saved={item.saved === true} className="text-[11px] text-white/60" />}
+        {isOwner && onFeaturedChange && <PinButton kind="piece" id={item.id} on={item.featured === true} onChange={(now) => onFeaturedChange(item.id, now)} className="text-[11px] text-white/60" />}
         {onToggleComments && (
           <button
             type="button"

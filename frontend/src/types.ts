@@ -37,6 +37,8 @@ export interface User {
   followerCount?: number;
   followingCount?: number;
   iFollow?: boolean;
+  /** What the profile puts first: the post pinned to the top (shown where the whole profile is). */
+  pinnedPost?: Post | null;
   workNote?: string;
   username: string;
   displayName: string;
@@ -86,6 +88,8 @@ export interface Post {
   imagePosition?: string | null;
   /** The author's description of the picture, for people who can't see it. */
   imageAlt?: string;
+  /** Whether its author has pinned it to the top of their profile. */
+  pinned?: boolean;
   isAiText: boolean;
   isAiImage: boolean;
   createdAt: string;
@@ -199,6 +203,8 @@ export interface MediaItem {
   albumId?: string | null;
   /** Whether the signed-in viewer has saved it. */
   saved?: boolean;
+  /** Whether its owner features it (it comes first in the portfolio). */
+  featured?: boolean;
   /** The emoji reactions on it, and the signed-in viewer's own. */
   reactions: ReactionSummary;
   /** How many comments the piece has. */

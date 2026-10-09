@@ -6,6 +6,7 @@ import { ProfilePage } from "./ProfilePage";
 import { profilesApi } from "../api/profiles.api";
 import { friendsApi } from "../api/friends.api";
 import { followsApi } from "../api/follows.api";
+import { postsApi } from "../api/posts.api";
 import { moderationApi } from "../api/moderation.api";
 import { profileViewsApi } from "../api/profileViews.api";
 import { ApiError } from "../api/client";
@@ -124,6 +125,26 @@ describe("ProfilePage", () => {
     answerLate({ user: stale }); // the late answer still says they follow
     await waitFor(() => expect(screen.getByLabelText("Followers and following")).toHaveTextContent("0 followers"));
     expect(screen.getByRole("button", { name: "Follow Zoe" })).toBeInTheDocument();
+  });
+
+  it("shows the post its owner pinned at the top, under its own heading, with no Pin button for a visitor", async () => {
+    const pinnedPost = { id: "p7", authorId: "u2", author: zoe, content: "Open for commissions", imageUrl: null, isAiText: false, isAiImage: false, commentCount: 0, createdAt: new Date().toISOString(), pinned: true };
+    profiles.get.mockResolvedValue({ user: { ...zoe, followerCount: 0, followingCount: 0, pinnedPost } as unknown as User });
+    renderAs(me, "zoe");
+    expect(await screen.findByRole("heading", { name: /Pinned post/ })).toBeInTheDocument();
+    expect(screen.getByText("Open for commissions")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /top of your profile/ })).toBeNull();
+  });
+
+  it("lets the owner unpin it from their own profile, which takes it off the page", async () => {
+    const pinnedPost = { id: "p7", authorId: "me", author: me, content: "My pinned words", imageUrl: null, isAiText: false, isAiImage: false, commentCount: 0, createdAt: new Date().toISOString(), pinned: true };
+    profiles.get.mockResolvedValue({ user: { ...me, followerCount: 0, followingCount: 0, pinnedPost } as unknown as User });
+    vi.spyOn(postsApi, "unpin").mockResolvedValue(undefined as never);
+    renderAs(me, "me");
+    await screen.findByText("My pinned words");
+    await userEvent.click(screen.getByRole("button", { name: "Take this post off the top of your profile" }));
+    await waitFor(() => expect(screen.queryByText("My pinned words")).toBeNull());
+    expect(postsApi.unpin).toHaveBeenCalledWith("p7");
   });
 
   it("offers no Follow button to a friend, on a private profile, on your own profile or when signed out", async () => {

@@ -47,9 +47,17 @@ import { OffersEditor, OpenToWorkBadge, WorkRequestForm } from "../components/pr
 import { WorkRequestsPanel } from "../components/profile/WorkRequestsPanel";
 import { useRobots } from "../lib/useRobots";
 import { FollowButton, FollowCounts, FollowLists } from "../components/follow/FollowControls";
+import { PostCard } from "../components/post/PostCard";
 import { t } from "../i18n";
 import { Linkified } from "../components/common/Linkified";
 import { MentionTextarea } from "../components/common/MentionField";
+
+/** A profile the server sends back after a change has the person's own fields only; what was worked out for the page (counts, pinned post, featured piece) stays. */
+function keepExtras(now: User | null, next: User): User {
+  if (!now) return next;
+  const { followerCount, followingCount, iFollow, pinnedPost } = now;
+  return { followerCount, followingCount, iFollow, pinnedPost, ...next };
+}
 
 export function ProfilePage() {
   const { username = "" } = useParams();
@@ -144,7 +152,7 @@ export function ProfilePage() {
     setSaving(true);
     try {
       const { user } = await profilesApi.updateMe(updates);
-      setProfile(user);
+      setProfile((now) => keepExtras(now, user));
       if (isOwner) setViewer(user);
       return true;
     } catch (err) {
@@ -371,7 +379,7 @@ export function ProfilePage() {
             key={profile.username}
             profile={profile}
             onChanged={(updated) => {
-              setProfile(updated);
+              setProfile((now) => keepExtras(now, updated));
               if (isOwner) setViewer(updated);
               // A new username is a new address: move to it.
               if (updated.username !== username) navigate(`/u/${updated.username}`, { replace: true });
@@ -523,6 +531,18 @@ export function ProfilePage() {
       {isOwner && viewer?.profileViews && <ProfileVisitors />}
 
       {isOwner && <WorkRequestsPanel />}
+
+      {profile.pinnedPost && (
+        <section aria-label={t("pinned.heading")} className="profile-card mt-6 rounded-xl border border-white/10 bg-black/20 p-4">
+          <h2 className="profile-heading mb-3 text-sm font-semibold uppercase tracking-wide text-white/60">
+            <span aria-hidden="true">📌</span> {t("pinned.heading")}
+          </h2>
+          <PostCard
+            post={profile.pinnedPost}
+            onPinChange={(pinned) => !pinned && setProfile((p) => (p ? { ...p, pinnedPost: null } : p))}
+          />
+        </section>
+      )}
 
       <div className="profile-sections mt-6 flex flex-col gap-4 pb-10">
         {order
