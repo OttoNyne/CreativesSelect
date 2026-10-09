@@ -141,6 +141,12 @@ describe("CallPage: someone else's call", () => {
     expect(moderationApi.report).toHaveBeenCalledWith("call", "c1", "Spam");
   });
 
+  it("leads the person chosen, and the owner, to the project room", async () => {
+    api.get.mockResolvedValue({ call: base({ applied: "chosen", projectId: "r9", myApplication: { id: "a1", note: "Me", status: "chosen", reply: "", pieceId: null } }) });
+    show();
+    expect(await screen.findByRole("link", { name: "Open project room" })).toHaveAttribute("href", "/projects/r9");
+  });
+
   it("says when the call isn't there", async () => {
     api.get.mockRejectedValue(new ApiError(404, "Call not found"));
     show();

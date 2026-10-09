@@ -27,6 +27,7 @@ const TYPE_KEY: Record<string, Key> = {
   processStep: "misc.type.processStep",
   call: "misc.type.call",
   callApplication: "misc.type.callApplication",
+  projectMessage: "misc.type.projectMessage",
 };
 const typeLabel = (type: string): string => (TYPE_KEY[type] ? t(TYPE_KEY[type]) : type);
 const ACTION_KEY: Record<string, Key> = {

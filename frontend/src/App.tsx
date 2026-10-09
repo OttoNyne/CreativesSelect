@@ -38,6 +38,8 @@ import { ChallengePage } from "./pages/ChallengePage";
 import { ExplorePage } from "./pages/ExplorePage";
 import { CallsPage } from "./pages/CallsPage";
 import { CallPage } from "./pages/CallPage";
+import { ProjectsPage } from "./pages/ProjectsPage";
+import { ProjectPage } from "./pages/ProjectPage";
 import { SavedPage } from "./pages/SavedPage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { usePageTitle } from "./lib/usePageTitle";
@@ -68,6 +70,8 @@ export default function App() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/calls" element={<CallsPage />} />
           <Route path="/calls/:id" element={<CallPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/:id" element={<ProjectPage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<FeedPage />} />

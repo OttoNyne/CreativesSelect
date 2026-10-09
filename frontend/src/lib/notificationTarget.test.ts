@@ -192,3 +192,10 @@ describe("notificationTarget: open calls", () => {
     }
   });
 });
+
+describe("notificationTarget: project rooms", () => {
+  it("opens the room, or the list when none is named", () => {
+    expect(notificationTarget(n("project_message", { projectId: "r 1" }), "ada")).toEqual({ to: "/projects/r%201", label: "Open project room" });
+    expect(notificationTarget(n("project_message", {}), "ada")).toEqual({ to: "/projects", label: "Open project room" });
+  });
+});

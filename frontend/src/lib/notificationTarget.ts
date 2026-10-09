@@ -81,6 +81,10 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const itemId = str(n.payload.itemId);
       return viewerUsername ? { to: `/u/${viewerUsername}${itemId ? `?piece=${encodeURIComponent(itemId)}` : ""}#portfolio`, label: t("target.viewCredit") } : null;
     }
+    case "project_message": {
+      const projectId = str(n.payload.projectId);
+      return { to: projectId ? `/projects/${encodeURIComponent(projectId)}` : "/projects", label: t("target.viewProject") };
+    }
     case "call_match":
     case "call_application":
     case "call_answer": {

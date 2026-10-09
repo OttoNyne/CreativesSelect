@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { callsApi } from "../api/calls.api";
 import { CallCard } from "../components/calls/CallCard";
@@ -70,6 +71,9 @@ export function CallsPage() {
       <header className="space-y-1">
         <h1 className="text-xl font-semibold text-white">{t("calls.title")}</h1>
         <p className="text-sm text-white/70">{t("calls.intro")}</p>
+        <Link to="/projects" className="text-sm text-violet-300 hover:underline">
+          {t("projects.yourRooms")}
+        </Link>
       </header>
 
       {posting ? (

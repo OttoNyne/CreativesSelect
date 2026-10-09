@@ -231,9 +231,46 @@ export interface OpenCall {
   /** The viewer's answer to it: waiting, chosen or passed (null if they haven't answered). */
   applied?: "waiting" | "chosen" | "passed" | null;
   myApplication?: { id: string; note: string; status: "waiting" | "chosen" | "passed"; reply: string; pieceId: string | null } | null;
+  /** The project room for this call, for its owner and anyone they chose. */
+  projectId?: string | null;
   /** For its owner: how many have answered, and how many are still waiting. */
   applicantCount?: number;
   waitingCount?: number;
+}
+
+/** A project room: a private chat and checklist for the people making something together. */
+export interface Project {
+  id: string;
+  callId: string | null;
+  title: string;
+  status: "active" | "archived";
+  lastActivityAt: string;
+  owner: string;
+  isOwner: boolean;
+  members: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean; isOwner: boolean }[];
+  /** On the list: how many messages are new to the viewer, and how many things are still to do. */
+  unread?: number;
+  openTasks?: number;
+  /** On one room: its checklist. */
+  tasks?: ProjectTask[];
+}
+
+export interface ProjectTask {
+  id: string;
+  text: string;
+  done: boolean;
+  doneBy: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface ProjectMessage {
+  id: string;
+  content: string;
+  imageUrl: string | null;
+  createdAt: string;
+  mine: boolean;
+  author: { id: string; username: string; displayName: string; avatarUrl: string | null; csVerified: boolean } | null;
 }
 
 /** One person's answer to a call, as its owner sees it. */
@@ -462,7 +499,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "reaction";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "project_message" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's

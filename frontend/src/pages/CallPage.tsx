@@ -147,6 +147,12 @@ export function CallPage() {
         </article>
       )}
 
+      {call.projectId && (
+        <Link to={`/projects/${call.projectId}`} className="inline-block rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500">
+          {t("projects.openRoom")}
+        </Link>
+      )}
+
       {call.mine ? (
         <>
           <div className="flex flex-wrap gap-2" role="group" aria-label={t("calls.manage")}>

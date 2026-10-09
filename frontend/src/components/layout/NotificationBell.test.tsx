@@ -427,3 +427,12 @@ describe("NotificationBell: open calls", () => {
     expect(screen.getAllByRole("link", { name: "View call" }).map((l) => l.getAttribute("href"))).toEqual(["/calls/c1", "/calls/c2", "/calls/c3", "/calls/c4"]);
   });
 });
+
+describe("NotificationBell: project rooms", () => {
+  it("says someone wrote in your room, counting what is new, and links to the room", async () => {
+    await openWith([note({ id: "p1", type: "project_message", payload: { projectId: "r1", title: "EP sessions", count: 1 } }), note({ id: "p2", type: "project_message", payload: { projectId: "r2", title: "Cover art", count: 4 } })]);
+    expect(await screen.findByText("wrote in your project room: EP sessions")).toBeInTheDocument();
+    expect(screen.getByText("wrote 4 messages in your project room: Cover art")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Open project room" }).map((l) => l.getAttribute("href"))).toEqual(["/projects/r1", "/projects/r2"]);
+  });
+});

@@ -33,7 +33,8 @@ import { mutes } from "./es/mutes";
 import { making } from "./es/process";
 import { calls } from "./es/calls";
 import { report } from "./es/report";
+import { projects } from "./es/projects";
 
 // Spanish. Each part of the site has its own file in es/; the server's own (English) messages, shown on the page, are in server.es.ts.
-export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report };
+export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects };
 export { serverEs as server } from "./server.es";
