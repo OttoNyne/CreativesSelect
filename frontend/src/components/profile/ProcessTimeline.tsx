@@ -5,6 +5,8 @@ import type { MediaItem, ProcessStep } from "../../types";
 import { CommentPicturePicker } from "../common/CommentPicturePicker";
 import { EditBox } from "../common/EditBox";
 import { Linkified } from "../common/Linkified";
+import { ReportButton } from "../common/ReportButton";
+import { useAuth } from "../../context/AuthContext";
 import { t } from "../../i18n";
 
 export const MAX_STEPS = 12;
@@ -17,6 +19,7 @@ const small = "rounded-md border border-white/20 px-2 py-1 text-xs text-white/80
  * also sees their steps as a list to add to, change, put in order and take away.
  */
 export function ProcessTimeline({ piece, isOwner, onCountChange }: { piece: MediaItem; isOwner: boolean; onCountChange: (count: number) => void }) {
+  const { user } = useAuth();
   const [steps, setSteps] = useState<ProcessStep[] | null>(null);
   const [index, setIndex] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
@@ -164,6 +167,11 @@ export function ProcessTimeline({ piece, isOwner, onCountChange }: { piece: Medi
               <span aria-hidden="true" className="inline-block rtl:rotate-180">▶</span>
             </button>
           </div>
+          {user && !isOwner && step && (
+            <div className="flex flex-wrap items-center text-xs text-white/60">
+              <ReportButton key={step.id} targetType="processStep" targetId={step.id} label={t("report.step")} />
+            </div>
+          )}
         </div>
       )}
 

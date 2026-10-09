@@ -5,6 +5,7 @@ import { callsApi } from "../../api/calls.api";
 import type { CallApplicationRow, CallPerson } from "../../types";
 import { Avatar } from "../common/Avatar";
 import { CSBadge } from "../common/CSBadge";
+import { ReportButton } from "../common/ReportButton";
 import { t } from "../../i18n";
 
 const STATUS = { waiting: "calls.statusWaiting", chosen: "calls.statusChosen", passed: "calls.statusPassed" } as const;
@@ -76,6 +77,9 @@ export function ApplicationsPanel({ callId, onChanged }: { callId: string; onCha
                 )}
               </Link>
             )}
+            <div className="flex flex-wrap items-center text-xs text-white/60">
+              <ReportButton targetType="callApplication" targetId={row.id} label={t("report.answer", { name: row.applicant.displayName })} />
+            </div>
             {row.status === "waiting" ? (
               <div className="space-y-2">
                 <input

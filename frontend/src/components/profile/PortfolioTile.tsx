@@ -7,6 +7,7 @@ import { ReactionBar } from "../common/ReactionBar";
 import { SaveButton } from "../common/SaveButton";
 import { PinButton } from "../common/PinButton";
 import { ProcessTimeline } from "./ProcessTimeline";
+import { ReportButton } from "../common/ReportButton";
 import { t } from "../../i18n";
 
 
@@ -202,6 +203,7 @@ export function PortfolioTile({
       <div className="flex flex-wrap items-center gap-1 bg-black/20 px-2 py-1">
         <ReactionBar summary={item.reactions} canReact={canReact} onReact={(key) => onReact(item.id, key)} label={t("media.reactionsToThisPiece")} />
         {canReact && <SaveButton kind="pieces" id={item.id} saved={item.saved === true} className="text-[11px] text-white/60" />}
+        {canReact && !isOwner && <ReportButton targetType="piece" targetId={item.id} label={t("report.piece")} className="text-[11px] text-white/60" />}
         {isOwner && onFeaturedChange && <PinButton kind="piece" id={item.id} on={item.featured === true} onChange={(now) => onFeaturedChange(item.id, now)} className="text-[11px] text-white/60" />}
         {(processCount > 0 || isOwner) && (
           <button

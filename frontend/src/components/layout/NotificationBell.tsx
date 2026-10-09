@@ -29,6 +29,10 @@ const REMOVED_WHAT: Record<string, Key> = {
   bulletin: "notif.what.bulletin",
   "group topic": "notif.what.groupTopic",
   "group reply": "notif.what.groupReply",
+  "portfolio piece": "notif.what.piece",
+  "step of a portfolio piece": "notif.what.processStep",
+  "open call": "notif.what.call",
+  "answer to an open call": "notif.what.callApplication",
   content: "notif.what.content",
 };
 const CHANGED_WHAT: Record<string, Key> = { time: "notif.change.time", place: "notif.change.place", link: "notif.change.link" };

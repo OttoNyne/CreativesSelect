@@ -22,6 +22,7 @@ import { SharedPost } from "./SharedPost";
 import { PictureDescription } from "./PictureDescription";
 import { PinButton } from "../common/PinButton";
 import { PostPoll } from "./PostPoll";
+import { ReportButton } from "../common/ReportButton";
 
 const MAX_POST = 5000;
 
@@ -171,6 +172,7 @@ export function PostCard({
           />
         )}
         {user && !isOwner && (post.isRepost ? post.repost?.available === true && post.repost.authorId !== user.id : !post.author.isPrivate) && <SharePost postId={post.id} />}
+        {user && !isOwner && <ReportButton targetType="post" targetId={post.id} label={t("report.post")} />}
         {isOwner && !editing && (
           <button onClick={() => setEditing(true)} className="ms-auto hover:text-white">
             {t("common.edit")}

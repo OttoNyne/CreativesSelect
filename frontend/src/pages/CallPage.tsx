@@ -8,6 +8,7 @@ import { ApplicationsPanel, MatchesPanel } from "../components/calls/CallOwnerPa
 import { Avatar } from "../components/common/Avatar";
 import { CSBadge } from "../components/common/CSBadge";
 import { Linkified } from "../components/common/Linkified";
+import { ReportButton } from "../components/common/ReportButton";
 import { formatCalendarDay } from "../lib/when";
 import type { OpenCall } from "../types";
 import { t } from "../i18n";
@@ -175,6 +176,11 @@ export function CallPage() {
         </>
       ) : call.closed && !call.myApplication ? null : (
         <ApplyForm call={call} onChange={setCall} />
+      )}
+      {!call.mine && (
+        <div className="flex flex-wrap items-center text-xs text-white/60">
+          <ReportButton targetType="call" targetId={call.id} label={t("report.call")} />
+        </div>
       )}
     </div>
   );

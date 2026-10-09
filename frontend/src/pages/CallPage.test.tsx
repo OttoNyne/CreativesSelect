@@ -7,10 +7,12 @@ import { callsApi } from "../api/calls.api";
 import { mediaApi } from "../api/media.api";
 import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../api/client";
+import { moderationApi } from "../api/moderation.api";
 import type { CallApplicationRow, MediaItem, OpenCall, User } from "../types";
 
 vi.mock("../api/calls.api", () => ({ callsApi: { get: vi.fn(), update: vi.fn(), remove: vi.fn(), apply: vi.fn(), withdraw: vi.fn(), applications: vi.fn(), answer: vi.fn(), matches: vi.fn() } }));
 vi.mock("../api/media.api", () => ({ mediaApi: { byUser: vi.fn() }, uploadFile: vi.fn() }));
+vi.mock("../api/moderation.api", () => ({ moderationApi: { report: vi.fn().mockResolvedValue({ report: {} }) } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 const api = vi.mocked(callsApi);
 
@@ -131,6 +133,14 @@ describe("CallPage: someone else's call", () => {
     expect(screen.queryByRole("button", { name: "Send answer" })).toBeNull();
   });
 
+  it("lets you report someone else's call, and not your own", async () => {
+    show();
+    await userEvent.click(await screen.findByRole("button", { name: "Report this call" }));
+    await userEvent.type(screen.getByLabelText("What's the issue?"), "Spam");
+    await userEvent.click(screen.getByRole("button", { name: "Send report" }));
+    expect(moderationApi.report).toHaveBeenCalledWith("call", "c1", "Spam");
+  });
+
   it("says when the call isn't there", async () => {
     api.get.mockRejectedValue(new ApiError(404, "Call not found"));
     show();
@@ -156,6 +166,16 @@ describe("CallPage: your own call", () => {
     expect(await within(panel).findByText("Chosen")).toBeInTheDocument();
     expect(within(panel).queryByRole("button", { name: "Choose Kai" })).toBeNull();
     expect(within(panel).getByRole("button", { name: "Choose Liv" })).toBeInTheDocument();
+  });
+
+  it("lets the owner report an answer", async () => {
+    api.get.mockResolvedValue({ call: mineCall() });
+    api.applications.mockResolvedValue({ applications: [row("a1", "Kai")] });
+    show();
+    await userEvent.click(await screen.findByRole("button", { name: "Report this answer from Kai" }));
+    await userEvent.type(screen.getByLabelText("What's the issue?"), "Abusive");
+    await userEvent.click(screen.getByRole("button", { name: "Send report" }));
+    expect(moderationApi.report).toHaveBeenCalledWith("callApplication", "a1", "Abusive");
   });
 
   it("passes on an answer", async () => {

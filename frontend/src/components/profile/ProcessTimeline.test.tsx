@@ -5,6 +5,8 @@ import { ProcessTimeline } from "./ProcessTimeline";
 import { PortfolioTile } from "./PortfolioTile";
 import { processApi } from "../../api/process.api";
 import { ApiError } from "../../api/client";
+import { useAuth } from "../../context/AuthContext";
+import { moderationApi } from "../../api/moderation.api";
 import type { MediaItem, ProcessStep } from "../../types";
 
 vi.mock("../../api/process.api", () => ({ processApi: { steps: vi.fn(), add: vi.fn(), setWords: vi.fn(), removePicture: vi.fn(), remove: vi.fn(), reorder: vi.fn() } }));
@@ -15,6 +17,8 @@ vi.mock("../common/CommentPicturePicker", () => ({
     </button>
   ),
 }));
+vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../../api/moderation.api", () => ({ moderationApi: { report: vi.fn() } }));
 vi.mock("../../api/mentions.api", () => ({ mentionsApi: { suggest: vi.fn().mockResolvedValue({ people: [] }) } }));
 vi.mock("../common/ReactionBar", () => ({ ReactionBar: () => null }));
 vi.mock("./PieceCredits", () => ({ PieceCredits: () => null }));
@@ -27,6 +31,8 @@ const step = (id: string, content: string, imageUrl: string | null = null, posit
 const THREE = [step("s1", "First sketch", null, 0), step("s2", "Throwing the shape", "https://cdn.example.com/two.png", 1), step("s3", "Glaze test", null, 2)];
 
 beforeEach(() => {
+  vi.mocked(useAuth).mockReturnValue({ user: { id: "visitor", username: "visitor" } as never, isLoading: false, setUser: vi.fn(), refresh: async () => {} });
+  vi.mocked(moderationApi.report).mockReset().mockResolvedValue({ report: {} });
   Object.values(api).forEach((fn) => fn.mockReset());
   api.steps.mockResolvedValue({ steps: THREE });
   window.confirm = vi.fn(() => true);
@@ -62,6 +68,31 @@ describe("ProcessTimeline: walking through", () => {
     api.steps.mockRejectedValue(new ApiError(404, "Media item not found"));
     render(<ProcessTimeline piece={piece()} isOwner={false} onCountChange={vi.fn()} />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Media item not found");
+  });
+});
+
+describe("ProcessTimeline: reporting a step", () => {
+  it("lets a signed-in visitor report the step on screen, and never offers it to the owner or a signed-out visitor", async () => {
+    const { unmount } = render(<ProcessTimeline piece={piece()} isOwner={false} onCountChange={vi.fn()} />);
+    await screen.findByText("Step 1 of 3");
+    await userEvent.click(screen.getByRole("button", { name: "Report this step" }));
+    await userEvent.type(screen.getByLabelText("What's the issue?"), "Not appropriate");
+    await userEvent.click(screen.getByRole("button", { name: "Send report" }));
+    expect(moderationApi.report).toHaveBeenCalledWith("processStep", "s1", "Not appropriate");
+    expect(await screen.findByText("Thanks. A moderator will take a look.")).toBeInTheDocument();
+    unmount();
+    render(<ProcessTimeline piece={piece()} isOwner onCountChange={vi.fn()} />);
+    await screen.findByText("Step 1 of 3");
+    expect(screen.queryByRole("button", { name: "Report this step" })).toBeNull();
+  });
+
+  it("asks about the step that is showing, not the first one", async () => {
+    render(<ProcessTimeline piece={piece()} isOwner={false} onCountChange={vi.fn()} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Next step" }));
+    await userEvent.click(screen.getByRole("button", { name: "Report this step" }));
+    await userEvent.type(screen.getByLabelText("What's the issue?"), "x");
+    await userEvent.click(screen.getByRole("button", { name: "Send report" }));
+    expect(moderationApi.report).toHaveBeenCalledWith("processStep", "s2", "x");
   });
 });
 

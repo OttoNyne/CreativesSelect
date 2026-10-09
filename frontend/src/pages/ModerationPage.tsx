@@ -23,6 +23,10 @@ const TYPE_KEY: Record<string, Key> = {
   mediaComment: "misc.type.mediaComment",
   event: "misc.type.event",
   blogComment: "misc.type.blogComment",
+  piece: "misc.type.piece",
+  processStep: "misc.type.processStep",
+  call: "misc.type.call",
+  callApplication: "misc.type.callApplication",
 };
 const typeLabel = (type: string): string => (TYPE_KEY[type] ? t(TYPE_KEY[type]) : type);
 const ACTION_KEY: Record<string, Key> = {
