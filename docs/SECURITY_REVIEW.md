@@ -1532,6 +1532,30 @@ Sharing someone's post puts it in front of the sharer's audience, and a saved li
 - Covered by 22 backend tests, 22 frontend tests and 4 browser flows on all three browsers. **Not covered:** a writer can't unsend what a maker has already read, and a moderator who handles a report reads the reported note.
 
 
+### 5.94 Scheduled posts: a post that isn't one yet
+
+**Threats.** A waiting post leaking to anyone (the feed, a profile, search, a hashtag, a digest, a mention) before its time, being read or changed by someone else, being published twice or never, and using the schedule to get round the limits on posting.
+
+**What stops it.**
+- **It isn't a post.** A scheduled post is its own record in its own collection, so no query that lists posts can return it: there is no filter to forget. Only its author's session can list, change, publish or remove it, and anyone else gets the answer for a missing one (tested with a second person on every route).
+- **Once.** Each due record is claimed with one atomic update before anything is made, and the id of the post is fixed at that moment and reused by a retry, so two simultaneous runs make one post (tested with two runs at once), and a run that died after making the post is finished by the next one without a second post (tested).
+- **At the right time, by the server.** The time is checked when it is set (at least a minute ahead, at most 90 days) and a change can't move it into the past; a poll runs from the moment of publishing. A sleeping server catches up the moment anyone looks at notifications, and a timer runs every minute.
+- **Nothing extra is allowed.** The same checks as a post (length, framing, description, poll), 20 waiting at a time and 30 made a day; an account that has been suspended by the time comes doesn't post, the record is marked failed with a reason, and the author is told.
+- **Gone with the account.** Waiting posts and their pictures are removed with the account and listed in the data download.
+- Covered by 16 backend tests, 15 frontend tests and 4 browser flows on all three browsers (one of which waits for a real minute to pass). **Not covered:** a post is published by the server's clock, so a server asleep through the time publishes it late (up to the next visit to the site or the ten-minute keep-warm check), never early.
+
+### 5.95 Embeds: showing public work on other websites, by choice
+
+**Threats.** Private or withdrawn work being shown on another website, markup or script in what a person wrote reaching someone else's visitors, the embed page being used to attack the site (clickjacking, mixed content, a script loading from elsewhere), and the page being a way to tell who exists.
+
+**What stops it.**
+- **By choice, and only public work.** Nothing is embeddable until its owner switches embedding on (off by default), and it stops when they switch it off, go private or are suspended. A missing, private, suspended or not-allowed piece or profile all answer the same bare 404 page (tested: the text is identical), so they can't be told apart.
+- **Nothing a person wrote can run.** The page has no scripts and a policy that allows pictures and media over https only (`default-src 'none'`); every word is escaped (tested with markup in a caption and a bio); a picture address is used only if it is https or a small inline png/jpeg/gif/webp (a `javascript:` address, an svg and an address with a quote in it are all left out, tested).
+- **Framing is allowed in exactly one place.** The embed pages drop the API's `SAMEORIGIN` rule and allow any site to frame them, and nothing else does (tested on both: the health check is still unframeable). The embed page cannot do anything on the person's behalf (no sign-in is read, no forms, links open the real page in a new tab with `noopener`).
+- **Cost and honesty.** 600 views an hour per address, cached for five minutes (so a takedown is complete within that time), an AI picture is labelled as such, and every card links back to the maker's page.
+- Covered by 10 backend tests, 7 frontend tests and 4 browser flows on all three browsers, including a real second origin framing the card. **Not covered:** a website that embeds a card can see that it loaded and how big it is (that is what embedding is), and a piece already copied from the page by a visitor stays copied.
+
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

@@ -450,3 +450,16 @@ describe("NotificationBell: feedback on pieces", () => {
     expect(screen.getAllByRole("link", { name: "View feedback" }).map((l) => l.getAttribute("href"))).toEqual(["/critiques/q1", "/critiques/q2", "/critiques/q3"]);
   });
 });
+
+describe("NotificationBell: scheduled posts", () => {
+  it("says a scheduled post is live (linking to it) or couldn't be published (linking to the feed)", async () => {
+    await openWith([
+      note({ id: "s1", type: "scheduled_post", payload: { postId: "p7" } }),
+      note({ id: "s2", type: "scheduled_post", payload: { failed: true } }),
+    ]);
+    expect(await screen.findByText("Your scheduled post is now live")).toBeInTheDocument();
+    expect(screen.getByText("Your scheduled post couldn't be published")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View post" })).toHaveAttribute("href", "/posts/p7");
+    expect(screen.getByRole("link", { name: "Review scheduled posts" })).toHaveAttribute("href", "/");
+  });
+});

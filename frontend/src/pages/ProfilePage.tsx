@@ -8,6 +8,7 @@ import { uploadFile } from "../api/media.api";
 import { assetUrl, ApiError } from "../api/client";
 import type { User, ProfileTheme } from "../types";
 import { ShareButton } from "../components/share/ShareButton";
+import { EmbedCode } from "../components/embed/EmbedCode";
 import { ThemedPage } from "../components/layout/ThemedPage";
 import { WIDTH_CLASS, styleValue, themeToSave } from "../lib/profileStyle";
 import { motionOf } from "../lib/wallpaperMotion";
@@ -429,6 +430,16 @@ export function ProfilePage() {
               <input type="checkbox" checked={profile.listInSearchEngines === true} disabled={profile.isPrivate} onChange={(e) => saveProfile({ listInSearchEngines: e.target.checked })} />
               {t("profile.listInSearch")}
             </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
+              <input type="checkbox" checked={profile.allowEmbeds === true} disabled={profile.isPrivate} onChange={(e) => saveProfile({ allowEmbeds: e.target.checked })} />
+              {t("embed.allow")}
+            </label>
+            {profile.allowEmbeds === true && !profile.isPrivate && (
+              <div className="w-full space-y-1">
+                <h3 className="text-sm font-medium text-[var(--profile-text)]">{t("embed.profileHeading")}</h3>
+                <EmbedCode kind="profile" id={profile.username} title={t("embed.frameTitle", { name: profile.displayName })} />
+              </div>
+            )}
             <label className="flex items-center gap-2 text-sm text-[var(--profile-muted)]">
               <input type="checkbox" checked={profile.profileViews === true} onChange={(e) => saveProfile({ profileViews: e.target.checked })} />
               {t("profile.profileViews")}

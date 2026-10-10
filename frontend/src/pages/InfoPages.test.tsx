@@ -40,10 +40,10 @@ describe("FeaturesPage", () => {
   it("lists what the site offers, each with its own heading", () => {
     renderPage(<FeaturesPage />);
     expect(screen.getByRole("heading", { level: 1, name: "Features" })).toBeInTheDocument();
-    for (const name of ["A profile that's yours", "Portfolio", "Music", "Feed", "Messages and group chat", "Friends and groups", "Help wanted", "Live audio", "AI assistance", "Privacy and safety", "Credits and collaborations", "Open to work", "Shareable profiles", "Weekly challenge", "Mentions", "Follow", "Replies and picture descriptions", "Pinned post and featured piece", "Polls", "Muting", "How it was made", "Open calls", "Project rooms", "Feedback on your work", "Topics and a weekly summary", "Hashtags and Explore", "Save and share", "Works on your phone", "In your language"]) {
+    for (const name of ["A profile that's yours", "Portfolio", "Music", "Feed", "Messages and group chat", "Friends and groups", "Help wanted", "Live audio", "AI assistance", "Privacy and safety", "Credits and collaborations", "Open to work", "Shareable profiles", "Weekly challenge", "Mentions", "Follow", "Replies and picture descriptions", "Pinned post and featured piece", "Polls", "Muting", "How it was made", "Open calls", "Project rooms", "Feedback on your work", "Scheduled posts", "Embeds", "Topics and a weekly summary", "Hashtags and Explore", "Save and share", "Works on your phone", "In your language"]) {
       expect(screen.getByRole("heading", { level: 2, name: name === "Feed" ? name : new RegExp(name) })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("listitem")).toHaveLength(29);
+    expect(screen.getAllByRole("listitem")).toHaveLength(31);
   });
 
   it("is honest that AI content is labelled", () => {

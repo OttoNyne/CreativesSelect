@@ -653,3 +653,20 @@ describe("PortfolioGrid: captions", () => {
     await waitFor(() => expect(api.create).toHaveBeenCalledWith(expect.objectContaining({ caption: "a harbour", isAiImage: true })));
   });
 });
+
+describe("PortfolioGrid: embedding", () => {
+  it("gives the owner an Embed button on each piece that opens the code, and gives a visitor none", async () => {
+    api.byUser.mockResolvedValue({ media: [item()] });
+    vi.mocked(useAuth).mockReturnValue({ user: { id: "me", username: "me", displayName: "Me", allowEmbeds: true } as never, isLoading: false, setUser: vi.fn(), refresh: async () => {} });
+    const { unmount } = render(<PortfolioGrid username="me" isOwner={true} />);
+    const button = await screen.findByRole("button", { name: "Embed this piece on another website" });
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(button);
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    expect((screen.getByLabelText("Copy this into the page") as HTMLTextAreaElement).value).toContain("/embed/piece/m1");
+    unmount();
+    renderGrid(false);
+    await waitFor(() => expect(document.querySelector("[id^='piece-']")).not.toBeNull());
+    expect(screen.queryByRole("button", { name: "Embed this piece on another website" })).toBeNull();
+  });
+});

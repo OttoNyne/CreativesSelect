@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { postsApi } from "../api/posts.api";
+import { scheduledPostsApi } from "../api/scheduledPosts.api";
+import { ScheduledPosts } from "../components/post/ScheduledPosts";
 import { PostComposer } from "../components/post/PostComposer";
 import { BulletinsStrip } from "../components/bulletins/BulletinsStrip";
 import { WelcomeChecklist } from "../components/onboarding/WelcomeChecklist";
@@ -7,17 +9,26 @@ import { PostCard } from "../components/post/PostCard";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { ThemedPage, hasChosenBackground } from "../components/layout/ThemedPage";
-import type { Post } from "../types";
+import type { Post, ScheduledPost } from "../types";
 import { t } from "../i18n";
 
 export function FeedPage() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
+  // posts this person asked to be published later (a convenience: if it can't be loaded the feed is just as usable)
+  const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  useEffect(() => {
+    scheduledPostsApi
+      .list()
+      .then(({ posts }) => setScheduled(posts))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     postsApi
@@ -69,7 +80,8 @@ export function FeedPage() {
       {actionError && <p className="text-sm text-red-400">{actionError}</p>}
       <WelcomeChecklist />
       <BulletinsStrip />
-      <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} />
+      <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} onScheduled={(waiting) => setScheduled((now) => [...now, waiting].sort((a, b) => a.publishAt.localeCompare(b.publishAt)))} />
+      <ScheduledPosts items={scheduled} onChange={setScheduled} onPublished={(post) => setPosts((p) => [post, ...p.filter((x) => x.id !== post.id)])} />
 
       {status === "loading" && <div className="text-center text-white/60">{t("feed.loading")}</div>}
       {status === "ready" && posts.length === 0 && (

@@ -208,3 +208,11 @@ describe("notificationTarget: feedback", () => {
     }
   });
 });
+
+describe("notificationTarget: scheduled posts", () => {
+  it("opens the post that went live, and the feed (where the waiting ones are) when one couldn't be published", () => {
+    expect(notificationTarget(n("scheduled_post", { postId: "p 1" }), "ada")).toEqual({ to: "/posts/p%201", label: "View post" });
+    expect(notificationTarget(n("scheduled_post", { failed: true }), "ada")).toEqual({ to: "/", label: "Review scheduled posts" });
+    expect(notificationTarget(n("scheduled_post", {}), "ada")).toEqual({ to: "/", label: "Review scheduled posts" });
+  });
+});

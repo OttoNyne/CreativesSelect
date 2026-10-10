@@ -7,6 +7,8 @@ const FEATURES = [
   { icon: "🎵", get title() { return t("sections.music"); }, get text() { return t("info.addUpToTwenty"); } },
   { icon: "📝", get title() { return t("nav.feed"); }, get text() { return t("info.shareWhatYoureWorking"); } },
   { icon: "💬", get title() { return t("info.messagesAndGroupChat"); }, get text() { return t("info.chatPrivatelyWithFriends"); } },
+  { icon: "🕒", get title() { return t("info.scheduleTitle"); }, get text() { return t("info.scheduleText"); } },
+  { icon: "🖼", get title() { return t("info.embedTitle"); }, get text() { return t("info.embedText"); } },
   { icon: "👥", get title() { return t("info.friendsAndGroups"); }, get text() { return t("info.searchForPeopleThose"); } },
   { icon: "🤝", get title() { return t("nav.helpWanted"); }, get text() { return t("info.postARequestOn"); } },
   { icon: "🎙️", get title() { return t("info.liveAudio"); }, get text() { return t("info.goLiveWithYour"); } },

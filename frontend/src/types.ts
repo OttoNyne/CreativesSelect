@@ -69,6 +69,8 @@ export interface User {
   /** Only in your own: whether you may be named as a mutual friend and suggested to friends of friends. */
   showConnections?: boolean;
   listInSearchEngines?: boolean;
+  /** Whether their public pieces and profile card may be shown on other websites. */
+  allowEmbeds?: boolean;
   /** Only in your own: whether friends see when you've read their messages and when you're typing (and you see theirs). */
   chatStatus?: boolean;
   /** On your own profile: whether you are a moderator of the site. */
@@ -531,7 +533,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "project_message" | "critique_note" | "critique_thanks" | "reaction";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "project_message" | "critique_note" | "critique_thanks" | "scheduled_post" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's
@@ -716,5 +718,24 @@ export interface ChallengeEntry {
   id: string;
   item: MediaItem;
   owner: MediaCredit["user"];
+  createdAt: string;
+}
+
+/** A post written to be published later. Only its author ever sees it; it becomes a Post at `publishAt`. */
+export interface ScheduledPost {
+  id: string;
+  content: string;
+  imageUrl: string | null;
+  imageAspect: "original" | "1:1" | "4:3" | "16:9" | null;
+  imageZoom: number | null;
+  imagePosition: string | null;
+  imageAlt: string;
+  poll: { options: string[]; days: 1 | 3 | 7 } | null;
+  isAiText: boolean;
+  isAiImage: boolean;
+  publishAt: string;
+  /** It could not be published (the reason is in `failure`); give it a new time to try again. */
+  failed: boolean;
+  failure: string;
   createdAt: string;
 }

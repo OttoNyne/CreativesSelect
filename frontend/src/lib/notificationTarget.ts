@@ -86,6 +86,11 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
       const critiqueId = str(n.payload.critiqueId);
       return { to: critiqueId ? `/critiques/${encodeURIComponent(critiqueId)}` : "/critiques", label: t("target.viewCritique") };
     }
+    case "scheduled_post": {
+      const postId = str(n.payload.postId);
+      if (n.payload.failed === true || !postId) return { to: "/", label: t("target.viewScheduledFailed") };
+      return { to: `/posts/${encodeURIComponent(postId)}`, label: t("target.viewPost") };
+    }
     case "project_message": {
       const projectId = str(n.payload.projectId);
       return { to: projectId ? `/projects/${encodeURIComponent(projectId)}` : "/projects", label: t("target.viewProject") };

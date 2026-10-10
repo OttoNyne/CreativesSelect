@@ -1,0 +1,33 @@
+import type { Translation } from "../../index";
+import type { scheduled as en } from "../en/scheduled";
+
+export const scheduled: Translation<typeof en> = {
+  "schedule.toggle": "Programar para después",
+  "schedule.when": "Publicar el",
+  "schedule.hint": "Se publicará en tu feed a esta hora, en tu zona horaria. Puedes cambiarla o cancelarla en Publicaciones programadas.",
+  "schedule.submit": "Programar publicación",
+  "schedule.submitting": "Programando…",
+  "schedule.needTime": "Elige cuándo debe publicarse.",
+  "schedule.done": "Programada para {when}.",
+  "schedule.failed": "No se pudo programar, inténtalo de nuevo.",
+  "schedule.actionFailed": "No se pudo hacer, inténtalo de nuevo.",
+  "schedule.heading": "Publicaciones programadas ({n})",
+  "schedule.withPicture": "Con una imagen",
+  "schedule.withPoll": "Con una encuesta",
+  "schedule.edit": "Editar",
+  "schedule.editLabel": "Editar publicación programada: {when}",
+  "schedule.words": "Texto",
+  "schedule.newTime": "Nueva hora",
+  "schedule.save": "Guardar",
+  "schedule.cancel": "Cancelar",
+  "schedule.postNow": "Publicar ahora",
+  "schedule.remove": "Quitar",
+  "schedule.removeLabel": "Quitar publicación programada: {when}",
+  "schedule.postNowLabel": "Publicar ahora: {when}",
+  "schedule.confirmRemove": "¿Quitar esta publicación programada?",
+  "schedule.couldntPublish": "No se pudo publicar",
+  "schedule.chooseNew": "Elige una hora nueva para intentarlo otra vez.",
+  "notif.scheduledPost": "Tu publicación programada ya está publicada",
+  "notif.scheduledPostFailed": "No se pudo publicar tu publicación programada",
+  "target.viewScheduledFailed": "Revisar publicaciones programadas",
+};

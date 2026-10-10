@@ -885,3 +885,19 @@ describe("ProfilePage: moving wallpapers", () => {
     expect(await screen.findByTestId("moving-wallpaper")).toHaveAttribute("data-motion", "zoom");
   });
 });
+
+describe("ProfilePage: embedding", () => {
+  it("lets the owner allow embedding, saved straight away, and then offers the profile card to copy", async () => {
+    profiles.get.mockResolvedValue({ user: me });
+    profiles.updateMe.mockResolvedValueOnce({ user: { ...me, allowEmbeds: true } });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    expect(screen.queryByLabelText("Copy this into the page")).toBeNull();
+    const box = screen.getByRole("checkbox", { name: "Let my pieces and profile card be shown on other websites" });
+    expect(box).not.toBeChecked();
+    await userEvent.click(box);
+    expect(profiles.updateMe).toHaveBeenLastCalledWith({ allowEmbeds: true });
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: "Let my pieces and profile card be shown on other websites" })).toBeChecked());
+    expect((screen.getByLabelText("Copy this into the page") as HTMLTextAreaElement).value).toContain("/embed/profile/me");
+  });
+});

@@ -9,6 +9,14 @@
       "destination": "https://first-server-2y0v.onrender.com/api/preview/profile/:username"
     },
     {
+      "source": "/embed/piece/:id",
+      "destination": "https://first-server-2y0v.onrender.com/api/embed/piece/:id"
+    },
+    {
+      "source": "/embed/profile/:username",
+      "destination": "https://first-server-2y0v.onrender.com/api/embed/profile/:username"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://first-server-2y0v.onrender.com/api/preview/sitemap.xml"
     },

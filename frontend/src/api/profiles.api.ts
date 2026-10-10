@@ -19,6 +19,7 @@ export interface UpdateProfileInput {
   profileViews?: boolean;
   showConnections?: boolean;
   listInSearchEngines?: boolean;
+  allowEmbeds?: boolean;
   chatStatus?: boolean;
   language?: "en" | "es" | "ar";
   openToWork?: boolean;

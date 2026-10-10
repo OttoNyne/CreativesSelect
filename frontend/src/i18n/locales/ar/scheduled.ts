@@ -1,0 +1,33 @@
+import type { Translation } from "../../index";
+import type { scheduled as en } from "../en/scheduled";
+
+export const scheduled: Translation<typeof en> = {
+  "schedule.toggle": "جدولة للنشر لاحقًا",
+  "schedule.when": "النشر في",
+  "schedule.hint": "سيُنشر في صفحتك في هذا الوقت بحسب توقيتك. يمكنك تغييره أو إلغاؤه من المنشورات المجدولة.",
+  "schedule.submit": "جدولة المنشور",
+  "schedule.submitting": "جارٍ الجدولة…",
+  "schedule.needTime": "اختر وقت النشر.",
+  "schedule.done": "تمت الجدولة في {when}.",
+  "schedule.failed": "تعذّرت الجدولة، حاول مرة أخرى.",
+  "schedule.actionFailed": "تعذّر تنفيذ ذلك، حاول مرة أخرى.",
+  "schedule.heading": "المنشورات المجدولة ({n})",
+  "schedule.withPicture": "مع صورة",
+  "schedule.withPoll": "مع استطلاع",
+  "schedule.edit": "تعديل",
+  "schedule.editLabel": "تعديل المنشور المجدول: {when}",
+  "schedule.words": "النص",
+  "schedule.newTime": "الوقت الجديد",
+  "schedule.save": "حفظ",
+  "schedule.cancel": "إلغاء",
+  "schedule.postNow": "انشر الآن",
+  "schedule.remove": "إزالة",
+  "schedule.removeLabel": "إزالة المنشور المجدول: {when}",
+  "schedule.postNowLabel": "انشر الآن: {when}",
+  "schedule.confirmRemove": "هل تريد إزالة هذا المنشور المجدول؟",
+  "schedule.couldntPublish": "تعذّر النشر",
+  "schedule.chooseNew": "اختر وقتًا جديدًا للمحاولة مرة أخرى.",
+  "notif.scheduledPost": "منشورك المجدول أصبح منشورًا الآن",
+  "notif.scheduledPostFailed": "تعذّر نشر منشورك المجدول",
+  "target.viewScheduledFailed": "مراجعة المنشورات المجدولة",
+};

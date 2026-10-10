@@ -9,6 +9,7 @@ import { PinButton } from "../common/PinButton";
 import { ProcessTimeline } from "./ProcessTimeline";
 import { ReportButton } from "../common/ReportButton";
 import { AskFeedback } from "../critique/AskFeedback";
+import { EmbedPiecePanel } from "../embed/EmbedPiecePanel";
 import { t } from "../../i18n";
 
 
@@ -106,6 +107,7 @@ export function PortfolioTile({
   const [editingCaption, setEditingCaption] = useState(false);
   // how it was made: the steps open under the piece, which then takes the whole row
   const [processOpen, setProcessOpen] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
   const [processCount, setProcessCount] = useState(item.processCount ?? 0);
 
   function onTimeUpdate(e: React.SyntheticEvent<HTMLVideoElement>) {
@@ -119,7 +121,7 @@ export function PortfolioTile({
   }
 
   return (
-    <div id={`piece-${item.id}`} className={`scroll-mt-20 overflow-hidden rounded-lg border border-white/10 ${commentsOpen ? "col-span-full sm:flex" : processOpen ? "col-span-full" : isVideoish ? "col-span-2" : ""}`}>
+    <div id={`piece-${item.id}`} className={`scroll-mt-20 overflow-hidden rounded-lg border border-white/10 ${commentsOpen ? "col-span-full sm:flex" : processOpen || embedOpen ? "col-span-full" : isVideoish ? "col-span-2" : ""}`}>
       <div className={commentsOpen ? "sm:w-72 sm:shrink-0" : "min-w-0"}>
       <div className="relative">
         {item.type === "audio" ? (
@@ -207,6 +209,17 @@ export function PortfolioTile({
         {canReact && !isOwner && <ReportButton targetType="piece" targetId={item.id} label={t("report.piece")} className="text-[11px] text-white/60" />}
         {(isOwner || canReact) && <AskFeedback item={item} isOwner={isOwner} signedIn={canReact} />}
         {isOwner && onFeaturedChange && <PinButton kind="piece" id={item.id} on={item.featured === true} onChange={(now) => onFeaturedChange(item.id, now)} className="text-[11px] text-white/60" />}
+        {isOwner && (
+          <button
+            type="button"
+            onClick={() => setEmbedOpen((open) => !open)}
+            aria-expanded={embedOpen}
+            aria-label={t("embed.buttonLabel")}
+            className={`rounded-md px-2 py-0.5 text-[11px] ${embedOpen ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/10"}`}
+          >
+            {t("embed.button")}
+          </button>
+        )}
         {(processCount > 0 || isOwner) && (
           <button
             type="button"
@@ -248,6 +261,7 @@ export function PortfolioTile({
         </div>
       )}
       {processOpen && <ProcessTimeline piece={item} isOwner={isOwner} onCountChange={setProcessCount} />}
+      {isOwner && embedOpen && <EmbedPiecePanel item={item} />}
       </div>
       {commentsOpen && comments && <div className="min-w-0 flex-1 border-t border-white/10 px-3 pb-3 sm:border-s sm:border-t-0">{comments}</div>}
     </div>

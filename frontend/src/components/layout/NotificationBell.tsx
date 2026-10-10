@@ -74,6 +74,8 @@ function describe(n: Notification): string {
       return typeof n.payload.title === "string" && n.payload.title ? t("notif.critiqueNote", { title: n.payload.title }) : t("notif.critiqueNoteNoTitle");
     case "critique_thanks":
       return t("notif.critiqueThanks");
+    case "scheduled_post":
+      return n.payload.failed === true ? t("notif.scheduledPostFailed") : t("notif.scheduledPost");
     case "project_message":
       return t("notif.projectMessage", { n: typeof n.payload.count === "number" ? n.payload.count : 1, title: String(n.payload.title ?? "") });
     case "call_match":

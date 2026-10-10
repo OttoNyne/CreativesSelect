@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { FeedPage } from "./FeedPage";
 import { postsApi } from "../api/posts.api";
+import { scheduledPostsApi } from "../api/scheduledPosts.api";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { Post } from "../types";
@@ -12,11 +13,13 @@ vi.mock("../api/posts.api", () => ({
   postsApi: { feed: vi.fn(), update: vi.fn(), create: vi.fn(), remove: vi.fn(), comments: vi.fn(), addComment: vi.fn(), removeComment: vi.fn() },
 }));
 vi.mock("../api/media.api", () => ({ uploadFile: vi.fn() }));
+vi.mock("../api/scheduledPosts.api", () => ({ scheduledPostsApi: { list: vi.fn(), create: vi.fn(), update: vi.fn(), publishNow: vi.fn(), remove: vi.fn() } }));
 vi.mock("../components/bulletins/BulletinsStrip", () => ({ BulletinsStrip: () => <div>bulletins strip</div> }));
 vi.mock("../components/onboarding/WelcomeChecklist", () => ({ WelcomeChecklist: () => <div>welcome checklist</div> }));
 vi.mock("../api/ai.api", () => ({ aiApi: { generateText: vi.fn(), generateImage: vi.fn() } }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
 const api = vi.mocked(postsApi);
+const scheduled = vi.mocked(scheduledPostsApi);
 
 function post(over: Partial<Post> = {}): Post {
   return {
@@ -43,6 +46,8 @@ function renderPage() {
 
 beforeEach(() => {
   Object.values(api).forEach((fn) => fn.mockReset());
+  Object.values(scheduled).forEach((fn) => fn.mockReset());
+  scheduled.list.mockResolvedValue({ posts: [] });
   vi.mocked(useAuth).mockReturnValue({
     user: { id: "me", username: "me", displayName: "Me" } as never,
     isLoading: false,
@@ -205,5 +210,36 @@ describe("FeedPage: the background", () => {
     api.feed.mockRejectedValue(new ApiError(500, "boom"));
     renderPage();
     expect(await screen.findByText("boom")).toBeInTheDocument();
+  });
+});
+
+describe("FeedPage: scheduled posts", () => {
+  const waiting = { id: "s1", content: "Opening night", imageUrl: null, imageAspect: null, imageZoom: null, imagePosition: null, imageAlt: "", poll: null, isAiText: false, isAiImage: false, publishAt: new Date("2030-05-01T09:30").toISOString(), failed: false, failure: "", createdAt: "" };
+
+  it("shows nothing about them when none are waiting", async () => {
+    api.feed.mockResolvedValue({ posts: [] });
+    renderPage();
+    await screen.findByText("welcome checklist");
+    expect(screen.queryByRole("button", { name: /Scheduled posts/ })).toBeNull();
+  });
+
+  it("lists the ones that are waiting, and a post made with Post now lands at the top of the feed", async () => {
+    api.feed.mockResolvedValue({ posts: [post()] });
+    scheduled.list.mockResolvedValue({ posts: [waiting] });
+    scheduled.publishNow.mockResolvedValue({ post: post({ id: "p9", content: "Opening night" }) });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Scheduled posts (1)" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Post now/ }));
+    expect(await screen.findAllByText("Opening night")).not.toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /Scheduled posts/ })).toBeNull();
+    expect(screen.getByText("First post")).toBeInTheDocument();
+  });
+
+  it("still shows the feed when the waiting list can't be loaded", async () => {
+    api.feed.mockResolvedValue({ posts: [post()] });
+    scheduled.list.mockRejectedValue(new ApiError(500, "Server error"));
+    renderPage();
+    expect(await screen.findByText("First post")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });
