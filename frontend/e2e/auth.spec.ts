@@ -52,6 +52,7 @@ test.describe("signing up, in and out", () => {
     await page.getByPlaceholder("Username").fill("bad.name");
     await page.getByPlaceholder("Email").fill("bad@example.com");
     await page.getByPlaceholder("Password (min 8 characters)").fill("long-enough-1");
+    await page.getByRole("checkbox", { name: /I'm at least 13/ }).check();
     await page.getByRole("button", { name: "Sign up" }).click();
     await expect(page).toHaveURL(/\/register$/); // the browser refused to submit
   });
@@ -63,6 +64,7 @@ test.describe("signing up, in and out", () => {
     await page.getByPlaceholder("Username").fill(newUser("copy").username);
     await page.getByPlaceholder("Email").fill(existing.user.email);
     await page.getByPlaceholder("Password (min 8 characters)").fill("long-enough-1");
+    await page.getByRole("checkbox", { name: /I'm at least 13/ }).check();
     await page.getByRole("button", { name: "Sign up" }).click();
     await expect(page.getByText("Email or username already taken")).toBeVisible();
     await existing.context.close();

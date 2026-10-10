@@ -1556,6 +1556,18 @@ Sharing someone's post puts it in front of the sharer's audience, and a saved li
 - Covered by 10 backend tests, 7 frontend tests and 4 browser flows on all three browsers, including a real second origin framing the card. **Not covered:** a website that embeds a card can see that it loaded and how big it is (that is what embedding is), and a piece already copied from the page by a visitor stays copied.
 
 
+### 5.96 Policy pages, the sign-up agreement and the website's own headers
+
+**Threats.** Another website putting the real sign-in or profile pages in a hidden frame (clickjacking), the browser guessing a file's type, referrers leaking addresses, a page asking for a device permission it doesn't need, and having no record of what a person agreed to, or no way to say what the site does with their information.
+
+**What stops it.**
+- **No framing.** Every page of the website is sent with `X-Frame-Options: DENY` and `frame-ancestors 'none'`, in the same rule as `nosniff`, a referrer policy and a permissions policy that allows only the microphone. The only pages that may be framed are the embed cards (finding 97), which are excluded from the rule by their address, and the API keeps its own headers. A test reads the real `vercel.json` and checks both lists of addresses.
+- **A written policy that matches the code.** The Privacy Policy, Terms and Community guidelines are written from the data model and the list of services, say there is no advertising or tracking, and tell people where to download or delete their data. Where to write to is a setting of the build, never a guessed address.
+- **A record of agreement.** The sign-up form needs the box ticked (and says 13 or over); the server keeps when and which version, and the person can see it in their data download.
+- **Unknown addresses are answered honestly.** A "not found" page, marked noindex, replaces a silent redirect that hid broken links.
+- Covered by 3 backend tests, 10 frontend tests and 4 browser flows on all three browsers. **Not covered:** the website still has no full content-security policy (the scripts and the services it loads from are a larger change, to be introduced in report-only mode first); the policy pages are plain-language text that a lawyer should read before launch, and the Spanish and Arabic text deserves a native reader; accounts made before the box existed have no record, and nothing asks them to agree.
+
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification

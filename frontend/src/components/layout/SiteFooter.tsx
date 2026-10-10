@@ -9,6 +9,9 @@ const LINKS = [
   { to: "/about", label: () => t("footer.about") },
   { to: "/features", label: () => t("footer.features") },
   { to: "/how-it-works", label: () => t("footer.howItWorks") },
+  { to: "/privacy", label: () => t("footer.privacy") },
+  { to: "/terms", label: () => t("footer.terms") },
+  { to: "/guidelines", label: () => t("footer.guidelines") },
 ];
 
 // Shown at the bottom of every page, so the information pages are one tap away, signed in or not.

@@ -16,6 +16,7 @@ async function signUpHere(page: Page, user: ReturnType<typeof newUser>) {
   await page.getByPlaceholder("Username").fill(user.username);
   await page.getByPlaceholder("Email").fill(user.email);
   await page.getByPlaceholder("Password (min 8 characters)").fill(user.password);
+  await page.getByRole("checkbox", { name: /I'm at least 13/ }).check();
   await page.getByRole("button", { name: "Sign up" }).click();
 }
 

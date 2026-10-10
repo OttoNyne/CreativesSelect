@@ -27,11 +27,12 @@ function renderPage() {
   );
 }
 
-async function fill(display = "Sam Painter", username = "sam_paints", email = "sam@example.com", password = "long-enough-1") {
+async function fill(display = "Sam Painter", username = "sam_paints", email = "sam@example.com", password = "long-enough-1", agree = true) {
   await userEvent.type(screen.getByPlaceholderText("Display name"), display);
   await userEvent.type(screen.getByPlaceholderText("Username"), username);
   await userEvent.type(screen.getByPlaceholderText("Email"), email);
   await userEvent.type(screen.getByPlaceholderText("Password (min 8 characters)"), password);
+  if (agree) await userEvent.click(screen.getByRole("checkbox", { name: /I'm at least 13/ }));
 }
 
 beforeEach(() => {
@@ -85,7 +86,7 @@ describe("RegisterPage: through an invite link", () => {
     expect(await screen.findByText(/isn't valid any more/)).toBeInTheDocument();
     await fill();
     await userEvent.click(screen.getByRole("button", { name: "Sign up" }));
-    expect(register).toHaveBeenCalledWith({ displayName: "Sam Painter", username: "sam_paints", email: "sam@example.com", password: "long-enough-1" });
+    expect(register).toHaveBeenCalledWith({ displayName: "Sam Painter", username: "sam_paints", email: "sam@example.com", password: "long-enough-1", acceptedTerms: true });
     expect(await screen.findByText("Home feed")).toBeInTheDocument();
   });
 
@@ -117,6 +118,7 @@ describe("RegisterPage", () => {
       username: "sam_paints",
       email: "sam@example.com",
       password: "long-enough-1",
+      acceptedTerms: true,
     });
     await waitFor(() => expect(setUser).toHaveBeenCalledWith(user));
     expect(await screen.findByText("Home feed")).toBeInTheDocument();

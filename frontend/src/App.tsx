@@ -26,6 +26,8 @@ import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { ConfirmEmailChangePage, UndoEmailChangePage } from "./pages/EmailChangePages";
 import { AboutPage } from "./pages/AboutPage";
+import { LegalPage } from "./pages/LegalPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { BlogEntryPage } from "./pages/BlogEntryPage";
 import { BulletinsPage } from "./pages/BulletinsPage";
 import { EventsPage } from "./pages/EventsPage";
@@ -70,6 +72,9 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/privacy" element={<LegalPage doc="privacy" />} />
+          <Route path="/terms" element={<LegalPage doc="terms" />} />
+          <Route path="/guidelines" element={<LegalPage doc="guidelines" />} />
           <Route path="/challenge" element={<ChallengePage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/calls" element={<CallsPage />} />
@@ -104,7 +109,7 @@ export default function App() {
 
           <Route path="/u/:username" element={<ProfilePage />} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <SiteFooter />
         <NowPlayingBar />

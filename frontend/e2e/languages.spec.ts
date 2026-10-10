@@ -157,6 +157,7 @@ test.describe("the site in other languages", () => {
     await page.getByPlaceholder("Nombre de usuario").fill(me.username);
     await page.getByPlaceholder("Correo electrónico").fill(me.email);
     await page.getByPlaceholder(/Contraseña/).fill(me.password);
+    await page.getByRole("checkbox", { name: /Tengo al menos 13 años/ }).check();
     await page.getByRole("button", { name: "Registrarse", exact: true }).click();
     await expect(page).toHaveURL("/");
     await expect.poll(async () => (await mailsTo(me.email)).map((m) => m.subject)).toContain("Confirma tu correo de CreativesSelect");

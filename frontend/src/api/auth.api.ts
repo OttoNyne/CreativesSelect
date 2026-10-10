@@ -9,6 +9,8 @@ export interface RegisterInput {
   displayName: string;
   /** The code from an invite link, if they came in through one. */
   invite?: string;
+  /** Ticked "I'm at least 13 and I agree to the Terms and the Privacy Policy". */
+  acceptedTerms?: boolean;
 }
 
 export interface LoginInput {

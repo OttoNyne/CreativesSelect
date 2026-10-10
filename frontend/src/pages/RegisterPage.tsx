@@ -35,6 +35,8 @@ export function RegisterPage() {
   const [form, setForm] = useState({ email: "", username: "", displayName: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // agreeing to the Terms and the Privacy Policy (and being at least 13) is asked for before an account is made
+  const [agreed, setAgreed] = useState(false);
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -45,7 +47,7 @@ export function RegisterPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const { user, invitedBy } = await authApi.register({ ...form, ...(code && inviteState !== "invalid" ? { invite: code } : {}) });
+      const { user, invitedBy } = await authApi.register({ ...form, acceptedTerms: true, ...(code && inviteState !== "invalid" ? { invite: code } : {}) });
       setUser(user);
       // came in through someone's link: show them their new friend; otherwise the feed
       navigate(invitedBy ? "/friends" : "/");
@@ -121,6 +123,23 @@ export function RegisterPage() {
           onChange={(e) => update("password", e.target.value)}
           className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none"
         />
+        <label className="flex items-start gap-2 text-xs text-white/70">
+          <input type="checkbox" required checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5" />
+          <span>
+            {tRich("legal.agree", {
+              terms: (c) => (
+                <Link to="/terms" target="_blank" className="text-violet-400 hover:underline">
+                  {c}
+                </Link>
+              ),
+              privacy: (c) => (
+                <Link to="/privacy" target="_blank" className="text-violet-400 hover:underline">
+                  {c}
+                </Link>
+              ),
+            })}
+          </span>
+        </label>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <button
           type="submit"
