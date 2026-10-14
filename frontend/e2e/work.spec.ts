@@ -8,6 +8,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function expectReadable(page: Page, where: string) {
+  // let any colour transition finish first: a button caught half way between two colours measures as unreadable on a slow phone run
+  await page.waitForTimeout(600);
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
   const results = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
   const problems = results.violations.flatMap((v) => v.nodes.map((n) => `${n.target.join(" ")} — ${(n.any[0]?.message ?? v.help).replace(/\s+/g, " ")}`));
   expect(problems, `unreadable text on ${where}`).toEqual([]);
