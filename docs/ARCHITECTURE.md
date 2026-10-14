@@ -540,7 +540,21 @@ Both must be true before anything is shown: the person's profile is public (not 
 
 **Headers.** The website's own pages (everything except `/api`, `/embed`, `/p` and the sitemap, which keep the headers their server sets) are sent with `X-Frame-Options: DENY` and `frame-ancestors 'none'` (no site can put them in a frame), `nosniff`, `strict-origin-when-cross-origin` and a permissions policy that allows only the microphone (live audio rooms). An address that isn't a page now shows a "That page isn't here" page, marked noindex, instead of silently going to the home page.
 
-### Following topics and the weekly summary — `/api/topics`, `/api/digest`
+### The MCP server — `/api/mcp` (public, read-only tools)
+A [Model Context Protocol](https://modelcontextprotocol.io) server on the API, so an AI assistant can look up people and work and answer questions about the site with a citation. Streamable HTTP, **stateless** (a new server and transport per request, JSON responses; nothing is kept between calls, so a server that has just woken up works at once). `GET /api/mcp` describes it for a person; `POST` speaks the protocol; `GET /audit` is the log (administrators only, 404 to anyone else).
+
+| Tool | Reads | Notes |
+|---|---|---|
+| `search_creators` | Public profiles | words, tag, open to work; ≤ 10 results; no email or anything private |
+| `get_creator` | One public profile, its newest 5 pieces and 3 posts | the same bare error for a private, suspended or missing member |
+| `find_pieces` | Public portfolio pieces | tag, caption words or kind; media addresses only if https |
+| `search_docs` | The project's documents (this one, the security review, the API README) | passages split by heading, scored by the words asked, returned with document, section and a GitHub link to cite; an honest empty list when the documents don't cover it |
+
+Everything is read-only (annotated so) and limited to what a visitor who isn't signed in could open. Fields written by members come back with a note that they are data, never instructions. The documents are read from GitHub at fixed addresses (never one a caller names), kept for an hour, with the last good copy used if GitHub can't be reached. Cross-site browser requests are turned away by the existing origin check; programs are limited to 300 requests an hour per address.
+
+**Audit log.** Every tool call writes a `McpAuditEntry`: the tool, what was asked (each text cut to 100 characters), ok or error, how many results, the document sections an answer was grounded in, how long it took, and the caller's own User-Agent. No address and no account. A call the protocol turned away before it ran (an argument of the wrong kind) is logged too. Entries delete themselves after 180 days; `scripts/export-mcp-audit.mjs` writes the log as Markdown.
+
+ — `/api/topics`, `/api/digest`
 **Topics (auth).** `PUT/DELETE /topics/:tag` follows or stops following a #hashtag (up to 30; the tag is checked as a plain word, `400` otherwise; 120 an hour) and `GET /topics` lists yours; the list is private. `GET /explore?mine=1` (signed in) shows the public posts or pieces about the topics you follow, under every rule Explore already has (public, unsuspended, not blocked or muted, your muted words), and an asked-for `tag` wins over `mine`.
 
 **The weekly summary (auth to change, public to run).** An email, off unless the person turns it on (`PUT /digest {enabled}`; the first one is a week later), of what happened since the last one: new followers, comments and replies, friend requests, new messages in project rooms, open calls that fit what they offer, and news in the topics they follow. It is counts and titles only, never anyone's words, in the person's language, and it is not sent when there is nothing to say (the next look is then three days away). `POST /digest/run` sends the ones that are due, at most 25 a run and not more often than every five minutes; the scheduled keep-warm check calls it, and it is safe for anyone to call because each person is due once a week, claimed in the database before anything is built. Only confirmed addresses, never suspended accounts. Every email carries a link to `/digest/unsubscribe#token=…`, which turns it off with a token the site signed (`POST /digest/unsubscribe`; one answer for a forged, old or wrong-purpose token; no sign-in needed).
@@ -945,7 +959,7 @@ rather than adding input validation to each route individually.
 
 **Three layers of tests, each faking only what it must.**
 (1) *Backend* (`first-server`): Vitest + Supertest against a dedicated
-`creativeselect_test` database — 1510 tests over auth (throttling, CSRF, session
+`creativeselect_test` database — 1522 tests over auth (throttling, CSRF, session
 revocation), Tasks and the Help wanted board, friends, direct messages, group chat, password reset, voice live rooms, blocking, reports, groups,
 portfolio media (reactions, video uploads and links), profile editing, account
 deletion, password change, uploads (including a storage account that refuses them) and stored-asset cleanup (Cloudinary is mocked).

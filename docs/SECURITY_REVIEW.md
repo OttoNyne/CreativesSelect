@@ -1568,6 +1568,18 @@ Sharing someone's post puts it in front of the sharer's audience, and a saved li
 - Covered by 3 backend tests, 10 frontend tests and 4 browser flows on all three browsers. **Not covered:** the website still has no full content-security policy (the scripts and the services it loads from are a larger change, to be introduced in report-only mode first); the policy pages are plain-language text that a lawyer should read before launch, and the Spanish and Arabic text deserves a native reader; accounts made before the box existed have no record, and nothing asks them to agree.
 
 
+### 5.97 The MCP server: read-only tools for AI assistants
+
+**Threats.** An assistant (or a person using one) reaching private data through the tools, a member's own words used to steer the assistant (prompt injection through a bio or caption), a tool being made to read or fetch something it shouldn't, abuse of an unauthenticated endpoint, a browser on another site using it, and calls that leave no trace.
+
+**What stops it.**
+- **Public data only, read-only by construction.** Each tool queries only members who are public and not suspended, never returns an email, a message, a private profile or anything about who is asking, and writes nothing. Tools are annotated read-only, and a private, suspended or missing member all get the same error (tested).
+- **Member text is marked as data.** Bios, captions and posts come back with a note that they were written by members and are to be reported, never followed, and are cut to short lengths; a media address is returned only if it is https.
+- **Nothing a caller types is a path or an address.** The documents are read from three fixed GitHub addresses (or a local file), so the search tool can't be used to fetch anything else; search words are escaped before they reach a database query (tested with `.*`).
+- **Limited and not a browser's to call.** 300 requests an hour per address, every result capped at 10, and the existing origin check turns away any browser request from another site (tested: 403).
+- **Every call is on record.** The audit log has the tool, what was asked (cut short), outcome, result count, the sources an answer was grounded in and the time taken, with no address or account; failures and calls the protocol refused are logged too (tested); administrators only, deleted after 180 days.
+- Covered by 12 backend tests (and a run with the official MCP client). **Not covered:** the endpoint needs no key, so anyone may use the public tools within the limit (by design: nothing in them is private); an assistant that ignores the "data, not instructions" note can still be misled by what a member wrote, which no server can prevent; and the documents the search reads are the project's public ones, so a change to them changes the answers.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
