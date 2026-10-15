@@ -47,7 +47,7 @@ v0 scored sections by how rare each question word is across the documents, with 
 1. **BM25 with length normalisation.** v0 kept returning one very long section ("7. Technical Decisions") for questions it knew nothing about, simply because a long section contains many words. BM25 stops long sections winning by length.
 2. **A coverage rule.** A section is returned only if the words it holds make up at least half of the *weight* of the whole question (a missing rare word counts heavily). This is what turned out-of-scope answers from 2 of 6 correct to 5 of 6.
 
-The end-to-end run, through the server with the official MCP client and every call written to its audit log, is in `EVAL_RESULTS.md` (per-question table with audit ids) and `eval-results.json`. **It was made against a local instance of the same code (commit `40cc204`), not the production address**, because the production deploy had not happened when this was written; it gave the same 22 of 28 and 5 of 6, with a median of 25 ms and a 95th percentile of 45 ms per call. The production run replaces it as soon as the deploy lands.
+The end-to-end run, through the server with the official MCP client and every call written to its audit log, is in `EVAL_RESULTS.md` (per-question table with audit ids) and `eval-results.json`. **It was made against the production address** (`https://www.creativesselect.com/api/mcp`, commit `40cc204`, 15 October 2026) and gave the same 22 of 28 and 5 of 6 as the earlier local run, with a median of 414 ms and a 95th percentile of 730 ms per call over the internet. All 34 calls (and the 3 of the demo script) are in `MCP_AUDIT_LOG.md`, each with the request id shown in the results table.
 
 ## What still fails (v1)
 
@@ -71,7 +71,7 @@ Five of the six are the same failure: the question and the section share meaning
 - **The labels were adjusted once, openly.** After the first run, seven questions answered by two documents had the second one accepted; no wrong answer was relabelled right (d08 and the paraphrase misses stand). The numbers above use the corrected labels for every column, including the baseline, so they are comparable.
 - **It measures retrieval, not answers.** The server returns passages; the assistant that uses them writes the answer, and its wording, faithfulness and use of the citation are not measured here.
 - **The documents change.** They are read live from GitHub, so a rerun after the documents change can move the numbers by a question or two (the architecture notes grew by the MCP section during this work).
-- **Latency was measured on the same machine as the server** (a local instance), with no load, so it says nothing about production, where the first call after the free tier sleeps takes much longer.
+- **Latency is measured over the internet from one machine**, with no load on the server and the server awake; the first call after the free tier has been asleep takes much longer (the keep-warm check makes that rare).
 
 ## How to repeat it
 

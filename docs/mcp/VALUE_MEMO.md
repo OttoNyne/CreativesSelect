@@ -4,7 +4,7 @@
 
 ## The claim
 
-> **For questions about how CreativesSelect is built and secured, the MCP server's `search_docs` tool returns the section that answers it in its top three results 79% of the time (22 of 28 questions), against 50% (14 of 28) for a plain word-count search over the same text, and returns nothing for 5 of 6 questions the documents don't cover. A call took a median of 25 ms in the end-to-end run (a local instance of the same code; the production figure is still to be measured) and costs nothing extra to run.**
+> **For questions about how CreativesSelect is built and secured, the MCP server's `search_docs` tool returns the section that answers it in its top three results 79% of the time (22 of 28 questions), against 50% (14 of 28) for a plain word-count search over the same text, and returns nothing for 5 of 6 questions the documents don't cover. A call took a median of 414 ms (95th percentile 730 ms) over the internet against the production address, and costs nothing extra to run.**
 
 That is a statement about the *search*. It is the only number in this memo that was measured, and the measurement is in `EVAL_REPORT.md`.
 
