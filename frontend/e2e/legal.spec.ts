@@ -26,7 +26,11 @@ test.describe("policy pages, sign-up agreement and not-found page", () => {
       await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
       await expect(page).toHaveTitle(title);
       await expect(page.getByText(/Last updated: /)).toBeVisible();
-      await expect(page.getByText(/use the Report button on anything on the site/)).toBeVisible();
+      // who to write to: the contact address when the site was built with one, otherwise a pointer to the Report button
+      const contact = page.getByText(/Questions or concerns:/);
+      await expect(contact).toBeVisible();
+      if (await contact.getByRole("link").count()) await expect(contact.getByRole("link")).toHaveAttribute("href", /^mailto:[^\s@]+@[^\s@]+\.[a-z]+$/);
+      else await expect(contact).toContainText("use the Report button on anything on the site");
       await expectNoHorizontalOverflow(page);
       await expectReadable(page, `the ${heading} page`);
     }
