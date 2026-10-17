@@ -1580,6 +1580,18 @@ Sharing someone's post puts it in front of the sharer's audience, and a saved li
 - **Every call is on record.** The audit log has the tool, what was asked (cut short), outcome, result count, the sources an answer was grounded in and the time taken, with no address or account; failures and calls the protocol refused are logged too (tested); administrators only, deleted after 180 days.
 - Covered by 12 backend tests (and a run with the official MCP client). **Not covered:** the endpoint needs no key, so anyone may use the public tools within the limit (by design: nothing in them is private); an assistant that ignores the "data, not instructions" note can still be misled by what a member wrote, which no server can prevent; and the documents the search reads are the project's public ones, so a change to them changes the answers.
 
+### 5.98 Telling the moderators a report is waiting, without a report becoming a way to reach them
+
+**Threats.** An email to a moderator carrying a stranger's words (a report's reason is written by anyone, so it could hold a phishing link or an instruction), a flood of reports becoming a flood of mail, mail going to people who shouldn't get it, the same report announced twice, and announcing every old report the moment the feature is switched on.
+
+**What stops it.**
+- **Counts and a link, never words.** The email says how many reports are new and open and links to the review queue; it never contains what was reported, the reason or who reported it (tested with a reason that holds a link and a post that holds a marker phrase: neither appears).
+- **One email in five minutes.** However many reports arrive, the moderators get at most one email every five minutes; reports in between wait and are counted in the next one, so an attacker filing reports (already limited to 30 an hour each) gets a moderator at most 12 emails an hour.
+- **Only the right people.** The recipients are the `ADMIN_EMAILS` addresses whose accounts are active and whose address is confirmed, the same rule as the review queue; an unconfirmed or suspended listed address gets nothing (tested). If nobody can be told, the reports stay unannounced until somebody can be.
+- **Once.** Reports are claimed with a single database update before anything is sent, so two runs at the same moment send once (tested), and a report already told about is not announced again. Reports that a moderator has already handled, and reports older than a day, are not counted.
+- **Never in the way.** The alert runs in the background after the report is saved; a mail failure can't change what the reporter sees, and `REPORT_ALERTS=off` switches it off.
+- Covered by 8 backend tests (and the email text in every language by the existing email-language tests). **Not covered:** a browser test (the five-minute quiet time makes a real-time end-to-end check slow), and the email's delivery and spam handling are the mail provider's.
+
 ## 6. Operational incident: a stale DB hostname caused a production outage
 
 While cleaning up the leftover test accounts noted below, live verification
