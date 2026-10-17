@@ -25,6 +25,8 @@ dist-ssr
 
 .vercel
 .env*
+# the one settings file that is meant to be committed: public values baked into the site (nothing secret goes in it)
+!.env.production
 
 # Playwright
 test-results/
