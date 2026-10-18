@@ -209,6 +209,12 @@ export function ChallengePage() {
             </p>
           </section>
 
+          <p className="text-sm">
+            <Link to="/sketch" className="text-violet-300 hover:underline">
+              {t("play.rollLink")}
+            </Link>
+          </p>
+
           <section aria-label={t("challenge.yourEntry")} className="space-y-2">
             {!user ? (
               <p className="text-sm text-white/70">

@@ -37,6 +37,7 @@ import { BlogEditorPage } from "./pages/BlogEditorPage";
 import { PostPage } from "./pages/PostPage";
 import { FeaturesPage } from "./pages/FeaturesPage";
 import { ChallengePage } from "./pages/ChallengePage";
+import { SketchPage } from "./pages/SketchPage";
 import { ExplorePage } from "./pages/ExplorePage";
 import { CallsPage } from "./pages/CallsPage";
 import { CallPage } from "./pages/CallPage";
@@ -76,6 +77,7 @@ export default function App() {
           <Route path="/terms" element={<LegalPage doc="terms" />} />
           <Route path="/guidelines" element={<LegalPage doc="guidelines" />} />
           <Route path="/challenge" element={<ChallengePage />} />
+          <Route path="/sketch" element={<SketchPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/calls" element={<CallsPage />} />
           <Route path="/calls/:id" element={<CallPage />} />

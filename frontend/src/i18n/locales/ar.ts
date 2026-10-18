@@ -23,6 +23,7 @@ import { livelog } from "./ar/livelog";
 import { credits } from "./ar/credits";
 import { work } from "./ar/work";
 import { challenge } from "./ar/challenge";
+import { play } from "./ar/play";
 import { mention } from "./ar/mention";
 import { follow } from "./ar/follow";
 import { explore } from "./ar/explore";
@@ -41,5 +42,5 @@ import { embed } from "./ar/embed";
 import { legal } from "./ar/legal";
 
 // Arabic (right to left). Each part of the site has its own file in ar/; the server's own (English) messages, shown on the page, are in server.ar.ts.
-export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects, ...topics, ...critique, ...scheduled, ...embed, ...legal };
+export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects, ...topics, ...critique, ...scheduled, ...embed, ...legal, ...play };
 export { serverAr as server } from "./server.ar";
