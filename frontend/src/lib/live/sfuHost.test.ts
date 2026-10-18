@@ -480,3 +480,50 @@ describe("SfuHost: who is speaking", () => {
     quiet.host.stop();
   });
 });
+
+describe("SfuHost: the phone's network comes back after the connection was given up on", () => {
+  it("starts over by itself, through the relay, and says it is on the air again", async () => {
+    const onConnection = vi.fn();
+    const { host, api, onFailed } = setup({ onConnection, maxAttempts: 1 });
+    api.token.mockRejectedValue(new TypeError("offline"));
+    host.start();
+    await settle();
+    expect(onFailed).toHaveBeenCalledTimes(1);
+    api.token.mockResolvedValue({ url: "wss://demo.livekit.cloud", token: "host-token" });
+    window.dispatchEvent(new Event("online"));
+    await settle();
+    expect(onConnection).toHaveBeenCalledWith("reconnecting");
+    expect(onConnection).toHaveBeenLastCalledWith("live");
+    expect(lastRoom().connectOptions).toEqual({ rtcConfig: { iceTransportPolicy: "relay" } });
+    expect(lastRoom().published).toHaveLength(1);
+    host.stop();
+  });
+
+  it("does nothing when the connection hadn't been given up on, or after the live is over", async () => {
+    const { host, api } = setup({ maxAttempts: 1 });
+    host.start();
+    await settle();
+    const rooms = FakeRoom.all.length;
+    window.dispatchEvent(new Event("online"));
+    await settle();
+    expect(FakeRoom.all).toHaveLength(rooms);
+    host.stop();
+    api.token.mockRejectedValue(new TypeError("offline"));
+    window.dispatchEvent(new Event("online"));
+    await settle();
+    expect(FakeRoom.all).toHaveLength(rooms);
+  });
+
+  it("doesn't start over when the server said no (the live is over, or this isn't allowed)", async () => {
+    const { host, api, onFailed } = setup();
+    api.token.mockRejectedValue(new ApiError(403, "Join this live first"));
+    host.start();
+    await settle();
+    expect(onFailed).toHaveBeenCalledWith("Join this live first");
+    api.token.mockClear();
+    window.dispatchEvent(new Event("online"));
+    await settle();
+    expect(api.token).not.toHaveBeenCalled();
+    host.stop();
+  });
+});

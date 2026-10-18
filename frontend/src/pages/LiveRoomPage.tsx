@@ -112,7 +112,11 @@ function HostRoom({ room }: { room: LiveRoom }) {
               onListenerCount: setListeners,
               onEnded,
               onFailed: setFailure,
-              onConnection: setConnection,
+              // back on the air (after the network returned): the "couldn't connect" message no longer applies
+              onConnection: (state) => {
+                setConnection(state);
+                if (state === "live") setFailure(null);
+              },
               onMicrophone: (state) => {
                 setMic(state);
                 note(`Microphone: ${state}`);
@@ -378,6 +382,14 @@ function ListenerRoom({ room }: { room: LiveRoom }) {
         }
       },
       heartbeatMs: room.heartbeatMs,
+      // a phone on mobile data usually can't use the direct audio route, so it starts on the relay
+      startWithRelay: onMobileData(),
+      // a guest whose connection was rebuilt and whose microphone couldn't be put back is told, instead of carrying on in silence
+      onSpeakingLost: (message: string) => {
+        setMicStarted(false);
+        setMicOn(false);
+        setStageError(message);
+      },
     };
     const listener = room.mode === "sfu" ? new SfuListener(options) : new LiveListener(options);
     listenerRef.current = listener;

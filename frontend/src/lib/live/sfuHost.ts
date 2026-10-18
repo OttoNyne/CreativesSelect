@@ -56,7 +56,20 @@ export class SfuHost {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private unwatchMicrophone: () => void = () => {};
   private stopped = false;
+  /** The connection was given up on because of the network (not because the server said no). */
+  private gaveUp = false;
   private readonly heartbeatPoller: Poller;
+  // The phone's network came back after the connection was given up on: start over, so a live that is still running isn't left silent
+  // until the host notices and taps something.
+  private readonly onOnline = () => {
+    if (!this.gaveUp || this.stopped) return;
+    this.gaveUp = false;
+    this.attempts = 0;
+    this.useRelay = true;
+    this.opts.onDiagnostic?.(t("livelog.yourPhoneIsBack"));
+    this.opts.onConnection?.("reconnecting");
+    void this.connect();
+  };
 
   constructor(opts: SfuHostOptions) {
     this.opts = opts;
@@ -65,6 +78,7 @@ export class SfuHost {
   }
 
   start() {
+    if (typeof window !== "undefined") window.addEventListener("online", this.onOnline);
     this.watchMicrophone();
     void this.connect();
     this.heartbeatPoller.start();
@@ -94,6 +108,7 @@ export class SfuHost {
 
   stop() {
     this.stopped = true;
+    if (typeof window !== "undefined") window.removeEventListener("online", this.onOnline);
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.unwatchMicrophone();
     this.heartbeatPoller.stop();
@@ -129,7 +144,10 @@ export class SfuHost {
     this.guestStream = null; // a new connection hands over the guests' audio afresh
     // A connection that dies within moments of starting usually means the direct audio route is blocked on this network.
     if (Date.now() - this.startedAt < HEALTHY_AFTER_MS) this.useRelay = true;
-    if (this.attempts >= (this.opts.maxAttempts ?? 3)) return this.fail(t("livelog.theConnectionToThe2"));
+    if (this.attempts >= (this.opts.maxAttempts ?? 3)) {
+      this.gaveUp = true;
+      return this.fail(t("livelog.theConnectionToThe2"));
+    }
     this.opts.onConnection?.("reconnecting");
     this.retryTimer = setTimeout(() => void this.connect(), RETRY_DELAY_MS * (this.attempts + 1));
   }
@@ -196,7 +214,10 @@ export class SfuHost {
       // anything else is most likely the network: try again (through the relay) before giving up
       this.opts.onDiagnostic?.(err instanceof Error && err.message ? t("livelog.couldntConnectBecause", { message: err.message }) : t("livelog.couldntConnect"));
       this.useRelay = true;
-      if (this.attempts >= (this.opts.maxAttempts ?? 3)) return this.fail(t("livelog.couldntConnectToThe"));
+      if (this.attempts >= (this.opts.maxAttempts ?? 3)) {
+        this.gaveUp = true;
+        return this.fail(t("livelog.couldntConnectToThe"));
+      }
       this.room?.disconnect();
       this.room = null;
       this.opts.onConnection?.("reconnecting");

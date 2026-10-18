@@ -334,3 +334,127 @@ describe("SfuListener: guests on stage", () => {
     await listener.leave();
   });
 });
+
+describe("SfuListener: networks that block the direct audio route (a phone on mobile data)", () => {
+  const RELAY = { rtcConfig: { iceTransportPolicy: "relay" } };
+
+  it("connects directly at first, and through the relay from the start when asked to", async () => {
+    const direct = setup();
+    await direct.listener.start();
+    expect(lastRoom().connectOptions).toBeUndefined();
+    await direct.listener.leave();
+    FakeRoom.reset();
+    const phone = setup({ startWithRelay: true });
+    await phone.listener.start();
+    expect(lastRoom().connectOptions).toEqual(RELAY);
+    await phone.listener.leave();
+  });
+
+  it("starts over through the relay when the connection drops soon after starting", async () => {
+    const { listener, states } = setup();
+    await listener.start();
+    const first = lastRoom();
+    await vi.advanceTimersByTimeAsync(5_000);
+    first.emit(RoomEvent.Reconnecting);
+    expect(states.at(-1)).toBe("reconnecting");
+    expect(first.disconnected).toBe(true);
+    first.emit(RoomEvent.Disconnected); // closing the room says so, which hands over to a new connection
+    await settle();
+    expect(FakeRoom.all).toHaveLength(2);
+    expect(lastRoom().connectOptions).toEqual(RELAY);
+    await listener.leave();
+  });
+
+  it("leaves a connection that has been fine for a while to ride out a drop by itself", async () => {
+    const { listener, states } = setup();
+    await listener.start();
+    const first = lastRoom();
+    first.emit(RoomEvent.TrackSubscribed, audioTrack);
+    await vi.advanceTimersByTimeAsync(40_000);
+    first.emit(RoomEvent.Reconnecting);
+    expect(states.at(-1)).toBe("reconnecting");
+    expect(first.disconnected).toBe(false);
+    first.emit(RoomEvent.Reconnected);
+    expect(states.at(-1)).toBe("live");
+    await listener.leave();
+  });
+
+  it("tries the relay when it couldn't connect at all", async () => {
+    const { listener } = setup();
+    FakeRoom.failConnect = new Error("ice failed");
+    await listener.start();
+    await settle();
+    expect(FakeRoom.all.length).toBeGreaterThanOrEqual(2);
+    expect(FakeRoom.all[0].connect).toHaveBeenCalledWith("wss://demo.livekit.cloud", "listener-token", undefined);
+    expect(FakeRoom.all[1].connect).toHaveBeenCalledWith("wss://demo.livekit.cloud", "listener-token", RELAY);
+    await listener.leave();
+  });
+
+  it("tries again by itself when the phone's network comes back, but only after giving up, and not after leaving", async () => {
+    const { listener, states } = setup();
+    await listener.start();
+    window.dispatchEvent(new Event("online"));
+    await settle();
+    expect(FakeRoom.all).toHaveLength(1); // nothing was wrong
+    for (let i = 0; i < 3; i++) {
+      lastRoom().emit(RoomEvent.Disconnected);
+      await settle();
+    }
+    expect(states.at(-1)).toBe("failed");
+    const before = FakeRoom.all.length;
+    window.dispatchEvent(new Event("online"));
+    await settle();
+    expect(FakeRoom.all.length).toBe(before + 1);
+    expect(states.at(-1)).toBe("connecting"); // a fresh try, as when the person taps Try again
+    await listener.leave();
+    window.dispatchEvent(new Event("online"));
+    await settle();
+    expect(FakeRoom.all.length).toBe(before + 1);
+  });
+});
+
+describe("SfuListener: a guest on stage whose connection is rebuilt", () => {
+  async function speaking(overrides: Partial<ConstructorParameters<typeof SfuListener>[0]> = {}) {
+    const made = setup(overrides);
+    await made.listener.start();
+    lastRoom().localParticipant.permissions = { canPublish: true };
+    await made.listener.startSpeaking();
+    return made;
+  }
+
+  it("turns the microphone back on in the new connection, as it was", async () => {
+    const { listener } = await speaking();
+    await listener.setSpeakingMuted(true);
+    lastRoom().emit(RoomEvent.Disconnected);
+    await settle();
+    const rebuilt = lastRoom();
+    expect(FakeRoom.all).toHaveLength(2);
+    rebuilt.localParticipant.permissions = { canPublish: true };
+    await vi.advanceTimersByTimeAsync(300);
+    // on again, then back to muted, because that is how the guest had left it
+    expect(rebuilt.localParticipant.setMicrophoneEnabled.mock.calls.map((c) => c[0])).toEqual([true, false]);
+    await listener.leave();
+  });
+
+  it("tells the page when the microphone can't be put back, instead of carrying on in silence", async () => {
+    const onSpeakingLost = vi.fn();
+    const { listener } = await speaking({ onSpeakingLost });
+    lastRoom().emit(RoomEvent.Disconnected);
+    await settle();
+    await vi.advanceTimersByTimeAsync(7_000); // the new connection never lets the microphone through
+    expect(onSpeakingLost).toHaveBeenCalledWith(expect.stringContaining("hasn't let your microphone through"));
+    await listener.leave();
+  });
+
+  it("does nothing about the microphone for someone who was only listening, or who stepped down", async () => {
+    const onSpeakingLost = vi.fn();
+    const { listener } = await speaking({ onSpeakingLost });
+    await listener.stopSpeaking();
+    lastRoom().emit(RoomEvent.Disconnected);
+    await settle();
+    await vi.advanceTimersByTimeAsync(7_000);
+    expect(lastRoom().localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
+    expect(onSpeakingLost).not.toHaveBeenCalled();
+    await listener.leave();
+  });
+});
