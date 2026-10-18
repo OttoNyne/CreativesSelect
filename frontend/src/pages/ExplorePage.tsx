@@ -145,6 +145,11 @@ export function ExplorePage() {
           {t("play.exploreLink")}
         </Link>
         {user && (
+          <Link to="/chains" className="ms-4 text-sm text-violet-300 hover:underline">
+            {t("chain.exploreLink")}
+          </Link>
+        )}
+        {user && (
           <Link to="/critiques" className="ms-4 text-sm text-violet-300 hover:underline">
             {t("critique.exploreLink")}
           </Link>

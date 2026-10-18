@@ -30,6 +30,7 @@ const TYPE_KEY: Record<string, Key> = {
   projectMessage: "misc.type.projectMessage",
   critique: "misc.type.critique",
   critiqueNote: "misc.type.critiqueNote",
+  chainSection: "misc.type.chainSection",
 };
 const typeLabel = (type: string): string => (TYPE_KEY[type] ? t(TYPE_KEY[type]) : type);
 const ACTION_KEY: Record<string, Key> = {

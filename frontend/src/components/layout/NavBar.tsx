@@ -22,11 +22,12 @@ const NAV_LINKS: { to: string; label: Key }[] = [
   { to: "/explore", label: "nav.explore" },
   { to: "/calls", label: "nav.calls" },
   { to: "/sketch", label: "nav.sketch" },
+  { to: "/chains", label: "nav.chains" },
   { to: "/saved", label: "nav.saved" },
 ];
 
 // shown as icons, not words, on the wide bar
-const ICON_LINKS = new Set(["/search", "/calls", "/sketch", "/saved"]);
+const ICON_LINKS = new Set(["/search", "/calls", "/sketch", "/chains", "/saved"]);
 
 export function NavBar() {
   const { user, setUser } = useAuth();
@@ -86,6 +87,9 @@ export function NavBar() {
               </Link>
               <Link to="/sketch" aria-label={t("nav.sketch")} title={t("nav.sketch")} className="flex h-8 w-8 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white">
                 <span aria-hidden="true">✏️</span>
+              </Link>
+              <Link to="/chains" aria-label={t("nav.chains")} title={t("nav.chains")} className="flex h-8 w-8 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white">
+                <span aria-hidden="true">🧩</span>
               </Link>
               <Link to="/saved" aria-label={t("nav.saved")} title={t("nav.saved")} className="flex h-8 w-8 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white">
                 <span aria-hidden="true">★</span>

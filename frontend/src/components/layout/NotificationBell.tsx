@@ -36,6 +36,7 @@ const REMOVED_WHAT: Record<string, Key> = {
   "message in a project room": "notif.what.projectMessage",
   "request for feedback": "notif.what.critique",
   "feedback on a piece": "notif.what.critiqueNote",
+  "drawing in a chain": "notif.what.chainSection",
   content: "notif.what.content",
 };
 const CHANGED_WHAT: Record<string, Key> = { time: "notif.change.time", place: "notif.change.place", link: "notif.change.link" };
@@ -74,6 +75,8 @@ function describe(n: Notification): string {
       return typeof n.payload.title === "string" && n.payload.title ? t("notif.critiqueNote", { title: n.payload.title }) : t("notif.critiqueNoteNoTitle");
     case "critique_thanks":
       return t("notif.critiqueThanks");
+    case "chain_done":
+      return typeof n.payload.prompt === "string" && n.payload.prompt ? t("notif.chainDone", { prompt: n.payload.prompt }) : t("notif.chainDoneNoIdea");
     case "scheduled_post":
       return n.payload.failed === true ? t("notif.scheduledPostFailed") : t("notif.scheduledPost");
     case "project_message":

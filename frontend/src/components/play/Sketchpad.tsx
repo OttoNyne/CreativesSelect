@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } from "react";
-import { BRUSH_SIZES, SKETCH_HEIGHT, SKETCH_WIDTH, SWATCHES, clearDraft, drawSegment, loadDraft, redraw, saveDraft, type Stroke } from "../../lib/sketch";
+import { useCallback, useEffect, useReducer, useRef, useState, type ReactNode, type RefObject } from "react";
+import { BRUSH_SIZES, DRAFT_KEY, SKETCH_HEIGHT, SKETCH_WIDTH, SWATCHES, clearDraft, drawSegment, loadDraft, redraw, saveDraft, type Stroke } from "../../lib/sketch";
 import { t, type Key } from "../../i18n";
 
 const button = "rounded-md border px-3 py-1.5 text-sm disabled:opacity-40";
@@ -27,8 +27,25 @@ function drawingReducer(state: Drawing, action: Action): Drawing {
  * A drawing surface: a pen and an eraser, colours and three brush sizes, undo, redo and clear. It works with a finger, a pen or a mouse.
  * The page that holds it gets the canvas (to turn into a picture) and is told how many strokes there are (to know there is something to post).
  */
-export function Sketchpad({ canvasRef, onStrokes }: { canvasRef: RefObject<HTMLCanvasElement | null>; onStrokes: (count: number) => void }) {
-  const [{ strokes, redoable }, dispatch] = useReducer(drawingReducer, undefined, () => ({ strokes: loadDraft(), redoable: [] }));
+export function Sketchpad({
+  canvasRef,
+  onStrokes,
+  width = SKETCH_WIDTH,
+  height = SKETCH_HEIGHT,
+  draftKey = DRAFT_KEY,
+  above,
+}: {
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  onStrokes: (count: number) => void;
+  /** The size of the page in drawing units (the picture made is this many pixels wide and high). */
+  width?: number;
+  height?: number;
+  /** Where an unfinished drawing is kept on this device; each kind of drawing has its own. */
+  draftKey?: string;
+  /** Something shown directly above the page, as wide as it (the strip a chain's next part carries on from). */
+  above?: ReactNode;
+}) {
+  const [{ strokes, redoable }, dispatch] = useReducer(drawingReducer, draftKey, (key) => ({ strokes: loadDraft(key), redoable: [] }));
   const [erasing, setErasing] = useState(false);
   const [color, setColor] = useState<string>(SWATCHES[0].value);
   const [size, setSize] = useState<number>(BRUSH_SIZES[1]);
@@ -40,16 +57,16 @@ export function Sketchpad({ canvasRef, onStrokes }: { canvasRef: RefObject<HTMLC
   // the page is drawn again whenever the list of strokes changes (and once at the start)
   useEffect(() => {
     const ctx = context();
-    if (ctx) redraw(ctx, strokes);
+    if (ctx) redraw(ctx, strokes, width, height);
     onStrokes(strokes.length);
-    saveDraft(strokes);
-  }, [strokes, context, onStrokes]);
+    saveDraft(strokes, draftKey);
+  }, [strokes, context, onStrokes, width, height, draftKey]);
 
   const pointAt = (e: React.PointerEvent<HTMLCanvasElement>): [number, number] => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) * SKETCH_WIDTH) / (rect.width || SKETCH_WIDTH);
-    const y = ((e.clientY - rect.top) * SKETCH_HEIGHT) / (rect.height || SKETCH_HEIGHT);
-    return [Math.max(0, Math.min(SKETCH_WIDTH, x)), Math.max(0, Math.min(SKETCH_HEIGHT, y))];
+    const x = ((e.clientX - rect.left) * width) / (rect.width || width);
+    const y = ((e.clientY - rect.top) * height) / (rect.height || height);
+    return [Math.max(0, Math.min(width, x)), Math.max(0, Math.min(height, y))];
   };
 
   function start(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -101,7 +118,7 @@ export function Sketchpad({ canvasRef, onStrokes }: { canvasRef: RefObject<HTMLC
     if (!sure) return setSure(true);
     setSure(false);
     dispatch({ type: "clear" });
-    clearDraft();
+    clearDraft(draftKey);
   }
 
   return (
@@ -176,11 +193,12 @@ export function Sketchpad({ canvasRef, onStrokes }: { canvasRef: RefObject<HTMLC
       </div>
 
       {/* the tools sit above the page so they stay in view while drawing; the page is never taller than most of the screen */}
-      <div className="mx-auto" style={{ maxWidth: "min(100%, calc(62vh * 4 / 3))" }}>
+      <div className="mx-auto" style={{ maxWidth: `min(100%, calc(62vh * ${width / height}))` }}>
+        {above}
         <canvas
           ref={canvasRef}
-          width={SKETCH_WIDTH}
-          height={SKETCH_HEIGHT}
+          width={width}
+          height={height}
           role="img"
           aria-label={t("play.canvasLabel")}
           data-testid="sketch-canvas"
@@ -190,8 +208,8 @@ export function Sketchpad({ canvasRef, onStrokes }: { canvasRef: RefObject<HTMLC
           onPointerCancel={finish}
           onLostPointerCapture={finish}
           // the page must not scroll or zoom while a finger is drawing
-          style={{ touchAction: "none" }}
-          className="block aspect-[4/3] w-full cursor-crosshair rounded-lg border border-white/20 bg-[#fffdf8]"
+          style={{ touchAction: "none", aspectRatio: `${width} / ${height}` }}
+          className="block w-full cursor-crosshair rounded-lg border border-white/20 bg-[#fffdf8]"
         />
       </div>
     </div>

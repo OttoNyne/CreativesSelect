@@ -26,6 +26,7 @@ const TITLES: [RegExp, Key | ""][] = [
   [/^\/help-wanted$/, "nav.helpWanted"],
   [/^\/challenge$/, "challenge.title"],
   [/^\/sketch$/, "play.title"],
+  [/^\/chains(?:\/[^/]+)*$/, "chain.title"],
   [/^\/explore$/, "explore.title"],
   [/^\/saved$/, "saves.title"],
   [/^\/calls(?:\/[^/]+)?$/, "calls.title"],

@@ -53,14 +53,14 @@ export function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   drawSegment(ctx, stroke, 1);
 }
 
-/** The blank page, then every stroke on it. */
-export function redraw(ctx: CanvasRenderingContext2D, strokes: Stroke[]) {
+/** The blank page (the size of the sketchpad's, or another), then every stroke on it. */
+export function redraw(ctx: CanvasRenderingContext2D, strokes: Stroke[], width = SKETCH_WIDTH, height = SKETCH_HEIGHT) {
   ctx.fillStyle = PAPER;
-  ctx.fillRect(0, 0, SKETCH_WIDTH, SKETCH_HEIGHT);
+  ctx.fillRect(0, 0, width, height);
   for (const stroke of strokes) drawStroke(ctx, stroke);
 }
 
-const DRAFT_KEY = "cs-sketch-draft";
+export const DRAFT_KEY = "cs-sketch-draft";
 const MAX_DRAFT_CHARS = 400_000;
 
 const isStroke = (s: unknown): s is Stroke => {
@@ -78,24 +78,24 @@ const isStroke = (s: unknown): s is Stroke => {
 };
 
 /** An unfinished drawing kept on this device, so a refresh or a closed tab doesn't lose it. */
-export function loadDraft(): Stroke[] {
+export function loadDraft(key = DRAFT_KEY): Stroke[] {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "[]");
+    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
     return Array.isArray(parsed) ? parsed.filter(isStroke) : [];
   } catch {
     return [];
   }
 }
 
-export function saveDraft(strokes: Stroke[]) {
+export function saveDraft(strokes: Stroke[], key = DRAFT_KEY) {
   try {
-    if (!strokes.length) return localStorage.removeItem(DRAFT_KEY);
+    if (!strokes.length) return localStorage.removeItem(key);
     const text = JSON.stringify(strokes.map((s) => ({ ...s, points: s.points.map((p) => [Math.round(p[0]), Math.round(p[1])]) })));
     // a drawing too big to keep is simply not kept
-    if (text.length <= MAX_DRAFT_CHARS) localStorage.setItem(DRAFT_KEY, text);
+    if (text.length <= MAX_DRAFT_CHARS) localStorage.setItem(key, text);
   } catch {
     // storage unavailable (private window, full): the drawing just isn't kept
   }
 }
 
-export const clearDraft = () => saveDraft([]);
+export const clearDraft = (key = DRAFT_KEY) => saveDraft([], key);

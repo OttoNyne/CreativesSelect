@@ -449,6 +449,16 @@ describe("NotificationBell: feedback on pieces", () => {
     expect(screen.getByText("thanked you for your feedback")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "View feedback" }).map((l) => l.getAttribute("href"))).toEqual(["/critiques/q1", "/critiques/q2", "/critiques/q3"]);
   });
+
+  it("tells someone a chain they drew a part of is finished, and links to it", async () => {
+    await openWith([
+      note({ id: "x1", type: "chain_done", payload: { chainId: "c1", prompt: "A tall cat" } }),
+      note({ id: "x2", type: "chain_done", payload: { chainId: "c2", prompt: "" } }),
+    ]);
+    expect(await screen.findByText("A chain you drew a part of is finished: A tall cat")).toBeInTheDocument();
+    expect(screen.getByText("A chain you drew a part of is finished")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "View the chain" }).map((l) => l.getAttribute("href"))).toEqual(["/chains/c1", "/chains/c2"]);
+  });
 });
 
 describe("NotificationBell: scheduled posts", () => {

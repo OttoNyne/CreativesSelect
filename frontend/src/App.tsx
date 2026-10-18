@@ -38,6 +38,9 @@ import { PostPage } from "./pages/PostPage";
 import { FeaturesPage } from "./pages/FeaturesPage";
 import { ChallengePage } from "./pages/ChallengePage";
 import { SketchPage } from "./pages/SketchPage";
+import { ChainsPage } from "./pages/ChainsPage";
+import { ChainPage } from "./pages/ChainPage";
+import { ChainDrawPage } from "./pages/ChainDrawPage";
 import { ExplorePage } from "./pages/ExplorePage";
 import { CallsPage } from "./pages/CallsPage";
 import { CallPage } from "./pages/CallPage";
@@ -90,6 +93,10 @@ export default function App() {
             <Route path="/" element={<FeedPage />} />
             <Route path="/friends" element={<FriendsPage />} />
             <Route path="/saved" element={<SavedPage />} />
+            <Route path="/chains" element={<ChainsPage />} />
+            <Route path="/chains/new" element={<ChainDrawPage />} />
+            <Route path="/chains/:id" element={<ChainPage />} />
+            <Route path="/chains/:id/draw" element={<ChainDrawPage />} />
             <Route path="/posts/:id" element={<PostPage />} />
             <Route path="/bulletins" element={<BulletinsPage />} />
             <Route path="/events" element={<EventsPage />} />

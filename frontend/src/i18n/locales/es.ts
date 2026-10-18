@@ -24,6 +24,7 @@ import { credits } from "./es/credits";
 import { work } from "./es/work";
 import { challenge } from "./es/challenge";
 import { play } from "./es/play";
+import { chains } from "./es/chains";
 import { mention } from "./es/mention";
 import { follow } from "./es/follow";
 import { explore } from "./es/explore";
@@ -42,5 +43,5 @@ import { embed } from "./es/embed";
 import { legal } from "./es/legal";
 
 // Spanish. Each part of the site has its own file in es/; the server's own (English) messages, shown on the page, are in server.es.ts.
-export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects, ...topics, ...critique, ...scheduled, ...embed, ...legal, ...play };
+export const messages: Partial<Record<Key, Message>> = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects, ...topics, ...critique, ...scheduled, ...embed, ...legal, ...play, ...chains };
 export { serverEs as server } from "./server.es";

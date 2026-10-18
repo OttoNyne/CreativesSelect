@@ -216,3 +216,10 @@ describe("notificationTarget: scheduled posts", () => {
     expect(notificationTarget(n("scheduled_post", {}), "ada")).toEqual({ to: "/", label: "Review scheduled posts" });
   });
 });
+
+describe("notificationTarget: drawing chains", () => {
+  it("a finished chain goes to the chain, or to the list when it isn't recorded", () => {
+    expect(notificationTarget(n("chain_done", { chainId: "c 1" }), "me")).toEqual({ to: "/chains/c%201", label: "View the chain" });
+    expect(notificationTarget(n("chain_done", {}), "me")).toEqual({ to: "/chains", label: "View the chain" });
+  });
+});

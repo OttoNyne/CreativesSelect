@@ -100,6 +100,14 @@ export function SketchPage() {
         <p className="text-sm text-white/70">{t("play.intro")}</p>
       </header>
 
+      {user && (
+        <p className="text-sm">
+          <Link to="/chains" className="text-violet-300 hover:underline">
+            {t("chain.sketchLink")}
+          </Link>
+        </p>
+      )}
+
       {spark ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 p-3">
           <p dir="auto" className="text-sm font-medium text-white">
