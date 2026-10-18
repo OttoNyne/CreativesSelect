@@ -9,7 +9,7 @@ export function SparkStrip() {
   return (
     <section aria-label={t("play.sparkOfDay")} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-400/30 bg-violet-500/10 p-3">
       <div className="min-w-0 flex-1">
-        <p className="text-xs uppercase tracking-wide text-violet-200">{t("play.sparkOfDay")}</p>
+        <p className="text-xs uppercase tracking-wide text-violet-300">{t("play.sparkOfDay")}</p>
         <p dir="auto" className="text-sm font-medium text-white">
           {sparkText(today)}
         </p>
