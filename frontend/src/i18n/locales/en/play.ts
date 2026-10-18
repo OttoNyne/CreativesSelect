@@ -1,6 +1,8 @@
 // the sketchpad and the spark dice
 export const play = {
+  "nav.sketch": "Sketch",
   "play.title": "Sketchpad",
+  "play.stripOpen": "Open the sketchpad",
   "play.intro": "Draw something, then keep it or post it to your portfolio. It works with a finger, a pen or a mouse.",
   "play.exploreLink": "Sketchpad and spark dice",
   "play.canvasLabel": "Drawing area. Draw with a finger, a pen or a mouse.",

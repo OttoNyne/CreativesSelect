@@ -2,7 +2,9 @@ import type { Translation } from "../../index";
 import type { play as en } from "../en/play";
 
 export const play: Translation<typeof en> = {
+  "nav.sketch": "ارسم",
   "play.title": "لوح الرسم",
+  "play.stripOpen": "افتح لوح الرسم",
   "play.intro": "ارسم شيئًا ثم احتفظ به أو انشره في معرض أعمالك. يعمل بالإصبع أو بالقلم أو بالفأرة.",
   "play.exploreLink": "لوح الرسم ونرد الأفكار",
   "play.canvasLabel": "منطقة الرسم. ارسم بإصبعك أو بالقلم أو بالفأرة.",

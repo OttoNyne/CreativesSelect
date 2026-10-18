@@ -120,6 +120,23 @@ test.describe("the sketchpad and the spark dice", () => {
     await expect(page.getByRole("heading", { name: "Sketchpad" })).toBeVisible();
   });
 
+  test("it is easy to find: a link in the top bar or the menu, and today's spark on the feed", async ({ page }) => {
+    await signUpViaUi(page, newUser("finder"));
+    // today's spark is on the feed, with a way in
+    const strip = page.getByRole("region", { name: "Spark of the day" });
+    await expect(strip).toBeVisible();
+    await expectReadable(page, "the feed with the spark");
+    await strip.getByRole("link", { name: "Sketch this" }).click();
+    await expect(page.getByText(/^Drawing: /)).toBeVisible();
+
+    // and from the top bar (a pencil on a wide screen) or the menu (on a phone)
+    await page.goto("/");
+    const menu = page.getByRole("button", { name: "Menu" });
+    if (await menu.isVisible()) await menu.click();
+    await page.getByRole("link", { name: "Sketch", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Sketchpad" })).toBeVisible();
+  });
+
   test("a signed-in person posts the drawing: a PNG and the caption go to the portfolio, and the next steps appear", async ({ page }) => {
     const me = newUser("sketcher");
     await signUpViaUi(page, me);

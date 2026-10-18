@@ -5,6 +5,7 @@ import { ScheduledPosts } from "../components/post/ScheduledPosts";
 import { FeedSkeleton, LoadingBlock } from "../components/common/Skeleton";
 import { PostComposer } from "../components/post/PostComposer";
 import { BulletinsStrip } from "../components/bulletins/BulletinsStrip";
+import { SparkStrip } from "../components/play/SparkStrip";
 import { WelcomeChecklist } from "../components/onboarding/WelcomeChecklist";
 import { PostCard } from "../components/post/PostCard";
 import { ApiError } from "../api/client";
@@ -82,6 +83,7 @@ export function FeedPage() {
       <WelcomeChecklist />
       <BulletinsStrip />
       <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} onScheduled={(waiting) => setScheduled((now) => [...now, waiting].sort((a, b) => a.publishAt.localeCompare(b.publishAt)))} />
+      <SparkStrip />
       <ScheduledPosts items={scheduled} onChange={setScheduled} onPublished={(post) => setPosts((p) => [post, ...p.filter((x) => x.id !== post.id)])} />
 
       {status === "loading" && (

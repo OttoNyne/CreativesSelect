@@ -2,7 +2,9 @@ import type { Translation } from "../../index";
 import type { play as en } from "../en/play";
 
 export const play: Translation<typeof en> = {
+  "nav.sketch": "Dibujar",
   "play.title": "Pizarra de dibujo",
+  "play.stripOpen": "Abrir la pizarra",
   "play.intro": "Dibuja algo y guárdalo o publícalo en tu portafolio. Funciona con el dedo, un lápiz digital o el ratón.",
   "play.exploreLink": "Pizarra de dibujo y dados de ideas",
   "play.canvasLabel": "Zona de dibujo. Dibuja con el dedo, un lápiz digital o el ratón.",
