@@ -96,6 +96,7 @@ vi.mock("../components/live/LiveChat", () => ({
     </div>
   ),
 }));
+vi.mock("../components/live/InvitePanel", () => ({ InvitePanel: ({ liveId }: { liveId: string }) => <div>invite panel for {liveId}</div> }));
 vi.mock("../api/live.api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/live.api")>()),
   liveApi: { get: vi.fn(), end: vi.fn(), stage: vi.fn(), requestToSpeak: vi.fn(), leaveStage: vi.fn(), acceptInvite: vi.fn(), inviteGuest: vi.fn(), removeGuest: vi.fn() },
@@ -700,5 +701,34 @@ describe("LiveRoomPage: connection details for a host", () => {
     act(() => opts.onConnection("reconnecting"));
     expect(await screen.findByText(/Your connection dropped — reconnecting/)).toBeInTheDocument();
     expect(screen.queryByText(/Your phone has lost its internet connection/)).not.toBeInTheDocument();
+  });
+});
+
+describe("LiveRoomPage: invite-only lives", () => {
+  it("tells the host it is private, gives them the people to manage, and offers no link to share", async () => {
+    api.get.mockResolvedValue({ live: room({ isHost: true, private: true }) });
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    expect(await screen.findByText(/only the people invited can see it/)).toBeInTheDocument();
+    expect(screen.getByText("invite panel for l1")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Share" })).toBeNull();
+  });
+
+  it("tells an invited listener it is private, without the host's controls", async () => {
+    api.get.mockResolvedValue({ live: room({ private: true }) });
+    renderRoom();
+    expect(await screen.findByText(/only the people invited can see it/)).toBeInTheDocument();
+    expect(screen.queryByText(/invite panel/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Share" })).toBeNull();
+  });
+
+  it("is unchanged for an ordinary live: nothing about invitations, and the share button is there", async () => {
+    api.get.mockResolvedValue({ live: room({ isHost: true }) });
+    holdStreamFor("l1", new FakeStream().asStream());
+    renderRoom();
+    await screen.findByText(/You're live/);
+    expect(screen.queryByText(/only the people invited/)).toBeNull();
+    expect(screen.queryByText(/invite panel/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Share" })).toBeInTheDocument();
   });
 });

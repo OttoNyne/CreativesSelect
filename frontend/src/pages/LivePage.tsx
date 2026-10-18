@@ -6,6 +6,7 @@ import { ScheduleLive } from "../components/live/ScheduleLive";
 import { UpcomingLives } from "../components/live/UpcomingLives";
 import { ApiError } from "../api/client";
 import { Avatar } from "../components/common/Avatar";
+import { FriendPicker } from "../components/live/FriendPicker";
 import { liveAudioSupported, unsupportedMessage } from "../lib/live/rtc";
 import { holdStreamFor, MIC_CONSTRAINTS, micErrorMessage } from "../lib/live/hostStream";
 import type { LiveRoom, ScheduledLive } from "../types";
@@ -21,6 +22,9 @@ export function LivePage() {
   const [loadError, setLoadError] = useState(false);
   const [title, setTitle] = useState("");
   const [starting, setStarting] = useState(false);
+  // an invite-only live: only the friends picked here (and more added later) can see it
+  const [inviteOnly, setInviteOnly] = useState(false);
+  const [invite, setInvite] = useState<string[]>([]);
   const [startError, setStartError] = useState<string | null>(null);
   const [plans, setPlans] = useState<ScheduledLive[] | null>(null);
 
@@ -65,12 +69,12 @@ export function LivePage() {
 
   function handleGoLive(e: React.FormEvent) {
     e.preventDefault();
-    void startLive(title.trim());
+    void startLive(title.trim(), undefined, inviteOnly ? { private: true, invite } : undefined);
   }
 
   // Starts a live (optionally as the fulfilment of a planned one). The microphone prompt has to come from the tap that got
   // us here, so this is called straight from the button's handler.
-  async function startLive(name: string, scheduledId?: string) {
+  async function startLive(name: string, scheduledId?: string, privateOptions?: { private: boolean; invite: string[] }) {
     if (!name || starting) return;
     setStartError(null);
     if (!navigator.mediaDevices?.getUserMedia || !liveAudioSupported()) {
@@ -86,7 +90,7 @@ export function LivePage() {
       return setStartError(micErrorMessage(err));
     }
     try {
-      const { live } = await (scheduledId ? liveApi.start(name, scheduledId) : liveApi.start(name));
+      const { live } = await (privateOptions ? liveApi.start(name, scheduledId, privateOptions) : scheduledId ? liveApi.start(name, scheduledId) : liveApi.start(name));
       holdStreamFor(live.id, stream);
       navigate(`/live/${live.id}`);
     } catch (err) {
@@ -122,6 +126,16 @@ export function LivePage() {
             {starting ? t("settings.starting") : t("live.goLive")}
           </button>
         </div>
+        <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-white">
+          <input type="checkbox" checked={inviteOnly} onChange={(e) => setInviteOnly(e.target.checked)} className="size-4" />
+          {t("privatelive.toggle")}
+        </label>
+        {inviteOnly && (
+          <div className="mt-2 space-y-2">
+            <p className="text-xs text-white/60">{t("privatelive.hint")}</p>
+            <FriendPicker selected={invite} onChange={setInvite} />
+          </div>
+        )}
         <p className="mt-2 text-xs text-white/60">
           {t("live.hostNote", { limit: maxListeners ? t("live.upToListeners", { n: maxListeners }) : t("live.listenersCanJoinWhile") })}
         </p>
@@ -155,6 +169,7 @@ export function LivePage() {
                   {l.isHost ? t("groups.you") : l.host.displayName} · {t("live.listeningCount", { n: l.listenerCount })}
                 </span>
               </span>
+              {l.private && <span className="rounded border border-violet-300/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">🔒 {t("privatelive.badge")}</span>}
               <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">{t("nav.live")}</span>
             </Link>
           ))}

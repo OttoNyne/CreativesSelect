@@ -1,5 +1,11 @@
 import { api } from "./client";
-import type { LiveComment, LiveRoom, LiveStage, StageState } from "../types";
+import type { LiveComment, LiveRoom, LiveStage, StageState, User } from "../types";
+
+/** Someone invited to an invite-only live, and whether they are in the room right now. */
+export interface LiveInvitee {
+  user: User;
+  present: boolean;
+}
 
 export const MAX_LIVE_COMMENT_LENGTH = 200;
 export const MAX_LIVE_TITLE_LENGTH = 80;
@@ -17,7 +23,12 @@ export const liveApi = {
   list: () => api.get<{ lives: LiveRoom[]; config?: { mode: "mesh" | "sfu"; maxListeners: number } }>("/live"),
   get: (id: string) => api.get<{ live: LiveRoom }>(`/live/${id}`),
   /** Start a live; `scheduledId` says which planned live this is (it is then closed, and people who asked for a reminder are told). */
-  start: (title: string, scheduledId?: string) => api.post<{ live: LiveRoom }>("/live", scheduledId ? { title, scheduledId } : { title }),
+  start: (title: string, scheduledId?: string, options?: { private?: boolean; invite?: string[] }) =>
+    api.post<{ live: LiveRoom }>("/live", { title, ...(scheduledId ? { scheduledId } : {}), ...(options?.private ? { private: true, invite: options.invite ?? [] } : {}) }),
+  /** Host of an invite-only live: who is invited (and in the room), invite more friends, or take an invitation back. */
+  invites: (id: string) => api.get<{ invited: LiveInvitee[]; max: number }>(`/live/${id}/invites`),
+  invite: (id: string, userIds: string[]) => api.post<{ invited: LiveInvitee[]; max: number }>(`/live/${id}/invites`, { userIds }),
+  uninvite: (id: string, userId: string) => api.delete<void>(`/live/${id}/invites/${userId}`),
   end: (id: string) => api.post<void>(`/live/${id}/end`),
   join: (id: string) => api.post<{ live: LiveRoom }>(`/live/${id}/join`),
   leave: (id: string) => api.post<void>(`/live/${id}/leave`),

@@ -533,7 +533,7 @@ export interface BlogEntry {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "project_message" | "critique_note" | "critique_thanks" | "chain_done" | "scheduled_post" | "reaction";
+  type: "friend_request" | "friend_accept" | "comment" | "profile_comment" | "group_invite" | "help_offer" | "help_accepted" | "live_started" | "message" | "live_scheduled" | "live_reminder" | "blog_post" | "invite_joined" | "report_resolved" | "content_removed" | "media_comment" | "event_created" | "event_updated" | "event_cancelled" | "event_reminder" | "friend_birthday" | "blog_comment" | "cs_verified" | "credit_request" | "credit_accepted" | "work_request" | "work_reply" | "mention" | "follow" | "repost" | "reply" | "call_match" | "call_application" | "call_answer" | "project_message" | "critique_note" | "critique_thanks" | "chain_done" | "live_invite" | "scheduled_post" | "reaction";
   payload: Record<string, unknown>;
   actor: User | null;
   /** Only present for type "friend_request" — the underlying Friendship's
@@ -615,6 +615,8 @@ export interface LiveRoom {
   commentPollMs?: number;
   /** How many listeners the host can bring on stage to speak; 0 when this live has no stage. */
   maxGuests?: number;
+  /** An invite-only live: only its host and the friends they invited can see or join it. */
+  private?: boolean;
 }
 
 /** A listener's place on the stage: listening, asking to speak, invited by the host, or speaking. */

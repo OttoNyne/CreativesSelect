@@ -518,4 +518,13 @@ export const serverEs: Record<string, string> = {
   "Take this part first — the time you had to draw it has run out, or someone else has it.": "Primero toma esta parte: se acabó el tiempo que tenías para dibujarla, o la tiene otra persona.",
   "You've drawn a lot of parts today — try again tomorrow.": "Has dibujado muchas partes hoy: inténtalo de nuevo mañana.",
   "A finished chain belongs to everyone who drew on it": "Una cadena terminada pertenece a todos los que dibujaron en ella",
+  "Invitations must be a list of people": "Las invitaciones deben ser una lista de personas",
+  "That isn't a person you can invite": "Esa no es una persona a la que puedas invitar",
+  "You can only invite your friends": "Solo puedes invitar a tus amigos",
+  "private must be true or false": "private debe ser verdadero o falso",
+  "Only an invite-only live has invitations": "Solo un directo por invitación tiene invitaciones",
+  "You can invite up to {v1} people": "Puedes invitar hasta a {v1} personas",
+  "This live isn't invite-only": "Este directo no es solo por invitación",
+  "That person isn't invited": "Esa persona no está invitada",
+  "You've sent a lot of invitations — try again later.": "Has enviado muchas invitaciones: inténtalo de nuevo más tarde.",
 };

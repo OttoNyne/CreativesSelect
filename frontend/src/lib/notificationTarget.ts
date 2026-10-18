@@ -55,7 +55,8 @@ export function notificationTarget(n: Notification, viewerUsername?: string | nu
     case "help_offer":
     case "help_accepted":
       return { to: "/help-wanted", label: t("target.viewRequest") };
-    case "live_started": {
+    case "live_started":
+    case "live_invite": {
       const liveId = str(n.payload.liveId);
       return liveId ? { to: `/live/${liveId}`, label: t("target.listenLive") } : null;
     }

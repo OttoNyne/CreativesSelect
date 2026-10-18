@@ -473,3 +473,18 @@ describe("NotificationBell: scheduled posts", () => {
     expect(screen.getByRole("link", { name: "Review scheduled posts" })).toHaveAttribute("href", "/");
   });
 });
+
+describe("NotificationBell: an invitation to a private live", () => {
+  it("says who invited you and to what, with a link straight to the room", async () => {
+    await openWith([note({ type: "live_invite", payload: { liveId: "live9", title: "Just us" } })]);
+    expect(screen.getByText(/invited you to a private live: "Just us"|invited you to a private live: Just us/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Zoe" })).toHaveAttribute("href", "/u/zoe");
+    expect(screen.getByRole("link", { name: "Listen live" })).toHaveAttribute("href", "/live/live9");
+  });
+
+  it("still reads sensibly without a title, and offers no link without a room", async () => {
+    await openWith([note({ type: "live_invite", payload: {} })]);
+    expect(screen.getByText(/invited you to a private live/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Listen live" })).not.toBeInTheDocument();
+  });
+});

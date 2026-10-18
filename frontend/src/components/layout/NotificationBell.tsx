@@ -117,6 +117,8 @@ function describe(n: Notification): string {
       const count = typeof n.payload.count === "number" ? n.payload.count : 1;
       return t("notif.messages", { n: count });
     }
+    case "live_invite":
+      return title !== null ? t("notif.liveInvite", { title }) : t("notif.liveInviteNoTitle");
     case "live_started":
       return title !== null ? t("notif.liveStartedTitled", { title }) : t("notif.liveStarted");
     case "report_resolved":
@@ -327,7 +329,7 @@ export function NotificationBell() {
                           setOpen(false);
                         }}
                         className={
-                          n.type === "live_started"
+                          n.type === "live_started" || n.type === "live_invite"
                             ? "mt-1 inline-block rounded bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-red-500"
                             : "mt-1 inline-block text-[11px] font-medium text-violet-300 hover:underline"
                         }

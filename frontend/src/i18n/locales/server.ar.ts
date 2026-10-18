@@ -518,4 +518,13 @@ export const serverAr: Record<string, string> = {
   "Take this part first — the time you had to draw it has run out, or someone else has it.": "خذ هذا الجزء أولًا — انتهى الوقت المتاح لك لرسمه، أو أخذه شخص آخر.",
   "You've drawn a lot of parts today — try again tomorrow.": "رسمت أجزاءً كثيرة اليوم — حاول مرة أخرى غدًا.",
   "A finished chain belongs to everyone who drew on it": "السلسلة المكتملة ملك لكل من رسم فيها",
+  "Invitations must be a list of people": "يجب أن تكون الدعوات قائمة بالأشخاص",
+  "That isn't a person you can invite": "هذا ليس شخصًا يمكنك دعوته",
+  "You can only invite your friends": "يمكنك دعوة أصدقائك فقط",
+  "private must be true or false": "يجب أن تكون قيمة private صحيحة أو خاطئة",
+  "Only an invite-only live has invitations": "الدعوات خاصة بالبث بالدعوة فقط",
+  "You can invite up to {v1} people": "يمكنك دعوة ما يصل إلى {v1} شخص",
+  "This live isn't invite-only": "هذا البث ليس بالدعوة فقط",
+  "That person isn't invited": "هذا الشخص غير مدعو",
+  "You've sent a lot of invitations — try again later.": "أرسلت دعوات كثيرة — حاول مرة أخرى لاحقًا.",
 };

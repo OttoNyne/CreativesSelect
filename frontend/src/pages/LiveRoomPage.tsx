@@ -7,6 +7,7 @@ import { Avatar } from "../components/common/Avatar";
 import { LiveChat } from "../components/live/LiveChat";
 import { ListenerStage } from "../components/live/StagePanel";
 import { HostConsole } from "../components/live/HostConsole";
+import { InvitePanel } from "../components/live/InvitePanel";
 import { useStage } from "../lib/live/useStage";
 import { ShareButton } from "../components/share/ShareButton";
 import { liveUrl } from "../lib/share";
@@ -28,6 +29,7 @@ function Header({ room, listening }: { room: LiveRoom; listening: number }) {
       <Avatar username={room.host.username} displayName={room.host.displayName} avatarUrl={room.host.avatarUrl} size={48} />
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-lg font-bold text-white">{room.title}</h1>
+        {room.private && <p className="text-xs font-medium text-violet-200">🔒 {t("privatelive.headerNote")}</p>}
         <p className="text-sm text-white/60">
           <Link to={`/u/${room.host.username}`} className="hover:underline">
             {room.isHost ? t("groups.you") : room.host.displayName}
@@ -35,14 +37,17 @@ function Header({ room, listening }: { room: LiveRoom; listening: number }) {
           · <span aria-live="polite">{t("live.listeningCount", { n: listening })}</span>
         </p>
       </div>
-      <ShareButton
-        url={() => liveUrl(room.id)}
-        title={t("live.shareThisLive")}
-        description={t("live.scanTheCodeOr")}
-        className="rounded-md border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10"
-      >
-        {t("profile.share")}
-      </ShareButton>
+      {/* a link to a private live is of no use to anyone who wasn't invited */}
+      {!room.private && (
+        <ShareButton
+          url={() => liveUrl(room.id)}
+          title={t("live.shareThisLive")}
+          description={t("live.scanTheCodeOr")}
+          className="rounded-md border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10"
+        >
+          {t("profile.share")}
+        </ShareButton>
+      )}
       <span className="rounded bg-red-600 px-2 py-1 text-xs font-bold uppercase tracking-wide text-white">{t("nav.live")}</span>
     </div>
   );
@@ -252,6 +257,7 @@ function HostRoom({ room }: { room: LiveRoom }) {
           )}
         </div>
       )}
+      {room.private && <InvitePanel liveId={id} />}
       {stream && guestsNeedTap && (
         <button onClick={() => void guestAudioRef.current?.play().then(() => setGuestsNeedTap(false))} className="block rounded-md border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
           {t("live.tapToHearYour")}

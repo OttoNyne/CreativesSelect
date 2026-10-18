@@ -223,3 +223,10 @@ describe("notificationTarget: drawing chains", () => {
     expect(notificationTarget(n("chain_done", {}), "me")).toEqual({ to: "/chains", label: "View the chain" });
   });
 });
+
+describe("notificationTarget: private lives", () => {
+  it("an invitation to a private live goes to the room, or the list when it isn't recorded", () => {
+    expect(notificationTarget(n("live_invite", { liveId: "l1" }), "me")).toEqual({ to: "/live/l1", label: "Listen live" });
+    expect(notificationTarget(n("live_invite", {}), "me")).toBeNull();
+  });
+});

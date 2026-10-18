@@ -233,3 +233,62 @@ describe("LivePage: scheduled lives", () => {
     expect(screen.getByText(/4 reminding/)).toBeInTheDocument();
   });
 });
+
+describe("LivePage: invite-only lives", () => {
+  const friendsApiMock = async () => (await import("../api/friends.api")).friendsApi;
+
+  it("shows a private live with a lock, and an ordinary one without", async () => {
+    api.list.mockResolvedValue({ lives: [room({ id: "p1", title: "Just us", private: true }), room({ id: "o1", title: "Open mic" })] });
+    renderPage();
+    expect(await screen.findByRole("link", { name: /Just us/ })).toHaveTextContent("Private");
+    expect(screen.getByRole("link", { name: /Open mic/ })).not.toHaveTextContent("Private");
+  });
+
+  it("offers to pick friends when 'Invite only' is on, and goes live inviting just them", async () => {
+    const user = userEvent.setup();
+    const friends = await friendsApiMock();
+    vi.spyOn(friends, "list").mockResolvedValue({ friends: [{ id: "f1", username: "ann", displayName: "Ann", avatarUrl: null } as User, { id: "f2", username: "ben", displayName: "Ben", avatarUrl: null } as User] });
+    const stream = new FakeStream();
+    getUserMedia.mockResolvedValue(stream);
+    api.start.mockResolvedValue({ live: room({ id: "new1", isHost: true, private: true }) });
+    renderPage();
+    await screen.findByLabelText("Live title");
+    expect(screen.queryByRole("group", { name: "Friends to invite" })).toBeNull();
+    await user.click(screen.getByRole("checkbox", { name: "Invite only" }));
+    expect(screen.getByText(/Only the friends you pick can see this live/)).toBeInTheDocument();
+    await user.click(await screen.findByRole("checkbox", { name: /Ben/ }));
+    await user.type(screen.getByLabelText("Live title"), "Just us");
+    await user.click(screen.getByRole("button", { name: "Go live" }));
+    expect(api.start).toHaveBeenCalledWith("Just us", undefined, { private: true, invite: ["f2"] });
+    expect(await screen.findByText(/Room/)).toBeInTheDocument();
+  });
+
+  it("can start an invite-only live with nobody picked yet", async () => {
+    const user = userEvent.setup();
+    const friends = await friendsApiMock();
+    vi.spyOn(friends, "list").mockResolvedValue({ friends: [] });
+    getUserMedia.mockResolvedValue(new FakeStream());
+    api.start.mockResolvedValue({ live: room({ id: "new2", isHost: true, private: true }) });
+    renderPage();
+    await user.click(await screen.findByRole("checkbox", { name: "Invite only" }));
+    expect(await screen.findByText(/You have no friends to invite yet/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Live title"), "Quiet");
+    await user.click(screen.getByRole("button", { name: "Go live" }));
+    expect(api.start).toHaveBeenCalledWith("Quiet", undefined, { private: true, invite: [] });
+  });
+
+  it("goes back to an ordinary live when 'Invite only' is turned off again", async () => {
+    const user = userEvent.setup();
+    const friends = await friendsApiMock();
+    vi.spyOn(friends, "list").mockResolvedValue({ friends: [{ id: "f1", username: "ann", displayName: "Ann", avatarUrl: null } as User] });
+    getUserMedia.mockResolvedValue(new FakeStream());
+    api.start.mockResolvedValue({ live: room({ id: "new3", isHost: true }) });
+    renderPage();
+    await user.click(await screen.findByRole("checkbox", { name: "Invite only" }));
+    await user.click(await screen.findByRole("checkbox", { name: /Ann/ }));
+    await user.click(screen.getByRole("checkbox", { name: "Invite only" }));
+    await user.type(screen.getByLabelText("Live title"), "Open again");
+    await user.click(screen.getByRole("button", { name: "Go live" }));
+    expect(api.start).toHaveBeenCalledWith("Open again");
+  });
+});
