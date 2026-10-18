@@ -2,7 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { PNG } from "pngjs";
 import { apiUser, expectNoHorizontalOverflow, fakeIpHeaders, newUser, signUpViaUi } from "./helpers";
 
-test.use({ extraHTTPHeaders: fakeIpHeaders() });
+// the suite runs with reduced motion on (playwright.config.ts); a moving wallpaper is tested with it off, and the still one asks for less motion itself
+test.use({ extraHTTPHeaders: fakeIpHeaders(), reducedMotion: "no-preference" });
 test.beforeEach(async ({ page }) => {
   await page.context().setExtraHTTPHeaders(fakeIpHeaders());
 });

@@ -89,9 +89,10 @@ a {
   .cs-skeleton {
     animation: none !important;
   }
+  /* A transition that lasts a hundredth of a millisecond is still a transition: the value read a moment after a change is the old one. So nothing animates at all. */
   * {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+    transition: none !important;
+    animation: none !important;
   }
 }
 
