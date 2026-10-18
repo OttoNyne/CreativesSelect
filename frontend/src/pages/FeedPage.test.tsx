@@ -243,3 +243,20 @@ describe("FeedPage: scheduled posts", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
+
+describe("FeedPage: while it loads", () => {
+  it("shows the shapes of posts (announced once as loading), then the real posts, which fade in", async () => {
+    let finish!: (answer: { posts: Post[] }) => void;
+    api.feed.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderPage();
+    const status = screen.getByText("Loading feed…").closest("[role=progressbar]");
+    expect(status).toHaveAttribute("aria-busy", "true");
+    expect(document.querySelectorAll(".cs-skeleton").length).toBeGreaterThan(0);
+    expect(screen.queryByText("First post")).toBeNull();
+    finish({ posts: [post()] });
+    expect(await screen.findByText("First post")).toBeInTheDocument();
+    expect(screen.queryByText("Loading feed…")).toBeNull();
+    expect(document.querySelectorAll(".cs-skeleton").length).toBe(0);
+    expect(screen.getByText("First post").closest("article")).toHaveClass("cs-fade-in");
+  });
+});

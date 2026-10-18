@@ -25,6 +25,9 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    // The site's fades and shimmers stop when a device asks for less motion, so the tests ask for it: a colour measured half way through a
+    // fade can't fail a contrast check, and nothing waits on an animation. e2e/skeletons.spec.ts turns motion back on to test it.
+    reducedMotion: "reduce",
   },
   projects: [
     {

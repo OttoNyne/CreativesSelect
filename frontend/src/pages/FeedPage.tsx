@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { postsApi } from "../api/posts.api";
 import { scheduledPostsApi } from "../api/scheduledPosts.api";
 import { ScheduledPosts } from "../components/post/ScheduledPosts";
+import { FeedSkeleton, LoadingBlock } from "../components/common/Skeleton";
 import { PostComposer } from "../components/post/PostComposer";
 import { BulletinsStrip } from "../components/bulletins/BulletinsStrip";
 import { WelcomeChecklist } from "../components/onboarding/WelcomeChecklist";
@@ -83,7 +84,11 @@ export function FeedPage() {
       <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} onScheduled={(waiting) => setScheduled((now) => [...now, waiting].sort((a, b) => a.publishAt.localeCompare(b.publishAt)))} />
       <ScheduledPosts items={scheduled} onChange={setScheduled} onPublished={(post) => setPosts((p) => [post, ...p.filter((x) => x.id !== post.id)])} />
 
-      {status === "loading" && <div className="text-center text-white/60">{t("feed.loading")}</div>}
+      {status === "loading" && (
+        <LoadingBlock label={t("feed.loading")}>
+          <FeedSkeleton />
+        </LoadingBlock>
+      )}
       {status === "ready" && posts.length === 0 && (
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center text-white/60">
           {t("feed.empty")}

@@ -81,7 +81,7 @@ export function PostCard({
   }
 
   return (
-    <article className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <article className="cs-fade-in rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex items-center gap-3">
         <Link to={`/u/${post.author.username}`}>
           <Avatar username={post.author.username} displayName={post.author.displayName} avatarUrl={post.author.avatarUrl} size={40} />

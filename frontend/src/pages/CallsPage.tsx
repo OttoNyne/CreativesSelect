@@ -6,6 +6,7 @@ import { CallCard } from "../components/calls/CallCard";
 import { CallForm } from "../components/calls/CallForm";
 import type { OpenCall } from "../types";
 import { t } from "../i18n";
+import { CardListSkeleton, LoadingBlock } from "../components/common/Skeleton";
 
 type Tab = "all" | "foryou" | "mine" | "applied";
 type Row = { call: OpenCall; status?: "waiting" | "chosen" | "passed" };
@@ -119,7 +120,11 @@ export function CallsPage() {
           {error}
         </p>
       )}
-      {rows === null && !error && <p className="text-sm text-white/60">{t("common.loading")}</p>}
+      {rows === null && !error && (
+        <LoadingBlock label={t("common.loading")}>
+          <CardListSkeleton />
+        </LoadingBlock>
+      )}
       {rows?.length === 0 && !error && <p className="text-sm text-white/60">{empty}</p>}
       <div className="space-y-3">
         {rows?.map(({ call, status }) => (

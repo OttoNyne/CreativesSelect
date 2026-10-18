@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { useRobots } from "../lib/useRobots";
 import type { ChallengeEntry, Post } from "../types";
 import { t } from "../i18n";
+import { FeedSkeleton, LoadingBlock } from "../components/common/Skeleton";
 
 // the same rule as the server's: one word of letters, numbers or underscores (at least one letter), 2 to 30 long
 const TAG = /^(?=[\p{N}_]*\p{L})[\p{L}\p{N}_]{2,30}$/u;
@@ -252,7 +253,11 @@ export function ExplorePage() {
           {error}
         </p>
       )}
-      {items === null && !error && <p className="text-sm text-white/60">{t("explore.loading")}</p>}
+      {items === null && !error && (
+        <LoadingBlock label={t("explore.loading")}>
+          <FeedSkeleton />
+        </LoadingBlock>
+      )}
       {topicProblem && (
         <p role="alert" className="text-xs text-red-400">
           {topicProblem}

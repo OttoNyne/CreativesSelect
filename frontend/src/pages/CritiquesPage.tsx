@@ -4,6 +4,7 @@ import { critiquesApi } from "../api/critiques.api";
 import { CritiqueCard } from "../components/critique/CritiqueParts";
 import type { Critique } from "../types";
 import { t } from "../i18n";
+import { CardListSkeleton, LoadingBlock } from "../components/common/Skeleton";
 
 type Tab = "board" | "mine" | "answered";
 
@@ -78,7 +79,11 @@ export function CritiquesPage() {
           {error}
         </p>
       )}
-      {rows === null && !error && <p className="text-sm text-white/60">{t("common.loading")}</p>}
+      {rows === null && !error && (
+        <LoadingBlock label={t("common.loading")}>
+          <CardListSkeleton />
+        </LoadingBlock>
+      )}
       {rows?.length === 0 && !error && <p className="text-sm text-white/60">{empty}</p>}
       <div className="space-y-3">
         {rows?.map((c) => (

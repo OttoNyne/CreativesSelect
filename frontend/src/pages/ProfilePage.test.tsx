@@ -901,3 +901,17 @@ describe("ProfilePage: embedding", () => {
     expect((screen.getByLabelText("Copy this into the page") as HTMLTextAreaElement).value).toContain("/embed/profile/me");
   });
 });
+
+describe("ProfilePage: while it loads", () => {
+  it("shows the shape of a profile, announced as loading, and the real profile once it arrives", async () => {
+    let finish!: (answer: { user: User }) => void;
+    profiles.get.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderAs(me, "zoe");
+    expect(screen.getByText("Loading profile…").closest("[role=progressbar]")).toHaveAttribute("aria-busy", "true");
+    expect(document.querySelectorAll(".cs-skeleton").length).toBeGreaterThan(5);
+    finish({ user: zoe });
+    expect(await screen.findByText("Zoe")).toBeInTheDocument();
+    expect(screen.queryByText("Loading profile…")).toBeNull();
+    expect(document.querySelectorAll(".cs-skeleton").length).toBe(0);
+  });
+});

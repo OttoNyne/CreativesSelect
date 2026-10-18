@@ -6,6 +6,7 @@ import { EventCard } from "../components/events/EventCard";
 import { EventForm } from "../components/events/EventForm";
 import type { CommunityEvent } from "../types";
 import { t } from "../i18n";
+import { CardListSkeleton, LoadingBlock } from "../components/common/Skeleton";
 import { tRich } from "../i18n/rich";
 
 // looked up when the page draws, so the text is in the language of the page
@@ -106,7 +107,11 @@ export function EventsPage() {
           {error}
         </p>
       )}
-      {events === null && !error && <p className="text-sm text-white/60">{t("common.loading")}</p>}
+      {events === null && !error && (
+        <LoadingBlock label={t("common.loading")}>
+          <CardListSkeleton />
+        </LoadingBlock>
+      )}
       {events?.length === 0 && <p className="text-sm text-white/60">{tab.empty}</p>}
       <div className="space-y-3">
         {events?.map((event) => (

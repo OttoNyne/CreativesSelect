@@ -9,6 +9,7 @@ import { assetUrl, ApiError } from "../api/client";
 import type { User, ProfileTheme } from "../types";
 import { ShareButton } from "../components/share/ShareButton";
 import { EmbedCode } from "../components/embed/EmbedCode";
+import { LoadingBlock, ProfileSkeleton } from "../components/common/Skeleton";
 import { ThemedPage } from "../components/layout/ThemedPage";
 import { WIDTH_CLASS, styleValue, themeToSave } from "../lib/profileStyle";
 import { motionOf } from "../lib/wallpaperMotion";
@@ -229,7 +230,11 @@ export function ProfilePage() {
   }
 
   if (!profile) {
-    return <div className="p-8 text-center text-white/60">{t("profile.loadingProfile")}</div>;
+    return (
+      <LoadingBlock label={t("profile.loadingProfile")}>
+        <ProfileSkeleton />
+      </LoadingBlock>
+    );
   }
 
   // The sections below the introduction, in the owner's order. While editing the owner sees every one (with controls); everyone else,
@@ -260,7 +265,7 @@ export function ProfilePage() {
   const motion = motionOf(profile.wallpaperMotion);
 
   return (
-    <ThemedPage look={look} contentClassName={`mx-auto ${WIDTH_CLASS[styleValue(look.theme, "width")]} px-4 pt-8`} panelClassName="min-h-[calc(100vh-56px)] pb-6 sm:rounded-b-2xl">
+    <ThemedPage look={look} contentClassName={`cs-fade-in mx-auto ${WIDTH_CLASS[styleValue(look.theme, "width")]} px-4 pt-8`} panelClassName="min-h-[calc(100vh-56px)] pb-6 sm:rounded-b-2xl">
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
         <div className="relative">
           <Avatar

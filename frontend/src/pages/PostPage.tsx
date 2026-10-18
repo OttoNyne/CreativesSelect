@@ -5,6 +5,7 @@ import { ApiError } from "../api/client";
 import { PostCard } from "../components/post/PostCard";
 import type { Post } from "../types";
 import { t } from "../i18n";
+import { LoadingBlock, PostSkeleton } from "../components/common/Skeleton";
 
 // One post on its own page: where a notification about a comment on it lands. The comments are open, and the comment the
 // notification was about is scrolled to and highlighted.
@@ -39,7 +40,11 @@ export function PostPage() {
       <Link to="/" className="text-sm text-violet-400 hover:underline">
         {t("misc.backToYourFeed")}
       </Link>
-      {state === "loading" && <p className="p-8 text-center text-white/60">{t("common.loading")}</p>}
+      {state === "loading" && (
+        <LoadingBlock label={t("common.loading")}>
+          <PostSkeleton />
+        </LoadingBlock>
+      )}
       {state === "missing" && (
         <p role="alert" className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-white/70">
           {t("misc.thisPostIsntAvailable")}
