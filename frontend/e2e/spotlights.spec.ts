@@ -46,7 +46,9 @@ test.describe("artist spotlights on the main screen", () => {
     const one = mod.page.getByRole("region", { name: "Slot 1" });
     await one.getByLabel("Username").fill(ann.user.username);
     await one.getByRole("button", { name: "Find their pictures" }).click();
-    await one.getByRole("radio", { name: `Work by ann${id}` }).check({ force: true });
+    // the picture is the radio's label: choosing it works the same in every browser
+    await one.getByAltText(`Work by ann${id}`).click();
+    await expect(one.getByRole("radio", { name: `Work by ann${id}` })).toBeChecked();
     await one.getByLabel(/A line about them/).fill("Her murals are everywhere");
     await one.getByRole("button", { name: "Show in slot 1" }).click();
     await expect(mod.page.getByRole("region", { name: "Slot 1" }).getByText("Saved. The main screen shows this within a minute.")).toBeVisible();

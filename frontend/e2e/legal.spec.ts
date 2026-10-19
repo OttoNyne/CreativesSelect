@@ -72,7 +72,9 @@ test.describe("policy pages, sign-up agreement and not-found page", () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex,nofollow");
     await expectNoHorizontalOverflow(page);
     await page.getByRole("link", { name: "Go to the home page" }).click();
-    await expect(page).toHaveURL(/\/login$/); // not signed in: the front door
+    // not signed in: the main screen is the landing page
+    await expect(page).toHaveURL("/");
+    await expect(page.getByRole("heading", { level: 1, name: "Show your work. Get found. Get hired." })).toBeVisible();
   });
 
   test("in Arabic and Spanish the policy pages read in the language, mirrored for Arabic, and fit the screen", async ({ page }) => {

@@ -102,7 +102,9 @@ test.describe("forgotten password", () => {
 
     // and the other device was signed out
     await otherPage.reload();
-    await expect(otherPage).toHaveURL(/\/login$/);
+    // signed out: the main screen is the landing page, not the feed
+    await expect(otherPage.getByRole("heading", { level: 1, name: "Show your work. Get found. Get hired." })).toBeVisible();
+    await expect(otherPage.getByPlaceholder(/Share what you're working on/)).toHaveCount(0);
     await other.close();
   });
 });
