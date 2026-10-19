@@ -30,7 +30,7 @@ describe("notificationTarget", () => {
   });
 
   it("a testimonial goes to your own profile's testimonials, and nowhere if we don't know who you are", () => {
-    expect(notificationTarget(n("profile_comment"), "ada")).toEqual({ to: "/u/ada#testimonials", label: "View testimonial" });
+    expect(notificationTarget(n("profile_comment"), "ada")).toEqual({ to: "/u/ada#testimonials", label: "View recommendation" });
     expect(notificationTarget(n("profile_comment"), null)).toBeNull();
     expect(notificationTarget(n("profile_comment"), undefined)).toBeNull();
   });

@@ -14,7 +14,7 @@ export const auth: Translation<typeof en> = {
   "login.twoStep.recoveryHint": "فقدت هاتفك؟ اكتب هنا أحد رموز الاسترداد بدلًا من ذلك. كل رمز يعمل مرة واحدة فقط.",
 
   "register.title": "انضم إلى CreativesSelect",
-  "register.subtitle": "مساحة آمنة للمبدعين للتواصل والتعاون وعرض أعمالهم.",
+  "register.subtitle": "الشبكة المهنية للمبدعين: اعرض أعمالك، ودع الناس يجدونك، واحصل على فرص عمل.",
   "register.alreadySignedIn": "لقد سجّلت الدخول بالفعل. <feed>انتقل إلى الصفحة الرئيسية</feed>.",
   "register.invitedYou": "<name>{name}</name> دعاك. ستصبحان صديقين فور تسجيلك.",
   "register.inviteInvalid": "رابط الدعوة هذا لم يعد صالحًا. ما زال بإمكانك التسجيل والعثور على صديقك بالبحث عنه.",

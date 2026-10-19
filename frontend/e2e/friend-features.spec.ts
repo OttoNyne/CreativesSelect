@@ -56,7 +56,7 @@ test.describe("friend features", () => {
     await befriend(page.request, second.request, me.username);
 
     await page.goto(`/u/${me.username}`);
-    await page.locator("h2", { hasText: "Top Friends" }).locator("xpath=..").getByRole("button", { name: "Edit", exact: true }).click();
+    await page.locator("h2", { hasText: "Network" }).locator("xpath=..").getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByText(first.user.displayName, { exact: true }).last().click();
     await page.getByText(second.user.displayName, { exact: true }).last().click();
     const list = page.getByRole("list", { name: "Your top friends, in order" });

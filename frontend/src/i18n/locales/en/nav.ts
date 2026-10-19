@@ -13,7 +13,7 @@ export const nav = {
   "nav.shareSite": "Share this site",
   "nav.shareTitle": "Share CreativesSelect",
   "nav.shareDescription": "Anyone who scans this code, or opens the link, lands on the site.",
-  "footer.tagline": "a home for creatives.",
+  "footer.tagline": "where creatives show their work, get found and get hired.",
   "footer.about": "About",
   "footer.features": "Features",
   "footer.howItWorks": "How it works",

@@ -128,7 +128,7 @@ export const misc = {
   "misc.type.account": "Account",
   "misc.type.post": "Post",
   "misc.type.comment": "Comment",
-  "misc.type.testimonial": "Testimonial",
+  "misc.type.testimonial": "Recommendation",
   "misc.type.blogEntry": "Blog entry",
   "misc.type.bulletin": "Bulletin",
   "misc.type.groupTopic": "Group topic",

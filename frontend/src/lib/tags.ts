@@ -5,6 +5,7 @@ import { t } from "../i18n";
 export const MAX_TAGS = 8;
 export const MIN_TAG = 2;
 export const MAX_TAG = 24;
+export const MAX_HEADLINE = 80;
 export const MAX_MOOD = 60;
 export const MAX_LISTENING = 80;
 

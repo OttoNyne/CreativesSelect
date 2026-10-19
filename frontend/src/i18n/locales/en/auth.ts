@@ -12,7 +12,7 @@ export const auth = {
   "login.twoStep.recoveryHint": "Lost your phone? Type one of your recovery codes here instead. Each one works once.",
 
   "register.title": "Join CreativesSelect",
-  "register.subtitle": "A safe space for creatives to network, collab, and show off work.",
+  "register.subtitle": "The professional network for creatives: show your work, get found and get hired.",
   "register.alreadySignedIn": "You're already signed in. <feed>Go to your feed</feed>.",
   "register.invitedYou": "<name>{name}</name> invited you. You'll be friends as soon as you sign up.",
   "register.inviteInvalid": "This invite link isn't valid any more. You can still sign up, and find your friend by searching for them.",

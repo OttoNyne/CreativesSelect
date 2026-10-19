@@ -1,6 +1,6 @@
 // sections
 export const sections = {
-  "sections.topFriends": "Top friends",
+  "sections.topFriends": "Network",
   "sections.music": "Music",
   "sections.portfolio": "Portfolio",
 } as const;

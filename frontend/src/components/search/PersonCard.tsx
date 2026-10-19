@@ -21,6 +21,7 @@ export function PersonCard({ user, onTag, words = [], mutualCount = 0, isFriend 
           </span>
         </span>
       </Link>
+      {user.headline && <p dir="auto" className="mt-1.5 truncate text-xs font-medium text-white/85">{user.headline}</p>}
       {(isFriend || mutualCount > 0) && (
         <p className="mt-1.5 text-xs text-violet-300">
           {isFriend && t("friends.yourFriend")}

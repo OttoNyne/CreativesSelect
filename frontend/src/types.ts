@@ -54,6 +54,8 @@ export interface User {
   /** Shows the CSverified badge: given by an administrator, or earned with 1,000 active friends. */
   csVerified?: boolean;
   /** A short status line, what they are listening to, and what they do (lower-case tags). Absent on a private profile you can't see. */
+  /** One line under the name saying what they do. */
+  headline?: string;
   mood?: string;
   listeningTo?: string;
   tags?: string[];

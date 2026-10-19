@@ -41,13 +41,13 @@ describe("ProfileComments (testimonials)", () => {
   it("says so when there are none", async () => {
     api.getComments.mockResolvedValue({ comments: [] });
     renderComments(null);
-    expect(await screen.findByText("No testimonials yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No recommendations yet.")).toBeInTheDocument();
   });
 
   it("shows the empty state, not a stuck 'Loading…', when they can't be loaded (private profile)", async () => {
     api.getComments.mockRejectedValue(new ApiError(403, "This profile is private"));
     renderComments(null);
-    expect(await screen.findByText("No testimonials yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No recommendations yet.")).toBeInTheDocument();
     expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
   });
 
@@ -132,7 +132,7 @@ describe("ProfileComments: arriving from a notification", () => {
         <ProfileComments username="me" />
       </MemoryRouter>
     );
-    await screen.findByText("Testimonials");
+    await screen.findByText("Recommendations");
     await new Promise((r) => setTimeout(r, 30));
     expect(scroll).not.toHaveBeenCalled();
   });
@@ -141,10 +141,10 @@ describe("ProfileComments: arriving from a notification", () => {
     api.getComments.mockResolvedValueOnce({ comments: [comment("c2", "u-zoe", "Zoe", "Wonderful work")], hasMore: true });
     api.getComments.mockResolvedValueOnce({ comments: [comment("c1", "u-kai", "Kai", "Great eye")], hasMore: false });
     renderComments(null);
-    await userEvent.click(await screen.findByRole("button", { name: "Show more testimonials" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Show more recommendations" }));
     expect(api.getComments).toHaveBeenLastCalledWith("owner", "c2");
     expect(await screen.findByText("Great eye")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Show more testimonials" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show more recommendations" })).not.toBeInTheDocument();
   });
 
   it("lets the author, and only the author, change a testimonial", async () => {
@@ -152,10 +152,10 @@ describe("ProfileComments: arriving from a notification", () => {
     api.updateComment.mockResolvedValue({ comment: { ...comment("c1", "me", "Me", "Really nice"), editedAt: "2026-05-01T00:00:00.000Z" } });
     renderComments({ id: "me", username: "me" });
     await screen.findByText("Wonderful work");
-    expect(screen.getAllByRole("button", { name: "Edit your testimonial" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Edit your recommendation" })).toHaveLength(1);
 
-    await userEvent.click(screen.getByRole("button", { name: "Edit your testimonial" }));
-    const box = screen.getByLabelText("Edit testimonial");
+    await userEvent.click(screen.getByRole("button", { name: "Edit your recommendation" }));
+    const box = screen.getByLabelText("Edit recommendation");
     await userEvent.clear(box);
     await userEvent.type(box, "Really nice");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));

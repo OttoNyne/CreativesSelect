@@ -1,13 +1,23 @@
 import { useEffect, useId, useState } from "react";
 import { profilesApi } from "../../api/profiles.api";
 import { usePlayback } from "../../context/PlaybackContext";
-import { MAX_LISTENING, MAX_MOOD, MAX_TAGS, normalizeTag, tagProblem } from "../../lib/tags";
+import { MAX_HEADLINE, MAX_LISTENING, MAX_MOOD, MAX_TAGS, normalizeTag, tagProblem } from "../../lib/tags";
 import { t } from "../../i18n";
 
 const input =
   "w-full rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white placeholder:text-white/55 focus:border-violet-500 focus:outline-none";
 
 /** Edit the mood and "listening to" lines (saved with the rest of the profile). */
+/** The headline: one line under the name saying what they do. */
+export function HeadlineEditor({ headline, onChange }: { headline: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block text-xs text-white/70">
+      {t("profile.headline")}
+      <input value={headline} onChange={(e) => onChange(e.target.value)} maxLength={MAX_HEADLINE} dir="auto" placeholder={t("profile.headlinePlaceholder")} className={`${input} mt-1`} />
+    </label>
+  );
+}
+
 export function StatusEditor({ mood, listeningTo, onMood, onListeningTo }: { mood: string; listeningTo: string; onMood: (v: string) => void; onListeningTo: (v: string) => void }) {
   const { current } = usePlayback();
   return (

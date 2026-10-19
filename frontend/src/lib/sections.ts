@@ -1,9 +1,10 @@
 import type { User } from "../types";
 import { t } from "../i18n";
 
-// The parts of a profile below the introduction. The owner can put them in any order and hide any of them; the server
-// keeps the same list (utils/profileSections.js).
-export const SECTION_KEYS = ["about", "friends", "music", "portfolio", "blog", "testimonials"] as const;
+// The parts of a profile below the introduction, in the order a profile has until its owner changes it: the work first, then who they are
+// and what others say about them. The owner can put them in any order and hide any of them; the server keeps the same list
+// (utils/profileSections.js).
+export const SECTION_KEYS = ["portfolio", "about", "testimonials", "blog", "friends", "music"] as const;
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
 export const SECTION_LABELS: Record<SectionKey, string> = {

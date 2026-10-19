@@ -42,7 +42,7 @@ test.describe("About me", () => {
 
     // the About me section comes before the others
     const aboutBox = await page.getByRole("heading", { name: "About me" }).boundingBox();
-    const friendsBox = await page.getByRole("heading", { name: "Top friends" }).boundingBox();
+    const friendsBox = await page.getByRole("heading", { name: "Network" }).boundingBox();
     expect(aboutBox!.y).toBeLessThan(friendsBox!.y);
 
     // a friend sees everything, including the place and the birthday

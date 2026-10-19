@@ -1,6 +1,16 @@
 import { Link } from "react-router-dom";
 import { t } from "../../i18n";
 
+/** One line under the name saying what the person does. */
+export function ProfileHeadline({ headline }: { headline?: string }) {
+  if (!headline) return null;
+  return (
+    <p dir="auto" className="mt-0.5 break-words text-sm font-medium">
+      {headline}
+    </p>
+  );
+}
+
 /** The owner's mood and what they are listening to: two short lines, shown as plain text. */
 export function ProfileMood({ mood, listeningTo }: { mood?: string; listeningTo?: string }) {
   if (!mood && !listeningTo) return null;

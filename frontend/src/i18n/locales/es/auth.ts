@@ -14,7 +14,7 @@ export const auth: Translation<typeof en> = {
   "login.twoStep.recoveryHint": "¿Perdiste el teléfono? Escribe aquí uno de tus códigos de recuperación. Cada uno sirve una sola vez.",
 
   "register.title": "Únete a CreativesSelect",
-  "register.subtitle": "Un espacio seguro para que los creativos conecten, colaboren y muestren su trabajo.",
+  "register.subtitle": "La red profesional de los creativos: muestra tu trabajo, haz que te encuentren y consigue trabajo.",
   "register.alreadySignedIn": "Ya has iniciado sesión. <feed>Ir a tu inicio</feed>.",
   "register.invitedYou": "<name>{name}</name> te invitó. Serán amigos en cuanto te registres.",
   "register.inviteInvalid": "Este enlace de invitación ya no es válido. Aun así puedes registrarte y encontrar a tu amigo buscándolo.",

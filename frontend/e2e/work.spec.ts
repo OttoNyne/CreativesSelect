@@ -24,7 +24,7 @@ test.describe("open to work and requests for work", () => {
 
     // before the maker says so, there is nothing to ask for
     await client.page.goto(`/u/${maker.username}`);
-    await expect(client.page.getByRole("button", { name: "Request work" })).toHaveCount(0);
+    await expect(client.page.getByRole("button", { name: "Hire or commission" })).toHaveCount(0);
 
     // the maker opens up from their profile settings
     await page.goto(`/u/${maker.username}`);
@@ -49,7 +49,7 @@ test.describe("open to work and requests for work", () => {
 
     // and asks
     await client.page.goto(`/u/${maker.username}`);
-    await client.page.getByRole("button", { name: "Request work" }).click();
+    await client.page.getByRole("button", { name: "Hire or commission" }).click();
     await client.page.getByRole("textbox", { name: "Title of your request" }).fill("A logo for my bakery");
     await client.page.getByRole("textbox", { name: "Details of your request" }).fill("Warm colours, hand-drawn feel.");
     await client.page.getByRole("textbox", { name: "Budget" }).fill("around 200");
@@ -109,7 +109,7 @@ test.describe("open to work and requests for work", () => {
     await page.goto(`/u/${maker.user.username}`);
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await expect(page.getByText("متاح للعمل", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "طلب عمل" }).click();
+    await page.getByRole("button", { name: "وظّفه أو كلّفه بعمل" }).click();
     await expect(page.getByRole("form", { name: /اطلب عملًا من/ })).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await expectReadable(page, "the Arabic request form");

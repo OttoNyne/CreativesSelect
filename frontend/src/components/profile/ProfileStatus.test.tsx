@@ -44,3 +44,19 @@ describe("ProfileTags", () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+describe("ProfileHeadline", () => {
+  it("shows what the person does as one line of plain text", async () => {
+    const { ProfileHeadline } = await import("./ProfileStatus");
+    render(<ProfileHeadline headline="<b>Sound designer</b> · open to work" />);
+    expect(screen.getByText("<b>Sound designer</b> · open to work")).toBeInTheDocument();
+  });
+
+  it("shows nothing when there isn't one", async () => {
+    const { ProfileHeadline } = await import("./ProfileStatus");
+    const { container } = render(<ProfileHeadline />);
+    expect(container).toBeEmptyDOMElement();
+    const again = render(<ProfileHeadline headline="" />);
+    expect(again.container).toBeEmptyDOMElement();
+  });
+});

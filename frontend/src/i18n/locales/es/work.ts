@@ -13,7 +13,7 @@ export const work: Translation<typeof en> = {
   "work.note": "Una nota breve para quien te encuentre",
   "work.notePlaceholder": "Ocupado hasta marzo, respondo en una semana…",
   "work.openSwitch": "Disponible para trabajar: permitir que me envíen solicitudes",
-  "work.requestWork": "Solicitar trabajo",
+  "work.requestWork": "Contratar o encargar",
   "work.requestFrom": "Pedir trabajo a {name}",
   "work.titlePlaceholder": "¿Qué necesitas? (p. ej., un logotipo para mi panadería)",
   "work.titleLabel": "Título de tu solicitud",

@@ -529,6 +529,30 @@ describe("ProfilePage", () => {
     expect(screen.queryByRole("list", { name: "Tags" })).not.toBeInTheDocument();
   });
 
+  it("shows what someone does under their name, and nothing when they haven't said", async () => {
+    profiles.get.mockResolvedValue({ user: { ...zoe, headline: "Illustrator · open to commissions" } });
+    renderAs(me, "zoe");
+    const name = await screen.findByRole("heading", { name: "Zoe" });
+    expect(screen.getByText("Illustrator · open to commissions")).toBeInTheDocument();
+    // under the name, above the @username
+    expect(name.compareDocumentPosition(screen.getByText("Illustrator · open to commissions")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("Illustrator · open to commissions").compareDocumentPosition(screen.getByText("@zoe")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("lets the owner write a headline, saved with the profile", async () => {
+    profiles.get.mockResolvedValue({ user: { ...me, headline: "Painter" } });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, headline: "Painter and muralist" } });
+    renderAs(me, "me");
+    await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
+    const box = screen.getByLabelText("Headline");
+    expect(box).toHaveValue("Painter");
+    expect(box).toHaveAttribute("maxlength", "80");
+    await userEvent.type(box, " and muralist");
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(profiles.updateMe).toHaveBeenCalled());
+    expect(profiles.updateMe.mock.calls[0][0]).toMatchObject({ headline: "Painter and muralist" });
+  });
+
   it("lets the owner set a mood, what they are listening to and tags, saved with the profile", async () => {
     profiles.get.mockResolvedValue({ user: { ...me, tags: ["painter"] } });
     profiles.updateMe.mockResolvedValue({ user: { ...me, mood: "calm", listeningTo: "Kind of Blue", tags: ["painter", "muralist"] } });
@@ -631,7 +655,7 @@ describe("ProfilePage", () => {
 });
 
 describe("ProfilePage: the order of the sections", () => {
-  const SECTION_TEXT = ["about me section", "top friends", "music", "portfolio", "blog visitor", "guestbook"];
+  const SECTION_TEXT = ["portfolio", "about me section", "guestbook", "blog visitor", "top friends", "music"];
   const shownOrder = () =>
     SECTION_TEXT.map((text) => ({ text, el: screen.queryByText(new RegExp(`^${text}`)) }))
       .filter((s) => s.el)
@@ -707,13 +731,13 @@ describe("ProfilePage: the order of the sections", () => {
 
   it("lets the owner move a section, saving the new order straight away", async () => {
     profiles.get.mockResolvedValue({ user: me });
-    profiles.updateMe.mockResolvedValue({ user: { ...me, sectionOrder: ["about", "music", "friends", "portfolio", "blog", "testimonials"] } });
+    profiles.updateMe.mockResolvedValue({ user: { ...me, sectionOrder: ["portfolio", "about", "testimonials", "blog", "music", "friends"] } });
     renderAs(me, "me");
     await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
-    expect(screen.getByRole("button", { name: "Move About me up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Portfolio up" })).toBeDisabled();
     await userEvent.click(screen.getByRole("button", { name: "Move Music up" }));
-    expect(profiles.updateMe).toHaveBeenCalledWith({ sectionOrder: ["about", "music", "friends", "portfolio", "blog", "testimonials"] });
-    await waitFor(() => expect(shownOrder().slice(0, 3)).toEqual(["about me section", "music", "top friends"]));
+    expect(profiles.updateMe).toHaveBeenCalledWith({ sectionOrder: ["portfolio", "about", "testimonials", "blog", "music", "friends"] });
+    await waitFor(() => expect(shownOrder().slice(-2)).toEqual(["music", "top friends"]));
   });
 
   it("lets the owner hide a section and show it again", async () => {
@@ -736,7 +760,7 @@ describe("ProfilePage: the order of the sections", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Edit profile" }));
     await userEvent.click(screen.getByRole("button", { name: "Move Music up" }));
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("boom"));
-    expect(shownOrder().slice(0, 3)).toEqual(["about me section", "top friends", "music"]);
+    expect(shownOrder().slice(-2)).toEqual(["top friends", "music"]);
     alertSpy.mockRestore();
   });
 });

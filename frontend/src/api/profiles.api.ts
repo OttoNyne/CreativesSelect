@@ -10,6 +10,7 @@ export interface UpdateProfileInput {
   wallpaperType?: "image" | "video";
   wallpaperPosition?: string;
   wallpaperMotion?: WallpaperMotion;
+  headline?: string;
   mood?: string;
   listeningTo?: string;
   tags?: string[];

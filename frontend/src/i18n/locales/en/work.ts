@@ -11,7 +11,7 @@ export const work = {
   "work.note": "A short note for people who find you",
   "work.notePlaceholder": "Booked until March, replies within a week…",
   "work.openSwitch": "Open to work: let people send me requests",
-  "work.requestWork": "Request work",
+  "work.requestWork": "Hire or commission",
   "work.requestFrom": "Ask {name} for work",
   "work.titlePlaceholder": "What do you need? (e.g. A logo for my bakery)",
   "work.titleLabel": "Title of your request",

@@ -1,7 +1,7 @@
 {
   "name": "CreativesSelect",
   "short_name": "CreativesSelect",
-  "description": "A home for creatives: customizable profiles, friends, groups, AI-assisted posts, and a Help wanted board.",
+  "description": "The professional network for creatives: portfolio-first profiles, open calls and requests for work, collaborations and recommendations.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

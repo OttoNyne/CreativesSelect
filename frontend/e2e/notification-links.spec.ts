@@ -72,7 +72,7 @@ test.describe("clicking a notification takes you to what it was about", () => {
     await openBell(page);
     await page.getByText(/left a comment on your profile/).click();
     await expect(page).toHaveURL(new RegExp(`/u/${me.username}#testimonials$`));
-    await expect(page.getByRole("heading", { name: "Testimonials" })).toBeInViewport();
+    await expect(page.getByRole("heading", { name: "Recommendations" })).toBeInViewport();
     await expect(page.getByText("Great work!")).toBeVisible();
     await friend.context.close();
   });

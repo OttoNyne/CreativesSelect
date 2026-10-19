@@ -50,7 +50,7 @@ describe("ProfileComments: pictures and links in testimonials", () => {
     vi.mocked(uploadFile).mockResolvedValue({ url: PICTURE });
     api.addComment.mockResolvedValue({ comment: comment("c9", "me", "Me", "Brilliant", { imageUrl: PICTURE }) });
     renderComments();
-    await screen.findByText("No testimonials yet.");
+    await screen.findByText("No recommendations yet.");
     fireEvent.change(screen.getByLabelText("Choose a picture for your comment"), { target: { files: [file()] } });
     await screen.findByRole("img", { name: "Picture to post with your comment" });
     await userEvent.type(screen.getByPlaceholderText("Leave a comment on this profile…"), "Brilliant");
@@ -77,7 +77,7 @@ describe("ProfileComments: pictures and links in testimonials", () => {
   it("posts nothing with neither words nor a picture", async () => {
     api.getComments.mockResolvedValue({ comments: [] });
     renderComments();
-    await screen.findByText("No testimonials yet.");
+    await screen.findByText("No recommendations yet.");
     await userEvent.click(screen.getByRole("button", { name: "Post" }));
     expect(api.addComment).not.toHaveBeenCalled();
   });
@@ -87,8 +87,8 @@ describe("ProfileComments: pictures and links in testimonials", () => {
     api.removeCommentPicture.mockResolvedValue({ comment: comment("c2", "me", "Me", "Mine", { imageUrl: null }) });
     renderComments("me", "someone-else");
     await screen.findByText("Mine");
-    expect(screen.getAllByRole("button", { name: "Remove the picture from your testimonial" })).toHaveLength(1);
-    await userEvent.click(screen.getByRole("button", { name: "Remove the picture from your testimonial" }));
+    expect(screen.getAllByRole("button", { name: "Remove the picture from your recommendation" })).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "Remove the picture from your recommendation" }));
     expect(api.removeCommentPicture).toHaveBeenCalledWith("c2");
     await waitFor(() => expect(screen.getAllByRole("img", { name: "Picture in a comment" })).toHaveLength(1));
   });

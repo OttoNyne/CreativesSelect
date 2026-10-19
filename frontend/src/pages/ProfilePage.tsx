@@ -14,8 +14,8 @@ import { ThemedPage } from "../components/layout/ThemedPage";
 import { WIDTH_CLASS, styleValue, themeToSave } from "../lib/profileStyle";
 import { motionOf } from "../lib/wallpaperMotion";
 import { WallpaperStudio } from "../components/profile/WallpaperStudio";
-import { ProfileMood, ProfileTags } from "../components/profile/ProfileStatus";
-import { StatusEditor, TagEditor } from "../components/profile/StatusEditor";
+import { ProfileHeadline, ProfileMood, ProfileTags } from "../components/profile/ProfileStatus";
+import { HeadlineEditor, StatusEditor, TagEditor } from "../components/profile/StatusEditor";
 import { profileUrl } from "../lib/share";
 import { Avatar } from "../components/common/Avatar";
 import { ImagePositioner } from "../components/common/ImagePositioner";
@@ -78,6 +78,7 @@ export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [searchParams] = useSearchParams();
   const [bio, setBio] = useState("");
+  const [headline, setHeadline] = useState("");
   const [mood, setMood] = useState("");
   const [listeningTo, setListeningTo] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -114,6 +115,7 @@ export function ProfilePage() {
         const user = changed && changed.count > editsAtStart ? { ...fetched, iFollow: changed.iFollow, followerCount: changed.followerCount } : fetched;
         setProfile(user);
         setBio(user.bio ?? "");
+        setHeadline(user.headline ?? "");
         setMood(user.mood ?? "");
         setListeningTo(user.listeningTo ?? "");
         setTags(user.tags ?? []);
@@ -291,6 +293,7 @@ export function ProfilePage() {
             <h1 className="break-words text-2xl font-bold">{profile.displayName}</h1>
             <CSBadge verified={profile.csVerified} size={22} withLabel />
           </div>
+          <ProfileHeadline headline={profile.headline} />
           <p className="text-sm text-[var(--profile-muted)]"><bdi>@{profile.username}</bdi></p>
           <ActivityBadge activity={profile.activity} className="text-[var(--profile-muted)]" />
           <ProfileMood mood={profile.mood} listeningTo={profile.listeningTo} />
@@ -408,6 +411,7 @@ export function ProfilePage() {
             placeholder={t("profile.tellPeopleWhatYou")}
             className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm placeholder:text-white/55 focus:outline-none"
           />
+          <HeadlineEditor headline={headline} onChange={setHeadline} />
           <StatusEditor mood={mood} listeningTo={listeningTo} onMood={setMood} onListeningTo={setListeningTo} />
           <TagEditor tags={tags} onChange={setTags} />
           <div className="space-y-2 rounded-lg border border-white/10 p-2.5">
@@ -525,7 +529,7 @@ export function ProfilePage() {
             />
           )}
           <button
-            onClick={() => saveProfile({ bio, theme: themeToSave(theme), mood, listeningTo, tags, workOffers: offers, workNote })}
+            onClick={() => saveProfile({ bio, theme: themeToSave(theme), headline, mood, listeningTo, tags, workOffers: offers, workNote })}
             disabled={saving}
             className="rounded-md px-4 py-1.5 text-sm font-medium text-[var(--profile-on-accent)] disabled:opacity-50"
             style={{ background: "var(--profile-accent-fill)" }}

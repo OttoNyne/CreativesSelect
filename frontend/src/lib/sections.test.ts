@@ -7,8 +7,8 @@ describe("orderOf", () => {
     expect(orderOf({ sectionOrder: [] })).toEqual([...SECTION_KEYS]);
   });
   it("follows the saved order, with every section once", () => {
-    expect(orderOf({ sectionOrder: ["blog", "music"] })).toEqual(["blog", "music", "about", "friends", "portfolio", "testimonials"]);
-    expect(orderOf({ sectionOrder: ["music", "nope", "music", "friends"] as SectionKey[] })).toEqual(["music", "friends", "about", "portfolio", "blog", "testimonials"]);
+    expect(orderOf({ sectionOrder: ["blog", "music"] })).toEqual(["blog", "music", "portfolio", "about", "testimonials", "friends"]);
+    expect(orderOf({ sectionOrder: ["music", "nope", "music", "friends"] as SectionKey[] })).toEqual(["music", "friends", "portfolio", "about", "testimonials", "blog"]);
   });
 });
 

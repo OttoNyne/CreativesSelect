@@ -75,6 +75,46 @@ test.describe("editing your profile", () => {
     await expect(page.getByText("Ceramics and slow mornings")).toBeVisible();
   });
 
+  test("a headline says what you do right under your name, for visitors and in search results", async ({ page, browser, baseURL }) => {
+    const user = newUser("headline");
+    await signUpViaUi(page, user);
+    await page.goto(`/u/${user.username}`);
+    await page.getByRole("button", { name: "Edit profile" }).click();
+    await page.getByLabel("Headline", { exact: true }).fill("Illustrator · open to commissions");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByRole("button", { name: "Done editing" }).click();
+    const name = page.getByRole("heading", { name: user.displayName });
+    await expect(page.getByText("Illustrator · open to commissions")).toBeVisible();
+
+    // a visitor sees it, between the name and the @username
+    const visitor = await apiUser(browser, baseURL!, "viewer");
+    const vpage = await visitor.context.newPage();
+    await vpage.goto(`/u/${user.username}`);
+    await expect(vpage.getByRole("heading", { name: user.displayName })).toBeVisible();
+    const headline = vpage.getByText("Illustrator · open to commissions");
+    await expect(headline).toBeVisible();
+    const y = async (locator: typeof headline) => (await locator.boundingBox())!.y;
+    expect(await y(vpage.getByRole("heading", { name: user.displayName }))).toBeLessThan(await y(headline));
+    expect(await y(headline)).toBeLessThan(await y(vpage.getByText(`@${user.username}`)));
+
+    // and it is on the person's card when they are searched for
+    await vpage.goto(`/search?q=${user.username}`);
+    await expect(vpage.getByText("Illustrator · open to commissions")).toBeVisible();
+    await visitor.context.close();
+    await expect(name).toBeVisible();
+  });
+
+  test("a new profile starts with the work first: Portfolio, then About me and Recommendations", async ({ page }) => {
+    const user = newUser("workfirst");
+    await signUpViaUi(page, user);
+    await page.goto(`/u/${user.username}`);
+    const TITLES = ["Portfolio", "About me", "Recommendations", "Blog", "Network", "Music"];
+    // the sections, top to bottom (the page fills in as its parts load, so this waits for all six)
+    await expect
+      .poll(async () => (await page.getByRole("heading", { level: 2 }).allTextContents()).map((t) => t.trim()).filter((t) => TITLES.includes(t)))
+      .toEqual(TITLES);
+  });
+
   test("a private profile is hidden from strangers", async ({ page, browser, baseURL }) => {
     const user = newUser("hidden");
     await signUpViaUi(page, user);
@@ -105,7 +145,7 @@ test.describe("top friends", () => {
     });
 
     await page.goto(`/u/${user.username}`);
-    const box = page.getByRole("heading", { name: "Top Friends" }).locator("xpath=ancestor::div[contains(@class,'rounded-xl')][1]");
+    const box = page.getByRole("heading", { name: "Network" }).locator("xpath=ancestor::div[contains(@class,'rounded-xl')][1]");
     await box.getByRole("button", { name: "Edit" }).click();
     await box.getByRole("button", { name: new RegExp(friend.user.displayName) }).click();
     await box.getByRole("button", { name: "Save", exact: true }).click();

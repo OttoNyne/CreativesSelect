@@ -108,3 +108,19 @@ describe("TagEditor", () => {
     expect(screen.getByRole("list", { name: "Your tags" })).toHaveTextContent("#dj");
   });
 });
+
+describe("HeadlineEditor", () => {
+  it("edits the headline, up to 80 characters, with an example of what to write", async () => {
+    const { HeadlineEditor } = await import("./StatusEditor");
+    function Harness() {
+      const [value, setValue] = useState("");
+      return <HeadlineEditor headline={value} onChange={setValue} />;
+    }
+    render(<Harness />);
+    const box = screen.getByLabelText("Headline");
+    expect(box).toHaveAttribute("maxlength", "80");
+    expect(box).toHaveAttribute("placeholder", expect.stringContaining("Illustrator"));
+    await userEvent.type(box, "Ceramicist");
+    expect(box).toHaveValue("Ceramicist");
+  });
+});

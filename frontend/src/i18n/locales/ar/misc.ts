@@ -130,7 +130,7 @@ export const misc: Translation<typeof en> = {
   "misc.type.account": "حساب",
   "misc.type.post": "منشور",
   "misc.type.comment": "تعليق",
-  "misc.type.testimonial": "شهادة",
+  "misc.type.testimonial": "توصية",
   "misc.type.blogEntry": "تدوينة",
   "misc.type.bulletin": "نشرة",
   "misc.type.groupTopic": "موضوع مجموعة",

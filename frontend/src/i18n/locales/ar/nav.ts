@@ -15,7 +15,7 @@ export const nav: Translation<typeof en> = {
   "nav.shareSite": "مشاركة هذا الموقع",
   "nav.shareTitle": "مشاركة CreativesSelect",
   "nav.shareDescription": "كل من يمسح هذا الرمز أو يفتح الرابط سيصل إلى الموقع.",
-  "footer.tagline": "بيت للمبدعين.",
+  "footer.tagline": "حيث يعرض المبدعون أعمالهم ويُكتشفون ويجدون فرص عمل.",
   "footer.about": "حول الموقع",
   "footer.features": "المزايا",
   "footer.howItWorks": "كيف يعمل",
