@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { t, type Key } from "../i18n";
 
 // the key of the title for each address (looked up when the title is set, so it is in the language of the page)
@@ -35,7 +36,9 @@ const TITLES: [RegExp, Key | ""][] = [
   [/^\/u\/([^/]+)$/, ""],
 ];
 
-export function titleForPath(pathname: string): string {
+/** The tab title for an address. The main screen ("/") is the feed for someone signed in and the landing page for everyone else. */
+export function titleForPath(pathname: string, signedIn = true): string {
+  if (pathname === "/" && !signedIn) return `${t("landing.title")} · CreativesSelect`;
   for (const [pattern, key] of TITLES) {
     const title = key ? t(key) : "";
     const match = pathname.match(pattern);
@@ -47,9 +50,16 @@ export function titleForPath(pathname: string): string {
 }
 
 // Keeps the browser tab / history entries meaningful as the SPA navigates.
-export function usePageTitle() {
+export function usePageTitle(signedIn = true) {
   const { pathname } = useLocation();
   useEffect(() => {
-    document.title = titleForPath(pathname);
-  }, [pathname]);
+    document.title = titleForPath(pathname, signedIn);
+  }, [pathname, signedIn]);
+}
+
+/** Keeps the tab title right; it sits inside the sign-in provider so it knows whether the main screen is the feed or the landing page. */
+export function PageTitle() {
+  const { user, isLoading } = useAuth();
+  usePageTitle(isLoading || Boolean(user));
+  return null;
 }

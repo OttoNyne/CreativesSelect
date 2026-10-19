@@ -24,3 +24,12 @@ describe("titleForPath", () => {
     expect(titleForPath("/nope/nothing")).toBe("CreativesSelect");
   });
 });
+
+describe("titleForPath: the main screen", () => {
+  it("is the feed for someone signed in, and the landing page's line for everyone else", () => {
+    expect(titleForPath("/", true)).toBe("Feed · CreativesSelect");
+    expect(titleForPath("/", false)).toBe("Show your work. Get found. Get hired. · CreativesSelect");
+    // only the main screen changes
+    expect(titleForPath("/login", false)).toBe("Log in · CreativesSelect");
+  });
+});

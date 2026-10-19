@@ -29,7 +29,7 @@ test.describe("sharing the site with a QR code", () => {
     const other = await browser.newContext();
     const visitor = await other.newPage();
     await visitor.goto(address);
-    await expect(visitor.getByRole("heading", { name: /Welcome back|Log in|Join CreativesSelect/ }).first()).toBeVisible();
+    await expect(visitor.getByRole("heading", { name: /Welcome back|Log in|Join CreativesSelect|Show your work/ }).first()).toBeVisible();
     await other.close();
 
     // closing it puts focus back on the button

@@ -13,6 +13,7 @@ vi.mock("../api/admin.api", async (importOriginal) => ({
   adminApi: { reports: vi.fn(), resolve: vi.fn(), actions: vi.fn(), suspended: vi.fn(), unsuspend: vi.fn(), verified: vi.fn(), giveBadge: vi.fn(), removeBadge: vi.fn() },
 }));
 vi.mock("../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../components/admin/SpotlightsPanel", () => ({ SpotlightsPanel: () => <section aria-label="Artist spotlights">spotlights panel</section> }));
 const api = vi.mocked(adminApi);
 
 const author = { id: "u1", username: "pat", displayName: "Pat Author", avatarUrl: null } as User;
@@ -306,5 +307,16 @@ describe("ModerationPage: CSverified badges", () => {
     const item = (await screen.findByText("CSverified badge given")).closest("li") as HTMLElement;
     expect(item).toHaveTextContent("About Vee Verified");
     expect(item).not.toHaveTextContent("report");
+  });
+});
+
+describe("ModerationPage: the Spotlights tab", () => {
+  it("opens the panel for choosing the main screen's two artists, without loading anything for the review queue", async () => {
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Spotlights" }));
+    expect(await screen.findByRole("region", { name: "Artist spotlights" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Spotlights" })).toHaveAttribute("aria-pressed", "true");
+    // only the first tab's load ran
+    expect(api.suspended).not.toHaveBeenCalled();
   });
 });

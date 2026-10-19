@@ -6,6 +6,7 @@ import { FeedSkeleton, LoadingBlock } from "../components/common/Skeleton";
 import { PostComposer } from "../components/post/PostComposer";
 import { BulletinsStrip } from "../components/bulletins/BulletinsStrip";
 import { SparkStrip } from "../components/play/SparkStrip";
+import { SpotlightSlots } from "../components/home/SpotlightSlots";
 import { WelcomeChecklist } from "../components/onboarding/WelcomeChecklist";
 import { PostCard } from "../components/post/PostCard";
 import { ApiError } from "../api/client";
@@ -80,6 +81,7 @@ export function FeedPage() {
   const content = (
     <>
       {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+      <SpotlightSlots />
       <WelcomeChecklist />
       <BulletinsStrip />
       <PostComposer onPosted={(post) => setPosts((p) => [post, ...p])} onScheduled={(waiting) => setScheduled((now) => [...now, waiting].sort((a, b) => a.publishAt.localeCompare(b.publishAt)))} />

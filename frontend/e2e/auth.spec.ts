@@ -28,8 +28,12 @@ test.describe("signing up, in and out", () => {
     await expect(page).toHaveURL(/\/help-wanted$/);
 
     await logOut(page);
+    // really signed out: the main screen is the landing page now, and a protected page sends them to log in
     await page.goto("/");
-    await expect(page).toHaveURL(/\/login$/); // really signed out
+    await expect(page.getByRole("heading", { level: 1, name: "Show your work. Get found. Get hired." })).toBeVisible();
+    await expect(page.getByPlaceholder(/Share what you're working on/)).toHaveCount(0);
+    await page.goto("/friends");
+    await expect(page).toHaveURL(/\/login$/);
 
     await logInViaUi(page, user);
     await expect(page).toHaveURL("/");

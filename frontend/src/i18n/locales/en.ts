@@ -26,6 +26,7 @@ import { challenge } from "./en/challenge";
 import { play } from "./en/play";
 import { chains } from "./en/chains";
 import { privatelive } from "./en/privatelive";
+import { spotlight } from "./en/spotlight";
 import { mention } from "./en/mention";
 import { follow } from "./en/follow";
 import { explore } from "./en/explore";
@@ -45,4 +46,4 @@ import { legal } from "./en/legal";
 
 // English is the source: every other language is checked against these keys, and anything not translated yet shows as it is here.
 // Each part of the site has its own file (en/, es/ and ar/ hold one per part).
-export const en = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects, ...topics, ...critique, ...scheduled, ...embed, ...legal, ...play, ...chains, ...privatelive } satisfies Catalog;
+export const en = { ...common, ...nav, ...auth, ...time, ...feed, ...social, ...profile, ...style, ...sections, ...settings, ...media, ...groups, ...events, ...live, ...misc, ...labels, ...info, ...libmsg, ...about, ...lib, ...livelog, ...credits, ...work, ...challenge, ...mention, ...follow, ...explore, ...saves, ...pinned, ...polls, ...mutes, ...making, ...calls, ...report, ...projects, ...topics, ...critique, ...scheduled, ...embed, ...legal, ...play, ...chains, ...privatelive, ...spotlight } satisfies Catalog;

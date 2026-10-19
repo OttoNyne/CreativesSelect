@@ -6,10 +6,11 @@ import { Avatar } from "../components/common/Avatar";
 import { useAuth } from "../context/AuthContext";
 import { formatDay } from "../lib/when";
 import { CSBadge } from "../components/common/CSBadge";
+import { SpotlightsPanel } from "../components/admin/SpotlightsPanel";
 import type { AdminAction, ModerationCase, SuspendedAccount } from "../types";
 import { t, type Key } from "../i18n";
 
-type Tab = "open" | "handled" | "suspended" | "verified";
+type Tab = "open" | "handled" | "suspended" | "verified" | "spotlights";
 
 const TYPE_KEY: Record<string, Key> = {
   user: "misc.type.account",
@@ -159,6 +160,12 @@ export function ModerationPage() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (which: Tab, p: number) => {
+    // the spotlights panel loads its own slots
+    if (which === "spotlights") {
+      setHasMore(false);
+      setState("ready");
+      return;
+    }
     setState("loading");
     try {
       if (which === "open") {
@@ -250,6 +257,7 @@ export function ModerationPage() {
         {tabButton("handled", t("misc.handled"))}
         {tabButton("suspended", t("misc.suspendedAccounts"))}
         {tabButton("verified", "CSverified")}
+        {tabButton("spotlights", t("spotlight.tab"))}
       </div>
 
       {state === "loading" && page === 1 && <p className="p-6 text-center text-white/60">{t("common.loading")}</p>}
@@ -322,6 +330,8 @@ export function ModerationPage() {
           </ul>
         </section>
       )}
+
+      {tab === "spotlights" && <SpotlightsPanel />}
 
       {tab === "suspended" && state === "ready" && suspended.length === 0 && <p className="text-sm text-white/60">{t("misc.noAccountsAreSuspended")}</p>}
       {tab === "suspended" && (

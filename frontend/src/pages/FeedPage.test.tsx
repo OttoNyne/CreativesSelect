@@ -260,3 +260,18 @@ describe("FeedPage: while it loads", () => {
     expect(screen.getByText("First post").closest("article")).toHaveClass("cs-fade-in");
   });
 });
+
+describe("FeedPage: the artist spotlights", () => {
+  it("shows the two artists an administrator chose at the top, above the post box", async () => {
+    const { spotlightsApi } = await import("../api/spotlights.api");
+    vi.spyOn(spotlightsApi, "list").mockResolvedValue({
+      spotlights: [{ slot: 1, note: "Her murals are everywhere", user: { id: "a", username: "ann", displayName: "Ann", avatarUrl: null, headline: "", csVerified: false, tags: [] }, piece: null }],
+    });
+    api.feed.mockResolvedValue({ posts: [] });
+    renderPage();
+    const region = await screen.findByRole("region", { name: "Artist spotlights" });
+    expect(region).toHaveTextContent("Her murals are everywhere");
+    const composer = await screen.findByPlaceholderText(/Share what you're working on/);
+    expect(region.compareDocumentPosition(composer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

@@ -527,4 +527,11 @@ export const serverEs: Record<string, string> = {
   "This live isn't invite-only": "Este directo no es solo por invitación",
   "That person isn't invited": "Esa persona no está invitada",
   "You've sent a lot of invitations — try again later.": "Has enviado muchas invitaciones: inténtalo de nuevo más tarde.",
+  "That slot doesn't exist": "Ese espacio no existe",
+  "That slot is empty": "Ese espacio está vacío",
+  "That profile is private, so it can't be shown on the main screen": "Ese perfil es privado, así que no se puede mostrar en la pantalla principal",
+  "That person is already in the other slot": "Esa persona ya está en el otro espacio",
+  "Pick one of their pictures, or leave it automatic": "Elige una de sus imágenes o déjalo en automático",
+  "Spotlight note must be text": "La nota del destacado debe ser texto",
+  "Spotlight note can be up to {v1} characters": "La nota del destacado puede tener hasta {v1} caracteres",
 };

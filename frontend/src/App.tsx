@@ -38,6 +38,7 @@ import { PostPage } from "./pages/PostPage";
 import { FeaturesPage } from "./pages/FeaturesPage";
 import { ChallengePage } from "./pages/ChallengePage";
 import { SketchPage } from "./pages/SketchPage";
+import { HomePage } from "./pages/HomePage";
 import { ChainsPage } from "./pages/ChainsPage";
 import { ChainPage } from "./pages/ChainPage";
 import { ChainDrawPage } from "./pages/ChainDrawPage";
@@ -51,19 +52,20 @@ import { CritiquesPage } from "./pages/CritiquesPage";
 import { CritiquePage } from "./pages/CritiquePage";
 import { SavedPage } from "./pages/SavedPage";
 import { HowItWorksPage } from "./pages/HowItWorksPage";
-import { usePageTitle } from "./lib/usePageTitle";
+import { PageTitle } from "./lib/usePageTitle";
 
 export default function App() {
-  usePageTitle();
   return (
     <AuthProvider>
       <PlaybackProvider>
+        <PageTitle />
         <NavBar />
         <ActivityPing />
         <PlayCounter />
         <InstallBanner />
         <VerifyEmailBanner />
         <Routes>
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/join/:code" element={<RegisterPage />} />

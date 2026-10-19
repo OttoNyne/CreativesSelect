@@ -527,4 +527,11 @@ export const serverAr: Record<string, string> = {
   "This live isn't invite-only": "هذا البث ليس بالدعوة فقط",
   "That person isn't invited": "هذا الشخص غير مدعو",
   "You've sent a lot of invitations — try again later.": "أرسلت دعوات كثيرة — حاول مرة أخرى لاحقًا.",
+  "That slot doesn't exist": "هذه الخانة غير موجودة",
+  "That slot is empty": "هذه الخانة فارغة",
+  "That profile is private, so it can't be shown on the main screen": "هذا الملف الشخصي خاص، لذلك لا يمكن عرضه على الشاشة الرئيسية",
+  "That person is already in the other slot": "هذا الشخص موجود بالفعل في الخانة الأخرى",
+  "Pick one of their pictures, or leave it automatic": "اختر إحدى صوره أو اتركها تلقائية",
+  "Spotlight note must be text": "يجب أن تكون ملاحظة الواجهة نصًا",
+  "Spotlight note can be up to {v1} characters": "يمكن أن تصل ملاحظة الواجهة إلى {v1} حرفًا",
 };
